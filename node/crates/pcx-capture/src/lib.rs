@@ -22,7 +22,7 @@ pub mod sources;
 pub use contracts::{CaptureEvent, Device, DeviceKind, DeviceStatus, Envelope, Event, FrameMeta, Payload, ToMsgpack};
 pub use frame::{BoxError, Frame};
 pub use runner::{run, Publisher, RunConfig, RunStats};
-pub use sink::{default_ingest, ChannelSink, MetaSink};
 #[cfg(feature = "zmq")]
 pub use sink::ZmqPush;
+pub use sink::{default_ingest, ChannelSink, MetaSink};
 pub use sources::{open_source, RunningSource, SourceOpts, SourceSpec};

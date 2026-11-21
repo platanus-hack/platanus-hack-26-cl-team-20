@@ -6,8 +6,8 @@ use std::sync::Arc;
 
 use base64::Engine;
 use rmcp::model::{
-    CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock, Implementation, ListToolsResult, PaginatedRequestParams, ServerCapabilities,
-    ServerConfig, Tool,
+    CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock, Implementation, ListToolsResult,
+    PaginatedRequestParams, ServerCapabilities, ServerConfig, Tool,
 };
 use rmcp::service::{RequestContext, RunningService};
 use rmcp::{ErrorData, RoleClient, RoleServer, ServerHandler};
@@ -60,11 +60,19 @@ impl ServerHandler for PcxMcp {
             .with_instructions(INSTRUCTIONS)
     }
 
-    async fn list_tools(&self, _request: Option<PaginatedRequestParams>, _context: RequestContext<RoleServer>) -> Result<ListToolsResult, ErrorData> {
+    async fn list_tools(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListToolsResult, ErrorData> {
         Ok(ListToolsResult::with_all_items((*self.tools).clone()))
     }
 
-    async fn call_tool(&self, request: CallToolRequestParams, _context: RequestContext<RoleServer>) -> Result<CallToolResponse, ErrorData> {
+    async fn call_tool(
+        &self,
+        request: CallToolRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<CallToolResponse, ErrorData> {
         match &self.backend {
             Backend::Local(t) => {
                 let args = request.arguments.map(serde_json::Value::Object).unwrap_or_default();

@@ -46,9 +46,7 @@ impl Zone {
         let mut min_d = f64::MAX;
         for i in 0..n {
             let (a, b) = (self.polygon[i], self.polygon[(i + 1) % n]);
-            if (a[1] > p[1]) != (b[1] > p[1])
-                && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]
-            {
+            if (a[1] > p[1]) != (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0] {
                 inside = !inside;
             }
             let ab = [b[0] - a[0], b[1] - a[1]];
@@ -222,17 +220,14 @@ impl TouchTracker {
     }
 
     pub fn to_mm(&self, p: Point2) -> Option<Point2> {
-        self.homography
-            .as_ref()
-            .and_then(|h| apply_homography(h, p))
+        self.homography.as_ref().and_then(|h| apply_homography(h, p))
     }
 
     /// Palma proyectada al plano de la mesa (mm con homografía; px de cámara sin ella).
     pub fn plane_palm(&self, lm: &[Point2; 21]) -> f64 {
         match &self.homography {
             Some(h) => {
-                let m: [Point2; 21] =
-                    std::array::from_fn(|i| apply_homography(h, lm[i]).unwrap_or(lm[i]));
+                let m: [Point2; 21] = std::array::from_fn(|i| apply_homography(h, lm[i]).unwrap_or(lm[i]));
                 palm_size(&m)
             }
             None => palm_size(lm),
@@ -278,11 +273,7 @@ impl TouchTracker {
 
             // señales: pinch (histéresis) y apoyo (ratio de palma en el plano)
             let r = pinch_ratio(lm);
-            st.pinch = r < if st.pinch {
-                self.cfg.pinch_off
-            } else {
-                self.cfg.pinch_on
-            };
+            st.pinch = r < if st.pinch { self.cfg.pinch_off } else { self.cfg.pinch_on };
             let size = self.plane_palm(lm);
             if self.cfg.hand_ref.is_none() {
                 if self.sizes.len() >= self.cfg.auto_ref_window {
@@ -291,25 +282,13 @@ impl TouchTracker {
                 self.sizes.push_back(size);
             }
             st.rest = match self.hand_ref() {
-                Some(rf) if rf > 0.0 => {
-                    size / rf
-                        < if st.rest {
-                            self.cfg.ratio_up
-                        } else {
-                            self.cfg.ratio_down
-                        }
-                }
+                Some(rf) if rf > 0.0 => size / rf < if st.rest { self.cfg.ratio_up } else { self.cfg.ratio_down },
                 _ => false,
             };
 
             // dwell: dedo quieto
-            let radius = if st.dwell_latched {
-                self.cfg.dwell_release_px
-            } else {
-                self.cfg.dwell_radius_px
-            };
-            let pointing = !self.cfg.dwell_require_pointing
-                || dist(lm[WRIST], tip) > dist(lm[WRIST], lm[INDEX_PIP]);
+            let radius = if st.dwell_latched { self.cfg.dwell_release_px } else { self.cfg.dwell_radius_px };
+            let pointing = !self.cfg.dwell_require_pointing || dist(lm[WRIST], tip) > dist(lm[WRIST], lm[INDEX_PIP]);
             match st.dwell_anchor {
                 Some(an) if dist(an, smooth) < radius && pointing => {}
                 _ => {
@@ -319,9 +298,7 @@ impl TouchTracker {
                     st.dwell_latched = false;
                 }
             }
-            let dwell_on = self.cfg.use_dwell
-                && pointing
-                && !(st.touching && st.trigger != TouchTrigger::Dwell);
+            let dwell_on = self.cfg.use_dwell && pointing && !(st.touching && st.trigger != TouchTrigger::Dwell);
             if dwell_on && !st.dwell_latched {
                 let progress = ((t - st.still_since) / self.cfg.dwell_s).clamp(0.0, 1.0);
                 let step = self.cfg.dwell_step.max(1e-3);
@@ -329,11 +306,7 @@ impl TouchTracker {
                 if k > st.dwell_steps {
                     st.dwell_steps = k;
                     let an = st.dwell_anchor.unwrap_or(smooth);
-                    let p = if progress >= 1.0 {
-                        1.0
-                    } else {
-                        k as f64 * step
-                    };
+                    let p = if progress >= 1.0 { 1.0 } else { k as f64 * step };
                     ev.push(HandsEvent::Dwell {
                         hand_id: h.id.clone(),
                         point_px: an,
@@ -359,23 +332,15 @@ impl TouchTracker {
 
             if !st.touching {
                 st.cnt_on = if contact { st.cnt_on + 1 } else { 0 };
-                if st.cnt_on >= self.cfg.frames_down || (contact && trigger == TouchTrigger::Dwell)
-                {
+                if st.cnt_on >= self.cfg.frames_down || (contact && trigger == TouchTrigger::Dwell) {
                     st.touching = true;
                     st.cnt_on = 0;
                     st.cnt_off = 0;
                     st.trigger = trigger;
-                    st.emitted = if trigger == TouchTrigger::Dwell {
-                        st.dwell_anchor.unwrap_or(smooth)
-                    } else {
-                        smooth
-                    };
+                    st.emitted =
+                        if trigger == TouchTrigger::Dwell { st.dwell_anchor.unwrap_or(smooth) } else { smooth };
                     st.blocked = match self.to_mm(st.emitted) {
-                        Some(mm) => self
-                            .cfg
-                            .zones
-                            .iter()
-                            .any(|z| z.contains(mm, self.cfg.zone_margin)),
+                        Some(mm) => self.cfg.zones.iter().any(|z| z.contains(mm, self.cfg.zone_margin)),
                         None => false,
                     };
                     if !st.blocked {
@@ -391,11 +356,7 @@ impl TouchTracker {
                 st.cnt_off = if contact { 0 } else { st.cnt_off + 1 };
                 if st.cnt_off >= self.cfg.frames_up {
                     if !st.blocked {
-                        let why = if st.trigger == TouchTrigger::Dwell {
-                            "moved"
-                        } else {
-                            "released"
-                        };
+                        let why = if st.trigger == TouchTrigger::Dwell { "moved" } else { "released" };
                         ev.push(HandsEvent::TouchUp {
                             touch: self.info(&st, &h.id, TouchPhase::Up, why),
                             t_capture_ns: tns,

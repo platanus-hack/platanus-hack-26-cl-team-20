@@ -33,6 +33,22 @@ Nueva versión técnica: **contexto físico para agentes de IA**. Nodo local en 
 | `tools/demo-techo/` | Demo calibrada en hardware real (techo con viga) | ver su README |
 | `docs/pruebas/hardware-manu/` | Pruebas en hardware real: 60 fps, 215 ms de latencia, bugs | — |
 
+## CI
+
+GitHub Actions en cada PR (y push) hacia `main` y `manu/plataforma`: [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+| Job | Qué corre | En local (desde la raíz) |
+|---|---|---|
+| `rust` | fmt, clippy con `-D warnings`, tests del workspace | `cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace` |
+| `python` | pytest de `contracts/` y `cloud/gateway/`, ruff del gateway | `(cd contracts && uv run pytest) && (cd cloud/gateway && uv run pytest && uv run ruff check . && uv run ruff format --check .)` |
+| `contracts-sync` | regenera schema, fixtures y `ts/pcx.d.ts`; falla si queda diff | `(cd contracts && uv run python -m pcx_contracts.export && ./ts/generate.sh) && git status --porcelain contracts` |
+| `web` | `pnpm install --frozen-lockfile`, `pnpm build`, Lighthouse (informativo) | `cd web && pnpm install --frozen-lockfile && pnpm build && npx @lhci/cli autorun` |
+
+- Formato: `rustfmt.toml` (120 columnas). Corre `cargo fmt --all` antes de commitear.
+- Tests del renderer con GPU (`golden`, `hot_reload`, `bench_smoke`): en CI corren sobre lavapipe (Vulkan por CPU) en un paso que **no bloquea**, porque las imágenes golden se generaron en macOS. Si fallan, las imágenes obtenidas quedan como artefacto. El resto de los tests sí bloquea.
+- Linux necesita `pkg-config libfontconfig1-dev` para compilar (y `mesa-vulkan-drivers` para los tests con GPU sin tarjeta).
+- [`cross-platform.yml`](.github/workflows/cross-platform.yml): `cargo check --workspace --all-targets` en Windows y macOS. Solo en PR hacia `main` que tocan Rust, o a mano desde la pestaña Actions.
+
 ## Estructura
 
 | Carpeta | Qué va | Responsable |

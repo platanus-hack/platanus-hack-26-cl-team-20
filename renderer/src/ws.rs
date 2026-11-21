@@ -17,10 +17,7 @@ pub enum WsEvent {
 }
 
 pub fn spawn(url: String, to_render: Sender<WsEvent>, from_render: Receiver<String>) {
-    std::thread::Builder::new()
-        .name("ws".into())
-        .spawn(move || run(url, to_render, from_render))
-        .expect("hilo ws");
+    std::thread::Builder::new().name("ws".into()).spawn(move || run(url, to_render, from_render)).expect("hilo ws");
 }
 
 fn run(url: String, to_render: Sender<WsEvent>, from_render: Receiver<String>) {
@@ -69,9 +66,7 @@ fn run(url: String, to_render: Sender<WsEvent>, from_render: Receiver<String>) {
                     return;
                 }
             }
-            Err(_) => {
-                while from_render.try_recv().is_ok() {}
-            }
+            Err(_) => while from_render.try_recv().is_ok() {},
         }
         std::thread::sleep(backoff);
         backoff = (backoff * 2).min(Duration::from_secs(2));

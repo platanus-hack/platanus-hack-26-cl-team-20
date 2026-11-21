@@ -88,7 +88,12 @@ impl Lut {
         for v in 0..h {
             for u in 0..w {
                 let i = (v * w + u) * 2;
-                verts.push([self.data[i], self.data[i + 1], (u as f64 * grid_step) as f32, (v as f64 * grid_step) as f32]);
+                verts.push([
+                    self.data[i],
+                    self.data[i + 1],
+                    (u as f64 * grid_step) as f32,
+                    (v as f64 * grid_step) as f32,
+                ]);
             }
         }
         let ok = |i: usize| verts[i][0].is_finite() && verts[i][1].is_finite();

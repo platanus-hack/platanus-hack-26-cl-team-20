@@ -36,7 +36,13 @@ fn dino_mas_sam_en_imagen_de_prueba() {
         let b = dets[0].bbox;
         let t = Instant::now();
         let (m, s) = sam.predict_box(b, Some(((b[0] + b[2]) / 2.0, (b[1] + b[3]) / 2.0))).unwrap();
-        println!("sam encoder {:.2}s · decoder {:.3}s · score {:.2} · área {} px", te, t.elapsed().as_secs_f64(), s, raster::count(&m));
+        println!(
+            "sam encoder {:.2}s · decoder {:.3}s · score {:.2} · área {} px",
+            te,
+            t.elapsed().as_secs_f64(),
+            s,
+            raster::count(&m)
+        );
         assert!(raster::count(&m) > 50);
     }
 }

@@ -153,7 +153,12 @@ fn fullscreen_pipeline(
     device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some(label),
         layout: Some(&layout),
-        vertex: wgpu::VertexState { module: &module, entry_point: Some("vs_main"), compilation_options: Default::default(), buffers: &[] },
+        vertex: wgpu::VertexState {
+            module: &module,
+            entry_point: Some("vs_main"),
+            compilation_options: Default::default(),
+            buffers: &[],
+        },
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
@@ -181,11 +186,25 @@ pub fn invert3(m: &[f64; 9]) -> Option<[f64; 9]> {
     if det.abs() < 1e-12 {
         return None;
     }
-    let inv = [co[0], -(b * i - c * h), b * f - c * e, co[1], a * i - c * g, -(a * f - c * d), co[2], -(a * h - b * g), a * e - b * d];
+    let inv = [
+        co[0],
+        -(b * i - c * h),
+        b * f - c * e,
+        co[1],
+        a * i - c * g,
+        -(a * f - c * d),
+        co[2],
+        -(a * h - b * g),
+        a * e - b * d,
+    ];
     Some(inv.map(|v| v / det))
 }
 
-fn mesh_pipeline(device: &wgpu::Device, bgl: &wgpu::BindGroupLayout, format: wgpu::TextureFormat) -> wgpu::RenderPipeline {
+fn mesh_pipeline(
+    device: &wgpu::Device,
+    bgl: &wgpu::BindGroupLayout,
+    format: wgpu::TextureFormat,
+) -> wgpu::RenderPipeline {
     let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("lut-mesh"),
         source: wgpu::ShaderSource::Wgsl(include_str!("compose.wgsl").into()),
@@ -205,7 +224,11 @@ fn mesh_pipeline(device: &wgpu::Device, bgl: &wgpu::BindGroupLayout, format: wgp
             buffers: &[Some(wgpu::VertexBufferLayout {
                 array_stride: 16,
                 step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &[wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x4, offset: 0, shader_location: 0 }],
+                attributes: &[wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x4,
+                    offset: 0,
+                    shader_location: 0,
+                }],
             })],
         },
         primitive: wgpu::PrimitiveState::default(),
@@ -248,7 +271,11 @@ impl Engine {
         let uniform_entry = wgpu::BindGroupLayoutEntry {
             binding: 2,
             visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-            ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Uniform,
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
             count: None,
         };
         let compose_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -264,7 +291,8 @@ impl Engine {
                 uniform_entry,
             ],
         });
-        let compose = fullscreen_pipeline(&device, "compose", include_str!("compose.wgsl"), &compose_bgl, out_format, None);
+        let compose =
+            fullscreen_pipeline(&device, "compose", include_str!("compose.wgsl"), &compose_bgl, out_format, None);
         let blit_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("blit"),
             entries: &[tex_entry(0, false)],
@@ -278,7 +306,8 @@ impl Engine {
             alpha: wgpu::BlendComponent::OVER,
         };
         let blit = fullscreen_pipeline(&device, "blit", include_str!("blit.wgsl"), &blit_bgl, CANVAS_FMT, Some(blend));
-        let pattern_pipeline = fullscreen_pipeline(&device, "pattern", include_str!("pattern.wgsl"), &blit_bgl, out_format, None);
+        let pattern_pipeline =
+            fullscreen_pipeline(&device, "pattern", include_str!("pattern.wgsl"), &blit_bgl, out_format, None);
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
@@ -366,7 +395,10 @@ impl Engine {
         let blit_bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("blit"),
             layout: &self.blit_bgl,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&scratch_view) }],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&scratch_view),
+            }],
         });
         self.canvas = Some(Canvas { tex, view, scratch_view, blit_bg, w: cw, h: ch });
     }
@@ -438,7 +470,15 @@ impl Engine {
     }
 
     /// Dibuja `state` en el instante `t` (s) hacia `target` (`out_w × out_h` px).
-    pub fn render(&mut self, state: &SceneState, t: f64, now_s: f64, target: &wgpu::TextureView, out_w: u32, out_h: u32) -> FrameInfo {
+    pub fn render(
+        &mut self,
+        state: &SceneState,
+        t: f64,
+        now_s: f64,
+        target: &wgpu::TextureView,
+        out_w: u32,
+        out_h: u32,
+    ) -> FrameInfo {
         let ppmm = self.cfg.ppmm;
         let surf = &state.surface;
         let cw = (surf.width_mm * ppmm).round().clamp(1.0, 8192.0) as u32;
@@ -475,7 +515,8 @@ impl Engine {
         let mut build_ms = 0.0;
         let canvas = self.canvas.as_ref().unwrap();
         let mut cleared = false;
-        let canvas_load = |cleared: bool| if cleared { wgpu::LoadOp::Load } else { wgpu::LoadOp::Clear(wgpu::Color::BLACK) };
+        let canvas_load =
+            |cleared: bool| if cleared { wgpu::LoadOp::Load } else { wgpu::LoadOp::Clear(wgpu::Color::BLACK) };
         for layer in &layers {
             match layer {
                 Layer::Vector(ws) => {
@@ -485,14 +526,21 @@ impl Engine {
                         self.painter.draw(&mut self.vscene, w, ppmm, t, &mut self.images);
                     }
                     build_ms += tb.elapsed().as_secs_f64() * 1000.0;
-                    let (view, base) = if cleared { (&canvas.scratch_view, Color::TRANSPARENT) } else { (&canvas.view, Color::BLACK) };
+                    let (view, base) =
+                        if cleared { (&canvas.scratch_view, Color::TRANSPARENT) } else { (&canvas.view, Color::BLACK) };
                     self.vello
-                        .render_to_texture(&self.device, &self.queue, &self.vscene, view, &RenderParams {
-                            base_color: base,
-                            width: cw,
-                            height: ch,
-                            antialiasing_method: AaConfig::Area,
-                        })
+                        .render_to_texture(
+                            &self.device,
+                            &self.queue,
+                            &self.vscene,
+                            view,
+                            &RenderParams {
+                                base_color: base,
+                                width: cw,
+                                height: ch,
+                                antialiasing_method: AaConfig::Area,
+                            },
+                        )
                         .expect("vello render");
                     if cleared {
                         let mut enc = self.device.create_command_encoder(&Default::default());
@@ -532,11 +580,26 @@ impl Engine {
         };
         let hinv = invert3(&hom).unwrap_or([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
         let u: [f32; 20] = [
-            hinv[0] as f32, hinv[1] as f32, hinv[2] as f32, 0.0,
-            hinv[3] as f32, hinv[4] as f32, hinv[5] as f32, 0.0,
-            hinv[6] as f32, hinv[7] as f32, hinv[8] as f32, 0.0,
-            surf.width_mm as f32, surf.height_mm as f32, 0.0, 0.0,
-            out_w as f32, out_h as f32, 0.0, 0.0,
+            hinv[0] as f32,
+            hinv[1] as f32,
+            hinv[2] as f32,
+            0.0,
+            hinv[3] as f32,
+            hinv[4] as f32,
+            hinv[5] as f32,
+            0.0,
+            hinv[6] as f32,
+            hinv[7] as f32,
+            hinv[8] as f32,
+            0.0,
+            surf.width_mm as f32,
+            surf.height_mm as f32,
+            0.0,
+            0.0,
+            out_w as f32,
+            out_h as f32,
+            0.0,
+            0.0,
         ];
         let bytes: Vec<u8> = u.iter().flat_map(|f| f.to_le_bytes()).collect();
         self.queue.write_buffer(&self.uniforms, 0, &bytes);
@@ -560,7 +623,10 @@ impl Engine {
                     view: target,
                     depth_slice: None,
                     resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
@@ -589,7 +655,11 @@ impl Engine {
     /// Se salta por completo el lienzo, widgets, homografía y LUT.
     pub fn render_pattern(&mut self, generation: u64, src: &str, target: &wgpu::TextureView) -> bool {
         if !self.pattern.as_ref().is_some_and(|(serial, key, _, _)| *serial == generation && key == src) {
-            if self.pattern_failed.as_ref().is_some_and(|(serial, time)| *serial == generation && time.elapsed() < Duration::from_secs(2)) {
+            if self
+                .pattern_failed
+                .as_ref()
+                .is_some_and(|(serial, time)| *serial == generation && time.elapsed() < Duration::from_secs(2))
+            {
                 return false;
             }
             let image = match crate::images::load_pattern(src) {
@@ -614,7 +684,11 @@ impl Engine {
             self.queue.write_texture(
                 texture.as_image_copy(),
                 image.data.data(),
-                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(image.width * 4), rows_per_image: Some(image.height) },
+                wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(image.width * 4),
+                    rows_per_image: Some(image.height),
+                },
                 texture.size(),
             );
             let bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -695,7 +769,11 @@ impl Engine {
     }
 }
 
-fn canvas_pass<'e>(enc: &'e mut wgpu::CommandEncoder, view: &'e wgpu::TextureView, load: wgpu::LoadOp<wgpu::Color>) -> wgpu::RenderPass<'e> {
+fn canvas_pass<'e>(
+    enc: &'e mut wgpu::CommandEncoder,
+    view: &'e wgpu::TextureView,
+    load: wgpu::LoadOp<wgpu::Color>,
+) -> wgpu::RenderPass<'e> {
     enc.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("canvas"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {

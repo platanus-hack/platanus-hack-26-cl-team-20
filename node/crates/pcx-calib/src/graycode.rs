@@ -112,11 +112,18 @@ impl Decoded {
 }
 
 /// Decodifica pares `(spec, cuadro)`. Debe haber patrón e inverso para cada bit de `captured_skip..top` por eje.
-pub fn decode(frames: &[(GraySpec, &GrayImage)], proj: (u32, u32), captured_skip: (u8, u8), p: &DecodeParams) -> Option<Decoded> {
+pub fn decode(
+    frames: &[(GraySpec, &GrayImage)],
+    proj: (u32, u32),
+    captured_skip: (u8, u8),
+    p: &DecodeParams,
+) -> Option<Decoded> {
     let (w, h) = (frames.first()?.1.width, frames.first()?.1.height);
     let n = (w * h) as usize;
     let top = (bits_for(proj.0), bits_for(proj.1));
-    let find = |axis: u8, bit: u8, inv: bool| frames.iter().find(|(s, _)| s.axis == axis && s.bit == bit && s.inverse == inv).map(|f| f.1);
+    let find = |axis: u8, bit: u8, inv: bool| {
+        frames.iter().find(|(s, _)| s.axis == axis && s.bit == bit && s.inverse == inv).map(|f| f.1)
+    };
     // diferencias por (eje, bit)
     let mut diffs: Vec<Vec<FloatMap>> = vec![Vec::new(), Vec::new()];
     for axis in [AXIS_X, AXIS_Y] {
@@ -217,7 +224,13 @@ pub fn decode(frames: &[(GraySpec, &GrayImage)], proj: (u32, u32), captured_skip
             for dy in -1..=1 {
                 for dx in -1..=1 {
                     let (nx, ny) = (x + dx, y + dy);
-                    if (dx != 0 || dy != 0) && nx >= 0 && ny >= 0 && nx < wi && ny < hi && coherent(&block, i, (ny * wi + nx) as usize, 2) {
+                    if (dx != 0 || dy != 0)
+                        && nx >= 0
+                        && ny >= 0
+                        && nx < wi
+                        && ny < hi
+                        && coherent(&block, i, (ny * wi + nx) as usize, 2)
+                    {
                         c += 1;
                     }
                 }

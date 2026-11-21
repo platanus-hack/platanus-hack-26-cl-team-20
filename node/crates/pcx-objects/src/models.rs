@@ -81,9 +81,11 @@ pub fn automatic_masks(
     seg.set_image(img)?;
     let mut cands: Vec<(Proposal, Mask)> = Vec::new();
     for r in 0..rows {
-        let y = h as f32 / (2.0 * rows as f32) + r as f32 * (h as f32 - h as f32 / rows as f32) / (rows - 1).max(1) as f32;
+        let y =
+            h as f32 / (2.0 * rows as f32) + r as f32 * (h as f32 - h as f32 / rows as f32) / (rows - 1).max(1) as f32;
         for c in 0..columns {
-            let x = w as f32 / (2.0 * columns as f32) + c as f32 * (w as f32 - w as f32 / columns as f32) / (columns - 1).max(1) as f32;
+            let x = w as f32 / (2.0 * columns as f32)
+                + c as f32 * (w as f32 - w as f32 / columns as f32) / (columns - 1).max(1) as f32;
             let (xi, yi) = ((x.round() as u32).min(w - 1), (y.round() as u32).min(h - 1));
             if valid.get_pixel(xi, yi).0[0] == 0 {
                 continue;
@@ -104,7 +106,9 @@ pub fn automatic_masks(
             cands.push((Proposal { mask, area, score: o.score, stability }, small));
         }
     }
-    cands.sort_by(|a, b| (b.0.score * b.0.stability).partial_cmp(&(a.0.score * a.0.stability)).unwrap_or(std::cmp::Ordering::Equal));
+    cands.sort_by(|a, b| {
+        (b.0.score * b.0.stability).partial_cmp(&(a.0.score * a.0.stability)).unwrap_or(std::cmp::Ordering::Equal)
+    });
     let mut sel: Vec<(Proposal, Mask)> = Vec::new();
     for (p, s) in cands {
         let dup = sel.iter().any(|(_, q)| {

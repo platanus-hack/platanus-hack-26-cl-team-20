@@ -39,8 +39,12 @@ pub fn select(displays: &[DisplayInfo], selector: &str, allow_main: bool) -> Res
             return Err("nombre de display vacío".into());
         }
         let needle = selector.to_lowercase();
-        let matches: Vec<_> =
-            displays.iter().enumerate().filter(|(_, d)| d.name.to_lowercase().contains(&needle)).map(|(i, _)| i).collect();
+        let matches: Vec<_> = displays
+            .iter()
+            .enumerate()
+            .filter(|(_, d)| d.name.to_lowercase().contains(&needle))
+            .map(|(i, _)| i)
+            .collect();
         match matches.as_slice() {
             [i] => *i,
             [] => {

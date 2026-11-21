@@ -113,7 +113,12 @@ fn read_patch(img: &GrayImage, c: [f64; 2], r: f64) -> f64 {
     for dy in -ri..=ri {
         for dx in -ri..=ri {
             let (x, y) = (c[0].round() as i64 + dx, c[1].round() as i64 + dy);
-            if x >= 0 && y >= 0 && x < img.width as i64 && y < img.height as i64 && ((dx * dx + dy * dy) as f64) <= r * r {
+            if x >= 0
+                && y >= 0
+                && x < img.width as i64
+                && y < img.height as i64
+                && ((dx * dx + dy * dy) as f64) <= r * r
+            {
                 s += img.get(x as u32, y as u32) as f64;
                 n += 1.0;
             }
@@ -172,7 +177,14 @@ pub fn stream(
     let first = grab.grab(t_prev + 1)?;
     let period = (first.t_capture_ns - t_prev).max(1);
     prev = first;
-    let (_, lat) = show_and_wait(sink, grab, &reset, &prev.image, None, &ChangeParams { min_change: 0.0005, ..Default::default() })?;
+    let (_, lat) = show_and_wait(
+        sink,
+        grab,
+        &reset,
+        &prev.image,
+        None,
+        &ChangeParams { min_change: 0.0005, ..Default::default() },
+    )?;
     rep.frame_period_ms = period as f64 / 1e6;
     rep.latency_ms = lat as f64 / 1e6;
     let hold = (prm.hold_frames * period as f64) as i64;
@@ -214,7 +226,10 @@ pub fn stream(
         sink.show(&reset)?;
         rep.frames_seen += frames.len();
         // niveles por parche
-        let reads: Vec<[f64; 2]> = frames.iter().map(|f| [read_patch(&f.image, centers[0], rad), read_patch(&f.image, centers[1], rad)]).collect();
+        let reads: Vec<[f64; 2]> = frames
+            .iter()
+            .map(|f| [read_patch(&f.image, centers[0], rad), read_patch(&f.image, centers[1], rad)])
+            .collect();
         let lv: Vec<(f64, f64)> = (0..2)
             .map(|k| {
                 let v: Vec<f64> = reads.iter().map(|r| r[k]).collect();

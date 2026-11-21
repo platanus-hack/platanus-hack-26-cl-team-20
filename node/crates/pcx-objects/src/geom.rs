@@ -29,10 +29,7 @@ pub fn invert(a: &Affine) -> Option<Affine> {
         return None;
     }
     let (ia, ib, ic, id) = (a[1][1] / det, -a[0][1] / det, -a[1][0] / det, a[0][0] / det);
-    Some([
-        [ia, ib, -(ia * a[0][2] + ib * a[1][2])],
-        [ic, id, -(ic * a[0][2] + id * a[1][2])],
-    ])
+    Some([[ia, ib, -(ia * a[0][2] + ib * a[1][2])], [ic, id, -(ic * a[0][2] + id * a[1][2])]])
 }
 
 /// Escala de la parte lineal (`hypot(A[0,0], A[1,0])`, como el filtro de `seguidor_v4`).

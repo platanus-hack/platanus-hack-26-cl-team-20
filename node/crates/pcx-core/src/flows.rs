@@ -53,7 +53,17 @@ impl World {
         }
         let t = now_ns();
         let initial = flow.initial.clone();
-        self.runs.insert(id.clone(), FlowRun { flow, request_id, state: initial.clone(), started_ns: t, entered_ns: t, widgets: BTreeSet::new() });
+        self.runs.insert(
+            id.clone(),
+            FlowRun {
+                flow,
+                request_id,
+                state: initial.clone(),
+                started_ns: t,
+                entered_ns: t,
+                widgets: BTreeSet::new(),
+            },
+        );
         self.flow_enter(&id, &initial, None, "start", 0);
         let state = self.runs.get(&id).map(|r| r.state.clone());
         Ok(json!({"flow_id": id, "state": state, "running": self.runs.contains_key(&id)}))
@@ -68,7 +78,13 @@ impl World {
             self.remove(&ids);
         }
         self.emit(
-            Event::FlowStateChanged { flow_id: flow_id.into(), request_id: run.request_id, from_state: Some(run.state), to_state: None, cause: Some(cause.into()) },
+            Event::FlowStateChanged {
+                flow_id: flow_id.into(),
+                request_id: run.request_id,
+                from_state: Some(run.state),
+                to_state: None,
+                cause: Some(cause.into()),
+            },
             "core",
             None,
         );
@@ -81,11 +97,24 @@ impl World {
             let req = format!("{rid}/{state}/{i}");
             let res = match a {
                 Action::Project { widgets } => self.project(widgets, false, Some(flow_id)).map(|_| ()),
-                Action::Update { id, set } => self.apply(Command::Update { request_id: req, id, set }, Some(flow_id)).map(|_| ()),
-                Action::Remove { ids } => self.apply(Command::Remove { request_id: req, ids }, Some(flow_id)).map(|_| ()),
+                Action::Update { id, set } => {
+                    self.apply(Command::Update { request_id: req, id, set }, Some(flow_id)).map(|_| ())
+                }
+                Action::Remove { ids } => {
+                    self.apply(Command::Remove { request_id: req, ids }, Some(flow_id)).map(|_| ())
+                }
                 Action::Clear {} => self.apply(Command::Clear { request_id: req }, Some(flow_id)).map(|_| ()),
                 Action::Emit { event, data } => {
-                    self.emit(Event::FlowEmitted { flow_id: Some(flow_id.into()), request_id: Some(rid.clone()), event, data }, "core", None);
+                    self.emit(
+                        Event::FlowEmitted {
+                            flow_id: Some(flow_id.into()),
+                            request_id: Some(rid.clone()),
+                            event,
+                            data,
+                        },
+                        "core",
+                        None,
+                    );
                     Ok(())
                 }
                 Action::HomeCall(body) => {
@@ -99,7 +128,12 @@ impl World {
                 data.insert("state".into(), state.into());
                 data.insert("error".into(), e.into());
                 self.emit(
-                    Event::FlowEmitted { flow_id: Some(flow_id.into()), request_id: Some(rid.clone()), event: "action_error".into(), data },
+                    Event::FlowEmitted {
+                        flow_id: Some(flow_id.into()),
+                        request_id: Some(rid.clone()),
+                        event: "action_error".into(),
+                        data,
+                    },
                     "core",
                     None,
                 );
@@ -114,7 +148,13 @@ impl World {
         let rid = run.request_id.clone();
         let Some(st) = run.current().cloned() else { return };
         self.emit(
-            Event::FlowStateChanged { flow_id: flow_id.into(), request_id: rid, from_state: from, to_state: Some(to.into()), cause: Some(cause.into()) },
+            Event::FlowStateChanged {
+                flow_id: flow_id.into(),
+                request_id: rid,
+                from_state: from,
+                to_state: Some(to.into()),
+                cause: Some(cause.into()),
+            },
             "core",
             None,
         );
@@ -147,11 +187,10 @@ impl World {
         let ids: Vec<String> = self.runs.keys().cloned().collect();
         let tag = ev.tag();
         for id in ids {
-            let Some(t) = self
-                .runs
-                .get(&id)
-                .and_then(|r| r.current())
-                .and_then(|s| s.transitions.iter().find(|t| t.on.as_ref().is_some_and(|f| matches(f, ev))).cloned())
+            let Some(t) =
+                self.runs.get(&id).and_then(|r| r.current()).and_then(|s| {
+                    s.transitions.iter().find(|t| t.on.as_ref().is_some_and(|f| matches(f, ev))).cloned()
+                })
             else {
                 continue;
             };

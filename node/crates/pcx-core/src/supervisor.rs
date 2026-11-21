@@ -154,7 +154,9 @@ pub async fn terminate(child: &mut Child, timeout: Duration) {
 async fn healthy(client: &reqwest::Client, url: &Option<String>) -> bool {
     match url {
         None => true,
-        Some(u) => client.get(u).timeout(Duration::from_secs(2)).send().await.map(|r| r.status().is_success()).unwrap_or(false),
+        Some(u) => {
+            client.get(u).timeout(Duration::from_secs(2)).send().await.map(|r| r.status().is_success()).unwrap_or(false)
+        }
     }
 }
 

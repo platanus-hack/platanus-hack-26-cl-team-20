@@ -20,8 +20,8 @@ pub mod sim;
 pub mod sync;
 
 pub use calib::{
-    CalibConfig, CalibOutcome, CalibReport, CalibRun, Calibration, CalibrationDrift, MetricRef, Mode, PrintedMarker, Step,
-    SyncMode,
+    CalibConfig, CalibOutcome, CalibReport, CalibRun, Calibration, CalibrationDrift, MetricRef, Mode, PrintedMarker,
+    Step, SyncMode,
 };
 pub use image::{ErrStats, GrayImage};
 pub use io::{CalibError, Frame, FrameGrab, Pattern, PatternSink};
