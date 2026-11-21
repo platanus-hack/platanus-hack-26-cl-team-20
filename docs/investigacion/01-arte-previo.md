@@ -47,3 +47,13 @@ Ojo: Desktopography **no es de Microsoft**, es de CMU. LuminAR (MIT, proyector +
 | "Reconoce objetos y proyecta info encima" | Lumen (2018, con ML) y la validación por visión de LightGuide y Arkite. Lo nuevo no es "reconocer": es el vocabulario abierto sin entrenar y el agente que decide |
 
 **Pitch recomendado:** no "mapping fácil", sino *"un agente que ve tu mesa y te arma la interfaz que necesitas, con un proyector de 50 lucas y tu teléfono"*.
+
+## Folk Computer, newsletter 2026-07
+
+Fuente: [folk.computer/newsletters/2026-07](https://folk.computer/newsletters/2026-07). Leída el 21-nov; el final (RFID y links) solo como resumen.
+- **Calibración:** sigue con AprilTags proyectados, que ahora salen centrados automáticamente ([PR #275](https://github.com/FolkComputer/folk/pull/275)). Aunque la calibración sea buena, los contornos reproyectados quedaban corridos: lo arreglaron con un *rewarp* más fino del recorte de cámara. Para el plano de la mesa evalúan registrarlo en la calibración y proyectar los puntos hacia él. **Copiable:** registrar el plano de la mesa al calibrar.
+- **Detección sin marcadores:** el objeto se pone una vez sobre una «página de registro» y SAM2 entrega máscaras de ese objeto toda la sesión, que pasan a contornos. Usan el fork en tiempo real [osnr/segment-anything-2-real-time](https://github.com/osnr/segment-anything-2-real-time). Rinde 1–2 s por inferencia en Mac y en un laptop NVIDIA, la memoria se disparaba a 30 GB por guardar todos los frames, y no se puede sacar un objeto sin reiniciar. **Conclusión:** sirve para registrar objetos, no para el loop en vivo (coincide con 03: YOLO + tracker).
+- **Lección clave:** «si proyectamos sobre el objeto trackeado, el tracker se engancha también a la proyección». Su salida: no dibujar contornos encima y poner las etiquetas ~1 cm al lado. **Copiable tal cual** para los halos de 04.
+- **Cámara:** autoexposición propia que cada pocos segundos ajusta la exposición según el blanco medio de los AprilTags detectados (buscan separación blanco/negro, no una imagen linda) ([código](https://github.com/FolkComputer/folk/blob/1f0595f25d570ca005f2f91a5416175b0ce2945b/builtin-programs/camera/autoexposure.folk)). **Copiable:** fijar la exposición a partir de los marcadores, útil con poco contraste.
+- **Toque:** no hay. Para manos dicen que «probablemente deberíamos usar MediaPipe».
+- **Interfaz:** programas declarativos (`When` / `Wish $this displays ...`) en un lenguaje tipo Tcl, más un modo de mezcla *screen* en GPU. Hay vistas web de depuración, como `/camera-slice/ID`, que muestra el objeto enderezado. **Copiable:** la idea de «wishes» por objeto es casi nuestro `POST /layers` con `anchor`, y una vista de depuración así nos sirve.
