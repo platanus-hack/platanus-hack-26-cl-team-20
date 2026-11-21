@@ -50,8 +50,9 @@ export function invert(m) {
 
 const DETECT_W = 640;
 
-/** Luminancia del cuadro a 640 px de ancho (el reescalado promedia y baja el ruido). */
-export function gray(canvas) {
+/** «Verdor» del cuadro a 640 px de ancho: G − (R+B)/2. Las marcas son verde puro; manos, sombras y cambios de luz
+ *  mueven los tres canales a la vez y casi no cambian esta señal. */
+export function signal(canvas) {
   const k = DETECT_W / canvas.width;
   const w = DETECT_W;
   const h = Math.round(canvas.height * k);
@@ -60,41 +61,98 @@ export function gray(canvas) {
   ctx.drawImage(canvas, 0, 0, w, h);
   const rgba = ctx.getImageData(0, 0, w, h).data;
   const g = new Float32Array(w * h);
-  for (let i = 0; i < g.length; i++) g[i] = 0.3 * rgba[i * 4] + 0.59 * rgba[i * 4 + 1] + 0.11 * rgba[i * 4 + 2];
+  for (let i = 0; i < g.length; i++) g[i] = rgba[i * 4 + 1] - 0.5 * (rgba[i * 4] + rgba[i * 4 + 2]);
   return { g, w, h, k };
 }
 
-/** Centro (en px del cuadro original) de la mancha que apareció entre `off` y `on`, o null si no es una marca clara. */
-export function blob(on, off) {
-  const { w, h, k } = on;
-  let peak = 0;
-  for (let i = 0; i < on.g.length; i++) peak = Math.max(peak, on.g[i] - off.g[i]);
-  if (peak < 18) return null;
-  const t = Math.max(18, peak * 0.5);
-  let n = 0;
+/** Promedio de las fotos con la marca menos el promedio de las fotos sin ella. */
+export function diff(on, off) {
+  const d = new Float32Array(on[0].g.length);
+  for (const f of on) for (let i = 0; i < d.length; i++) d[i] += f.g[i] / on.length;
+  for (const f of off) for (let i = 0; i < d.length; i++) d[i] -= f.g[i] / off.length;
+  return { d, w: on[0].w, h: on[0].h, k: on[0].k };
+}
+
+/** Zona de la foto que el proyector ilumina (de la diferencia con todo encendido): máscara, área y nivel. */
+export function litArea({ d }) {
+  const sorted = Float32Array.from(d).sort();
+  const level = sorted[Math.floor(sorted.length * 0.98)];
+  const mask = new Uint8Array(d.length);
+  let area = 0;
+  if (level >= 6) for (let i = 0; i < d.length; i++) if (d[i] > level * 0.4) ((mask[i] = 1), area++);
+  return { mask, area, level };
+}
+
+/** Busca la marca: la ventana (del tamaño esperado de la marca) con más señal dentro de la zona iluminada.
+ *  Devuelve su centro en px del cuadro original y qué tan clara es (`z`: desviaciones sobre el resto), o null. */
+export function findDot({ d, w, h, k }, mask, win) {
+  const n = Math.max(5, Math.min(60, Math.round(win))) | 1;
+  const r = n >> 1;
+  const S = new Float64Array((w + 1) * (h + 1)); // imagen integral de la señal positiva dentro de la máscara
+  for (let y = 0; y < h; y++) {
+    let row = 0;
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      row += mask[i] && d[i] > 0 ? d[i] : 0;
+      S[(y + 1) * (w + 1) + x + 1] = S[y * (w + 1) + x + 1] + row;
+    }
+  }
+  const box = (x, y) => S[(y + r + 1) * (w + 1) + x + r + 1] - S[(y - r) * (w + 1) + x + r + 1] - S[(y + r + 1) * (w + 1) + x - r] + S[(y - r) * (w + 1) + x - r];
+  let best = -1;
+  let bx = 0;
+  let by = 0;
   let sum = 0;
-  let sx = 0;
-  let sy = 0;
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) {
-      const d = on.g[y * w + x] - off.g[y * w + x];
-      if (d < t) continue;
-      n++;
-      sum += d;
-      sx += d * x;
-      sy += d * y;
+  let sq = 0;
+  let cnt = 0;
+  for (let y = r; y < h - r; y += 2)
+    for (let x = r; x < w - r; x += 2) {
+      if (!mask[y * w + x]) continue;
+      const v = box(x, y) / (n * n);
+      sum += v;
+      sq += v * v;
+      cnt++;
+      if (v > best) ((best = v), (bx = x), (by = y));
     }
-  const cx = sx / sum;
-  const cy = sy / sum;
-  let spread = 0;
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) {
-      const d = on.g[y * w + x] - off.g[y * w + x];
-      if (d >= t) spread += d * ((x - cx) ** 2 + (y - cy) ** 2);
+  if (cnt < 20) return null;
+  const mean = sum / cnt;
+  const z = (best - mean) / (Math.sqrt(Math.max(1e-6, sq / cnt - mean * mean)) + 0.5);
+  if (best < 4 || z < 5) return null;
+  // Centro fino: centroide de la señal alrededor de la mejor ventana.
+  let peak = 0;
+  for (let y = Math.max(0, by - n); y <= Math.min(h - 1, by + n); y++)
+    for (let x = Math.max(0, bx - n); x <= Math.min(w - 1, bx + n); x++) peak = Math.max(peak, d[y * w + x]);
+  let m = 0;
+  let mx = 0;
+  let my = 0;
+  for (let y = Math.max(0, by - n); y <= Math.min(h - 1, by + n); y++)
+    for (let x = Math.max(0, bx - n); x <= Math.min(w - 1, bx + n); x++) {
+      const v = d[y * w + x] - peak * 0.35;
+      if (v > 0) ((m += v), (mx += v * x), (my += v * y));
     }
-  // Una marca es chica y compacta; reflejos, manos o dos marcas a la vez dan una mancha extendida.
-  if (n < 4 || Math.sqrt(spread / sum) > w * 0.05) return null;
-  return { x: (cx + 0.5) / k, y: (cy + 0.5) / k, peak };
+  if (!m) return null;
+  return { x: (mx / m + 0.5) / k, y: (my / m + 0.5) / k, z: Math.round(z * 10) / 10 };
+}
+
+/** RANSAC sobre todos los cuartetos: la homografía que deja más marcas a menos de `tol` mm, reajustada con ellas. */
+export function ransacH(px, mm, tol = 15) {
+  const n = px.length;
+  const err = (H, i) => Math.hypot(...apply(H, px[i]).map((v, a) => v - mm[i][a]));
+  let best = [];
+  for (let a = 0; a < n; a++)
+    for (let b = a + 1; b < n; b++)
+      for (let c = b + 1; c < n; c++)
+        for (let e = c + 1; e < n; e++) {
+          const H = solveH([px[a], px[b], px[c], px[e]], [mm[a], mm[b], mm[c], mm[e]]);
+          if (!H) continue;
+          const inl = [];
+          for (let i = 0; i < n; i++) if (err(H, i) < tol) inl.push(i);
+          if (inl.length > best.length) best = inl;
+        }
+  if (best.length < 4) return null;
+  const H = solveH(best.map((i) => px[i]), best.map((i) => mm[i]));
+  if (!H) return null;
+  const residual = Math.sqrt(best.reduce((acc, i) => acc + err(H, i) ** 2, 0) / best.length);
+  return { H, inliers: best, residual };
 }
 
 /** Dibuja sobre la foto la superficie proyectable y una grilla cada 100 mm, con sus coordenadas. */

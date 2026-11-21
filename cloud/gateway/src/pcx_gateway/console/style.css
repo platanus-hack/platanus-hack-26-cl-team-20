@@ -440,3 +440,13 @@ main {
   border: 0;
   background: none;
 }
+
+.aviso {
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  border: 1px solid var(--senal);
+  border-radius: 10px;
+  color: var(--luz);
+  font-size: 0.95rem;
+  font-weight: 600;
+}

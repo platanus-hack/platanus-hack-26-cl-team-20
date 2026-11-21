@@ -134,12 +134,32 @@ async function refreshCams() {
 const SIM = new URLSearchParams(location.search).has("sim");
 const simCam = { id: "cam-sim", kind: "camera", adapter: "sim", caps: ["frames"], status: "online", meta: { label: "Cámara simulada", main: true } };
 let calibDots = null;
+// `?sim=ruido`: además agrega objetos, un foco y una «mano» que se mueve, para probar calibrate en condiciones malas.
+const SIM_NOISE = new URLSearchParams(location.search).get("sim") === "ruido";
+function simNoise(scene) {
+  const ctx = scene.getContext("2d");
+  const t = performance.now() / 1000;
+  ctx.globalCompositeOperation = "lighter";
+  const g = ctx.createRadialGradient(560, 120, 10, 560, 120, 260);
+  g.addColorStop(0, "#ffffffcc");
+  g.addColorStop(1, "#ffffff00");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, scene.width, scene.height); // foco de luz
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = "#7a4a2a";
+  ctx.fillRect(90, 60, 110, 80); // caja
+  ctx.fillStyle = "#dddddd";
+  (ctx.beginPath(), ctx.arc(400, 300, 45, 0, 7), ctx.fill()); // taza: tapa la marca del centro
+  ctx.fillStyle = "#c79a7a";
+  ctx.fillRect(300 + 250 * Math.sin(t * 1.7), 330 + 40 * Math.cos(t * 2.3), 90, 160); // mano moviéndose
+}
 let textScale = store.get("textScale") || 1;
 
 function simFrame() {
   const { width_mm, height_mm } = node.world.surface;
   const scene = Object.assign(document.createElement("canvas"), { width: 800, height: Math.round((800 * height_mm) / width_mm) });
   drawScene(scene.getContext("2d"), scene.width, scene.height, node.world, performance.now(), { calib: calibDots });
+  if (SIM_NOISE) simNoise(scene);
   const c = Object.assign(document.createElement("canvas"), { width: 1280, height: 720 });
   const ctx = c.getContext("2d");
   ctx.fillStyle = "#2a2a2a";
@@ -194,6 +214,7 @@ const node = new BrowserNode(ses, {
     calibDots = dots;
     pushWorld();
   },
+  progress: (text) => ($("calib-estado").textContent = `Calibrando. ${text}`),
   saveCalib: (calib) => store.set("calib", { session_id: ses.session_id, calib }),
 });
 const saved = store.get("calib");
@@ -303,11 +324,12 @@ $("texto").onchange = () => {
 };
 $("calibrar").onclick = async () => {
   $("calibrar").disabled = true;
-  $("calib-estado").textContent = "Calibrando: proyectando marcas y buscándolas con la cámara…";
+  $("calib-aviso").hidden = true;
+  $("calib-estado").textContent = "Calibrando: proyectando marcas verdes y buscándolas con la cámara (unos 20 s). Saca las manos de la mesa.";
   try {
     await node.calibrate({ mode: "quick" });
   } catch (err) {
-    $("calib-estado").textContent = err.message;
+    showCalibError(err);
   }
   $("calibrar").disabled = false;
   paintProjector();
@@ -315,6 +337,15 @@ $("calibrar").onclick = async () => {
 
 function pushWorld() {
   bus.postMessage({ t: "world", world: node.world, pattern: $("patron").checked, calib: calibDots, textScale });
+}
+
+/** El motivo de un calibrate fallido queda a la vista hasta el próximo intento (también si lo pidió el agente). */
+function showCalibError(err) {
+  const marks = err.detail?.marks;
+  $("calib-aviso").hidden = false;
+  $("calib-aviso").textContent =
+    `La calibración automática falló y sigue rigiendo la anterior. ${err.message}` +
+    (marks?.length ? ` Marcas vistas (mm): ${marks.map((m) => m.mm.join(",")).join(" · ")}.` : "");
 }
 
 function paintProjector() {
@@ -325,13 +356,19 @@ function paintProjector() {
     ? "Sin ventana de proyector. Mientras tanto, lo que proyecte el agente se ve en la vista previa."
     : proj.fullscreen
       ? `Proyectando a ${proj.w}×${proj.h} en pantalla completa.`
-      : `Ventana abierta a ${proj.w}×${proj.h}. Falta la pantalla completa: aprieta el botón de esa ventana (o F).`;
+      : `Ventana abierta (${proj.window?.join("×")}) sobre una pantalla de ${proj.w}×${proj.h}.`;
+  const warn = open && !proj.fullscreen;
+  $("pantalla-aviso").hidden = !warn;
+  if (warn)
+    $("pantalla-aviso").textContent = proj.exact
+      ? "La ventana del proyector no está en pantalla completa. Lo proyectado cae en su lugar, pero se corta lo que tapan la barra de menú y el Dock. Aprieta «Pantalla completa aquí» en esa ventana (o F)."
+      : "La ventana del proyector no está en pantalla completa y no puedo medir dónde quedó: la calibración NO vale y todo cae corrido. Aprieta «Pantalla completa aquí» en esa ventana (o F).";
   const c = node.calib;
   if (c && !$("calibrar").disabled)
     $("calib-estado").textContent =
       c.source === "manual"
         ? `Calibración manual de 4 puntos sobre ${c.camera_id}. «Calibrar» la reemplaza por una automática.`
-        : `Calibrada con ${c.camera_id}: ${c.points} marcas, error ${c.residual_mm} mm. El agente ya puede apuntar en píxeles de la foto.`;
+        : `Calibrada con ${c.camera_id}: ${c.points} de ${c.total ?? c.points} marcas, error ${c.residual_mm} mm. El agente ya puede apuntar en píxeles de la foto.`;
   else if (!c && !$("calib-estado").textContent)
     $("calib-estado").textContent = "Sin calibrar: el agente ve la foto, pero no sabe dónde cae cada punto de la mesa.";
   const { width_mm, height_mm } = node.world.surface;
@@ -341,7 +378,7 @@ function paintProjector() {
 bus.onmessage = ({ data }) => {
   if (data.t === "alive") {
     const was = projectorOpen();
-    Object.assign(proj, { alive: Date.now(), w: data.w, h: data.h, fullscreen: data.fullscreen });
+    Object.assign(proj, { alive: Date.now(), w: data.w, h: data.h, fullscreen: data.fullscreen, window: data.window, exact: data.exact });
     node.setSurface(data.w, data.h);
     if (!was) pushWorld();
     syncDevices();
@@ -572,9 +609,13 @@ const brief = (tool, args, data) =>
           : tool === "look"
             ? `${data.camera_id} · ${data.image_px.join("×")}`
             : tool === "calibrate"
-              ? `${data.camera_id} · ${data.points_found}/${data.points_total} marcas · ${data.residual_mm} mm`
+              ? `${data.camera_id} · ${data.points_used ?? data.points_found}/${data.points_total} marcas · ${data.residual_mm} mm`
               : "";
 node.addEventListener("call", ({ detail: d }) => {
+  if (d.tool === "calibrate") {
+    $("calib-aviso").hidden = d.ok;
+    if (!d.ok) showCalibError(new Error(d.data.error));
+  }
   lastCall = Date.now();
   if (d.tool === "project" && d.ok && $("patron").checked) {
     $("patron").checked = false; // el agente ya está proyectando: fuera el patrón

@@ -9,7 +9,24 @@ const ctx = canvas.getContext("2d");
 const top = document.getElementById("top");
 const tctx = top.getContext("2d");
 const layer = new HtmlLayer(document.getElementById("html"), (w, name, point_mm) => bus.postMessage({ t: "press", id: w.id, value: name, point_mm }));
-const syncHtml = () => world && layer.sync(calib ? { ...world, widgets: [] } : world, innerWidth / world.surface.width_mm);
+// La superficie (mm) es la pantalla completa del proyector. Si la ventana no está en pantalla completa (barra de menú,
+// Dock), `geo` dice dónde cae la ventana dentro de esa pantalla para dibujar corrido y que nada se mueva de su lugar.
+let details = null;
+let geo = { sw: innerWidth, sh: innerHeight, ox: 0, oy: 0, exact: true };
+function measure() {
+  const cs = details?.currentScreen;
+  const frame = (outerWidth - innerWidth) / 2;
+  const next = document.fullscreenElement
+    ? { sw: innerWidth, sh: innerHeight, ox: 0, oy: 0, exact: true }
+    : cs
+      ? { sw: cs.width, sh: cs.height, ox: screenX - cs.left + frame, oy: screenY - cs.top + (outerHeight - innerHeight) - frame, exact: true }
+      : { sw: screen.width, sh: screen.height, ox: screenX - (screen.availLeft ?? 0) + frame, oy: screen.height - screen.availHeight + (outerHeight - innerHeight) - frame, exact: false };
+  const changed = JSON.stringify(next) !== JSON.stringify(geo);
+  geo = next;
+  return changed;
+}
+const scale = () => geo.sw / (world?.surface.width_mm ?? 1000); // px de CSS por mm
+const syncHtml = () => world && layer.sync(calib ? { ...world, widgets: [] } : world, scale(), geo.ox, geo.oy);
 let world = null;
 let pattern = true;
 let calib = null;
@@ -24,17 +41,21 @@ function size() {
   canvas.height = Math.round(innerHeight * dpr);
   top.width = canvas.width;
   top.height = canvas.height;
+  measure();
   syncHtml();
   report();
 }
 
 function report() {
+  const dpr = window.devicePixelRatio || 1;
+  if (measure()) syncHtml();
   bus.postMessage({
     t: "alive",
-    w: canvas.width,
-    h: canvas.height,
+    w: Math.round(geo.sw * dpr), // la pantalla completa, no la ventana
+    h: Math.round(geo.sh * dpr),
+    window: [canvas.width, canvas.height],
     fullscreen: !!document.fullscreenElement,
-    screen: window.screen?.label || "",
+    exact: geo.exact,
   });
 }
 
@@ -54,10 +75,14 @@ bus.onmessage = ({ data }) => {
 
 function frame(t) {
   if (world) {
-    bounds = drawScene(ctx, canvas.width, canvas.height, world, t, { pattern, calib, textScale });
+    const dpr = window.devicePixelRatio || 1;
+    const [W, H, off] = [geo.sw * dpr, geo.sh * dpr, [geo.ox * dpr, geo.oy * dpr]];
+    bounds = drawScene(ctx, W, H, world, t, { pattern, calib, textScale, offset: off });
     const now = performance.now();
+    tctx.setTransform(1, 0, 0, 1, 0, 0);
     tctx.clearRect(0, 0, top.width, top.height); // las manos van en un canvas encima del html
-    if (hands && !calib && now - hands.at < 300) drawHands(tctx, top.width, world, hands, trails, bounds, now);
+    tctx.translate(-off[0], -off[1]);
+    if (hands && !calib && now - hands.at < 300) drawHands(tctx, W, world, hands, trails, bounds, now);
   }
   requestAnimationFrame(frame);
 }
@@ -78,14 +103,20 @@ addEventListener("resize", size);
 addEventListener("beforeunload", () => bus.postMessage({ t: "closed" }));
 canvas.addEventListener("click", (e) => {
   if (!world) return;
-  const s = world.surface.width_mm / innerWidth;
-  const pt = [e.clientX * s, e.clientY * s];
+  const pt = [(e.clientX + geo.ox) / scale(), (e.clientY + geo.oy) / scale()];
   const w = hit(world, bounds, pt);
   if (w) bus.postMessage({ t: "press", id: w.id, point_mm: pt });
 });
 
 size();
-setInterval(report, 1500);
+setInterval(report, 1000);
+// Con el permiso de Window Management se sabe dónde está la ventana dentro de su pantalla.
+if ("getScreenDetails" in window)
+  navigator.permissions
+    .query({ name: "window-management" })
+    .then((p) => p.state === "granted" && window.getScreenDetails())
+    .then((d) => d && ((details = d), report()))
+    .catch(() => {});
 requestAnimationFrame(frame);
 // Con el permiso de Window Management, Chrome abre el popup ya en pantalla completa; si no, queda el botón.
 if (new URLSearchParams(location.search).get("auto")) fullscreen();

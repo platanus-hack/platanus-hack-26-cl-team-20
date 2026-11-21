@@ -1,7 +1,7 @@
 // El navegador como nodo de pcx: habla por WSS con el gateway el mismo protocolo que el nodo Rust
 // (contracts/src/pcx_contracts/cloud.py) y resuelve las tools con la cámara y la ventana del proyector.
 
-import { annotate, apply, blob, gray, invert, solveH } from "./calib.js";
+import { annotate, apply, diff, findDot, invert, litArea, ransacH, signal } from "./calib.js";
 
 const CONTRACT = 2;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -212,78 +212,111 @@ export class BrowserNode extends EventTarget {
     if (mode === "verify" && !this.calib) throw new Error("No hay calibración que verificar: llama a calibrate con mode quick.");
     const { width_mm: W, height_mm: H } = this.world.surface;
     const [nx, ny] = mode === "precise" ? [5, 4] : [3, 3];
+    const R = 30; // radio de la marca en mm
     const targets = [];
     for (let j = 0; j < ny; j++)
       for (let i = 0; i < nx; i++) targets.push([W * (0.12 + (0.76 * i) / (nx - 1)), H * (0.12 + (0.76 * j) / (ny - 1))]);
+    const say = (text) => this.hooks.progress?.(text);
+    let camera;
+    let image_px;
     const shot = async () => {
       const f = await this.hooks.frame(args.camera_id);
-      return { ...f, gray: gray(f.canvas) };
+      camera = f.camera;
+      image_px = [f.canvas.width, f.canvas.height];
+      return signal(f.canvas);
     };
+    const fail = (why, extra = {}) =>
+      Object.assign(
+        new Error(
+          `${why} Revisa que ${camera?.id ?? "la cámara cenital"} mire la proyección completa, saca las manos de la mesa y baja la luz ambiente si puedes.`,
+        ),
+        { detail: extra },
+      );
     this.calibrating = true;
-    const px = [];
-    const mm = [];
-    let first;
+    const found = []; // {mm, px, z} por marca vista
     try {
-      this.hooks.showCalib([]);
-      await sleep(800);
-      first = await shot();
-      for (const t of targets) {
-        this.hooks.showCalib([[t[0], t[1], 16]]);
-        await sleep(350);
-        // La marca vale cuando dos cuadros seguidos la ven en el mismo lugar (descarta el cuadro de transición).
-        let prev = null;
-        for (let k = 0; k < 12; k++) {
-          const b = blob((await shot()).gray, first.gray);
-          if (b && prev && Math.hypot(b.x - prev.x, b.y - prev.y) < 2.5) {
-            px.push([(b.x + prev.x) / 2, (b.y + prev.y) / 2]);
-            mm.push(t);
+      // 1. Todo apagado y todo encendido: mide la demora proyector→cámara y qué zona de la foto ilumina el proyector.
+      say("Midiendo la proyección…");
+      this.hooks.showCalib({ dots: [] });
+      await sleep(900);
+      const dark = [await shot(), await shot()];
+      this.hooks.showCalib({ fill: true });
+      const t0 = performance.now();
+      let lit = null;
+      let lag = null;
+      let last = 0;
+      while (performance.now() - t0 < 2500) {
+        const f = await shot();
+        const a = litArea(diff([f], dark));
+        if (a.area > f.g.length * 0.01) {
+          lag ??= performance.now() - t0;
+          if (lit && Math.abs(a.area - last) < a.area * 0.05) {
+            lit = a;
             break;
           }
-          prev = b;
-          await sleep(120);
+          lit = a;
+          last = a.area;
         }
-        if (!px.length && targets.indexOf(t) >= 2) break; // tres marcas sin verse: la cámara no mira la proyección
+        await sleep(60);
+      }
+      if (!lit) throw fail("La cámara no ve la proyección: encendí todo el proyector en verde y la foto no cambió.");
+      const settle = Math.min(1500, Math.max(300, lag * 1.5 + 150));
+      // Diámetro esperado de la marca en la foto, por regla de tres con el área iluminada.
+      const win = 2 * Math.sqrt((lit.area * (Math.PI * R * R)) / (W * H) / Math.PI);
+      // 2. Cada marca: dos fotos con ella y dos sin ella, intercaladas; así un objeto o una mano quieta se cancelan.
+      for (const [n, t] of targets.entries()) {
+        say(`Marca ${n + 1} de ${targets.length} (vistas: ${found.length})…`);
+        const on = [];
+        const off = [];
+        for (let c = 0; c < 2; c++) {
+          this.hooks.showCalib({ dots: [[t[0], t[1], R]] });
+          await sleep(settle);
+          on.push(await shot());
+          this.hooks.showCalib({ dots: [] });
+          await sleep(settle);
+          off.push(await shot());
+        }
+        const dot = findDot(diff(on, off), lit.mask, win);
+        if (dot) found.push({ mm: t, px: [dot.x, dot.y], z: dot.z });
       }
     } finally {
       this.hooks.showCalib(null);
       this.calibrating = false;
     }
-    const camera_id = first.camera.id;
-    const fail = (why) =>
-      new Error(
-        `${why} Revisa que ${camera_id} mire la proyección completa, que no haya manos ni reflejos fuertes, y baja la luz ambiente si puedes.`,
-      );
-    if (px.length < 4) throw fail(`Solo encontré ${px.length} de ${targets.length} marcas en la cámara.`);
-    const errs = (M) => px.map((p, i) => Math.hypot(...apply(M, p).map((v, a) => v - mm[i][a])));
-    const rms = (e) => Math.sqrt(e.reduce((a, v) => a + v * v, 0) / e.length);
-    const image_px = [first.canvas.width, first.canvas.height];
+    const camera_id = camera.id;
+    const total = targets.length;
+    const need = Math.ceil(total * (2 / 3)); // 6 de 9
+    const marks = found.map((f) => ({ mm: f.mm.map(Math.round), px: f.px.map(Math.round), z: f.z }));
+    if (found.length < 4)
+      throw fail(`Solo vi ${found.length} de ${total} marcas en la cámara ${camera_id}; con menos de 4 no se puede calcular.`, { marks });
+    const px = found.map((f) => f.px);
+    const mm = found.map((f) => f.mm);
     if (mode === "verify") {
-      const e = errs(this.calib.matrix);
-      return { camera_id, mode, points_found: px.length, points_total: targets.length, residual_mm: round(rms(e)), max_error_mm: round(Math.max(...e)), ok: rms(e) < 12 };
+      const e = px.map((p, i) => Math.hypot(...apply(this.calib.matrix, p).map((v, a) => v - mm[i][a])));
+      const rms = Math.sqrt(e.reduce((a, v) => a + v * v, 0) / e.length);
+      return { camera_id, mode, points_found: px.length, points_total: total, residual_mm: round(rms), max_error_mm: round(Math.max(...e)), ok: rms < 12 };
     }
-    let M = solveH(px, mm);
-    if (M && px.length > 5) {
-      // Una marca mal detectada (reflejo) se descarta y se vuelve a ajustar.
-      const e = errs(M);
-      const keep = e.map((v) => v < Math.max(15, 3 * [...e].sort((a, b) => a - b)[e.length >> 1]));
-      if (keep.includes(false) && keep.filter(Boolean).length >= 4) {
-        for (const list of [px, mm]) list.splice(0, list.length, ...list.filter((_, i) => keep[i]));
-        M = solveH(px, mm);
-      }
-    }
-    if (!M) throw fail("Las marcas encontradas no alcanzan para calcular la homografía.");
-    const residual_mm = round(rms(errs(M)));
-    if (residual_mm > 25) throw fail(`La calibración quedó con ${residual_mm} mm de error: no la guardé.`);
+    const fit = ransacH(px, mm);
+    const good = fit?.inliers.length ?? 0;
+    if (good < need)
+      throw fail(
+        `Vi ${found.length} de ${total} marcas, pero solo ${good} calzan entre sí (necesito ${need}); el resto son reflejos o cosas que se movieron.`,
+        { marks },
+      );
+    const residual_mm = round(fit.residual);
+    if (residual_mm > 12) throw fail(`${good} marcas calzan, pero con ${residual_mm} mm de error: no la guardé.`, { marks });
+    const M = fit.H;
     const toPx = invert(M);
     const corners = [[0, 0], [W, 0], [W, H], [0, H]].map((p) => apply(toPx, p).map((v) => Math.round(v)));
-    const calib = { camera_id, matrix: M, image_px, residual_mm, points: px.length, version: (this.calib?.version ?? 0) + 1 };
+    const calib = { camera_id, matrix: M, image_px, residual_mm, points: good, total, version: (this.calib?.version ?? 0) + 1 };
     this.setCalib(calib);
     this.hooks.saveCalib(calib);
     return {
       camera_id,
       mode,
-      points_found: px.length,
-      points_total: targets.length,
+      points_found: found.length,
+      points_used: good,
+      points_total: total,
       residual_mm,
       image_px,
       matrix_px_to_mm: M.map((v) => round(v, 6)),

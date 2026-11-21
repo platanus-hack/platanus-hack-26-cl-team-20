@@ -264,14 +264,17 @@ function pattern(ctx, W, H, world, s) {
 export function drawScene(ctx, W, H, world, tMs, opts = {}) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = "#000";
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  // W×H es la superficie completa (la pantalla del proyector); si la ventana es más chica, `offset` dice dónde cae.
+  if (opts.offset) ctx.translate(-opts.offset[0], -opts.offset[1]);
   const s = W / world.surface.width_mm;
   const bounds = new Map();
   K = opts.textScale || 1;
   if (opts.calib) {
     // Calibrando: solo las marcas, sobre negro, para que la cámara las encuentre por diferencia.
-    ctx.fillStyle = "#fff";
-    for (const [x, y, r] of opts.calib) (ctx.beginPath(), ctx.arc(x * s, y * s, r * s, 0, Math.PI * 2), ctx.fill());
+    ctx.fillStyle = "#00ff00"; // verde puro: es la señal que busca calib.js
+    if (opts.calib.fill) ctx.fillRect(0, 0, W, H);
+    for (const [x, y, r] of opts.calib.dots || []) (ctx.beginPath(), ctx.arc(x * s, y * s, r * s, 0, Math.PI * 2), ctx.fill());
     return bounds;
   }
   if (opts.pattern) {

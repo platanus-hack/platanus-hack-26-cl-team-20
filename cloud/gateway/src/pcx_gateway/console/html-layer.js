@@ -73,8 +73,8 @@ export class HtmlLayer {
     });
   }
 
-  /** Monta, actualiza o quita iframes según el mundo. `s`: px de CSS por mm. */
-  sync(world, s) {
+  /** Monta, actualiza o quita iframes según el mundo. `s`: px de CSS por mm; (ox, oy): origen de la ventana en la superficie. */
+  sync(world, s, ox = 0, oy = 0) {
     const wanted = new Map((world.widgets || []).filter(isHtml).map((w) => [w.id, w]));
     for (const [id, f] of this.frames) {
       if (wanted.has(id)) continue;
@@ -107,7 +107,7 @@ export class HtmlLayer {
         height: `${rh}px`,
         zIndex: String(w.z ?? 0),
         opacity: String(w.params?.opacity ?? 1),
-        transform: `translate(${x * s}px, ${y * s}px) scale(${s}) translate(${rw / 2}px, ${rh / 2}px) rotate(${rot}deg) translate(${-rw / 2}px, ${-rh / 2}px)`,
+        transform: `translate(${x * s - ox}px, ${y * s - oy}px) scale(${s}) translate(${rw / 2}px, ${rh / 2}px) rotate(${rot}deg) translate(${-rw / 2}px, ${-rh / 2}px)`,
       });
     }
   }
