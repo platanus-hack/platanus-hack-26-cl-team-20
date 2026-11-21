@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "properties": {
+    "domain": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "service": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "data": {
+      "type": "object",
+      "default": {}
+    },
+    "request_id": {
+      "description": "Clave de idempotencia (obligatoria)",
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 1
+    }
+  },
+  "required": [
+    "domain",
+    "service",
+    "request_id"
+  ],
+  "additionalProperties": false
+}

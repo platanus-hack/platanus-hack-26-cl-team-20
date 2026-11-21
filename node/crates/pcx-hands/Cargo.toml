@@ -1,0 +1,26 @@
+[package]
+name = "pcx-hands"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Manos y toque para pcx: palma + 21 landmarks (ONNX MediaPipe del opencv_zoo) con ort, tracking, One Euro y eventos de toque."
+publish = false
+
+[features]
+default = ["download"]
+# Descarga de los modelos ONNX (ureq + rustls) a la caché del SO con verificación sha256.
+download = ["dep:ureq"]
+# Execution provider de CoreML (macOS). Sin la feature, CPU.
+coreml = ["ort/coreml"]
+
+[dependencies]
+ort = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+directories = "6"
+sha2 = "0.10"
+ureq = { version = "3", optional = true }
+
+[dev-dependencies]
+image = { version = "0.25", default-features = false, features = ["jpeg"] }

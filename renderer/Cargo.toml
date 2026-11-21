@@ -1,0 +1,29 @@
+[package]
+name = "pcx-renderer"
+version = "0.1.0"
+edition = "2024"
+description = "Compositor del proyector de pcx: escena del core por WS -> GPU (wgpu + vello), alineada con la mesa."
+publish = false
+
+[lib]
+name = "pcx_renderer"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pcx-renderer"
+path = "src/main.rs"
+
+[dependencies]
+pcx-contracts = { path = "../contracts/rust/pcx-contracts" }
+image = { version = "0.25", default-features = false, features = ["png"] }
+parley = "0.13"
+pollster = "1.0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tungstenite = "0.30"
+vello = "0.12"
+winit = "0.30"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+raw-window-handle = "0.6"

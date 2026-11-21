@@ -1,0 +1,217 @@
+{
+  "type": "run_flow",
+  "request_id": "req-guia-cafe-1",
+  "flow": {
+    "id": "guia-cafe",
+    "initial": "paso1",
+    "states": [
+      {
+        "id": "paso1",
+        "on_enter": [
+          {
+            "type": "project",
+            "widgets": [
+              {
+                "type": "halo",
+                "id": "g-halo",
+                "anchor": {
+                  "object_id": "taza",
+                  "point_mm": null,
+                  "offset_mm": null
+                },
+                "z": 0,
+                "ttl_s": null,
+                "on_press": null,
+                "polygon_mm": null,
+                "color": "#00E5FF",
+                "width_mm": 4.0,
+                "pulse_hz": 1.0
+              },
+              {
+                "type": "panel",
+                "id": "g-panel",
+                "anchor": null,
+                "z": 0,
+                "ttl_s": null,
+                "on_press": null,
+                "rect_mm": [
+                  470.0,
+                  220.0,
+                  200.0,
+                  110.0
+                ],
+                "title": "Paso 1 de 3",
+                "body": "Pon la taza al centro de la mesa.",
+                "color": "#FFFFFF"
+              },
+              {
+                "type": "button",
+                "id": "g-next",
+                "anchor": null,
+                "z": 0,
+                "ttl_s": null,
+                "on_press": {
+                  "value": "next",
+                  "triggers": [
+                    "dwell",
+                    "pinch",
+                    "api"
+                  ],
+                  "dwell_ms": 800
+                },
+                "rect_mm": [
+                  470.0,
+                  340.0,
+                  110.0,
+                  45.0
+                ],
+                "label": "Listo",
+                "progress": 0.0,
+                "color": "#00E676"
+              }
+            ]
+          }
+        ],
+        "transitions": [
+          {
+            "on": {
+              "event": "widget_pressed",
+              "where": {
+                "widget_id": "g-next"
+              }
+            },
+            "after_s": null,
+            "to": "paso2",
+            "actions": []
+          },
+          {
+            "on": {
+              "event": "object_moved",
+              "where": {
+                "object_id": "taza"
+              }
+            },
+            "after_s": null,
+            "to": "paso2",
+            "actions": []
+          }
+        ],
+        "final": false
+      },
+      {
+        "id": "paso2",
+        "on_enter": [
+          {
+            "type": "update",
+            "id": "g-panel",
+            "set": {
+              "title": "Paso 2 de 3",
+              "body": "Agrega el café molido."
+            }
+          },
+          {
+            "type": "project",
+            "widgets": [
+              {
+                "type": "arrow",
+                "id": "g-arrow",
+                "anchor": {
+                  "object_id": "frasco",
+                  "point_mm": null,
+                  "offset_mm": null
+                },
+                "z": 0,
+                "ttl_s": null,
+                "on_press": null,
+                "from_mm": null,
+                "to_mm": null,
+                "color": "#FFD400",
+                "width_mm": 5.0
+              }
+            ]
+          }
+        ],
+        "transitions": [
+          {
+            "on": {
+              "event": "widget_pressed",
+              "where": {
+                "widget_id": "g-next"
+              }
+            },
+            "after_s": null,
+            "to": "paso3",
+            "actions": [
+              {
+                "type": "remove",
+                "ids": [
+                  "g-arrow"
+                ]
+              }
+            ]
+          }
+        ],
+        "final": false
+      },
+      {
+        "id": "paso3",
+        "on_enter": [
+          {
+            "type": "update",
+            "id": "g-panel",
+            "set": {
+              "title": "Paso 3 de 3",
+              "body": "Sirve el agua. Enciendo la luz."
+            }
+          },
+          {
+            "type": "home_call",
+            "domain": "light",
+            "service": "turn_on",
+            "data": {
+              "entity_id": "light.cocina",
+              "brightness_pct": 80
+            }
+          }
+        ],
+        "transitions": [
+          {
+            "on": {
+              "event": "widget_pressed",
+              "where": {
+                "widget_id": "g-next"
+              }
+            },
+            "after_s": null,
+            "to": "fin",
+            "actions": []
+          },
+          {
+            "on": null,
+            "after_s": 120.0,
+            "to": "fin",
+            "actions": []
+          }
+        ],
+        "final": false
+      },
+      {
+        "id": "fin",
+        "on_enter": [
+          {
+            "type": "emit",
+            "event": "guia_terminada",
+            "data": {
+              "guia": "cafe",
+              "pasos": 3
+            }
+          }
+        ],
+        "transitions": [],
+        "final": true
+      }
+    ],
+    "cleanup": true,
+    "timeout_s": 600.0
+  }
+}

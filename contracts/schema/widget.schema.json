@@ -1,0 +1,732 @@
+{
+  "anyOf": [
+    {
+      "$ref": "#/$defs/Label"
+    },
+    {
+      "$ref": "#/$defs/Halo"
+    },
+    {
+      "$ref": "#/$defs/Arrow"
+    },
+    {
+      "$ref": "#/$defs/Panel"
+    },
+    {
+      "$ref": "#/$defs/Button"
+    },
+    {
+      "$ref": "#/$defs/Image"
+    },
+    {
+      "$ref": "#/$defs/Effect"
+    }
+  ],
+  "discriminator": {
+    "propertyName": "type",
+    "mapping": {
+      "label": "#/$defs/Label",
+      "halo": "#/$defs/Halo",
+      "arrow": "#/$defs/Arrow",
+      "panel": "#/$defs/Panel",
+      "button": "#/$defs/Button",
+      "image": "#/$defs/Image",
+      "effect": "#/$defs/Effect"
+    }
+  },
+  "$defs": {
+    "Label": {
+      "title": "Label",
+      "description": "Texto centrado en `anchor` (admite `\\n` y Unicode).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "label"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "text": {
+          "type": "string",
+          "default": ""
+        },
+        "size_mm": {
+          "type": "number",
+          "default": 12.0
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+          "default": "#FFFFFF"
+        },
+        "bg": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ]
+    },
+    "Anchor": {
+      "title": "Anchor",
+      "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "point_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PointMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "offset_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PointMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": []
+    },
+    "PointMM": {
+      "title": "PointMM",
+      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]` (exactamente 2 números).",
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "OnPress": {
+      "title": "OnPress",
+      "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+      "type": "object",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "triggers": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "api",
+              "dwell",
+              "pinch",
+              "shadow"
+            ]
+          }
+        },
+        "dwell_ms": {
+          "type": "integer",
+          "default": 800
+        }
+      },
+      "required": []
+    },
+    "Halo": {
+      "title": "Halo",
+      "description": "Borde luminoso animado. Sin `polygon_mm`, el core usa el polígono del objeto anclado.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "halo"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "polygon_mm": {
+          "anyOf": [
+            {
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PointMM"
+              },
+              "minItems": 3
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+          "default": "#00E5FF"
+        },
+        "width_mm": {
+          "type": "number",
+          "default": 4.0
+        },
+        "pulse_hz": {
+          "type": "number",
+          "default": 1.0
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ]
+    },
+    "Arrow": {
+      "title": "Arrow",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "arrow"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "from_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PointMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "to_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PointMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+          "default": "#FFD400"
+        },
+        "width_mm": {
+          "type": "number",
+          "default": 5.0
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ]
+    },
+    "Panel": {
+      "title": "Panel",
+      "description": "Título + párrafo con ajuste de línea.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "panel"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rect_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RectMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "title": {
+          "type": "string",
+          "default": ""
+        },
+        "body": {
+          "type": "string",
+          "default": ""
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+          "default": "#FFFFFF"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ]
+    },
+    "RectMM": {
+      "title": "RectMM",
+      "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "Button": {
+      "title": "Button",
+      "description": "Botón tocable; `progress` (0..1) dibuja el anillo de permanencia.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "button"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rect_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RectMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "label": {
+          "type": "string",
+          "default": ""
+        },
+        "progress": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.0
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+          "default": "#00E676"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ]
+    },
+    "Image": {
+      "title": "Image",
+      "description": "Imagen en un rectángulo. `src`: `asset:<id>`, `data:<mime>;base64,...` o `https://...`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "image"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rect_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RectMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "src": {
+          "type": "string"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 1.0
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "src"
+      ]
+    },
+    "Effect": {
+      "title": "Effect",
+      "description": "Efecto de shader WGSL por nombre (catálogo del compositor), con parámetros numéricos o vectores.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "effect"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "shader": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object",
+          "default": {}
+        },
+        "rect_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RectMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "polygon_mm": {
+          "anyOf": [
+            {
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PointMM"
+              },
+              "minItems": 3
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "shader"
+      ]
+    }
+  }
+}

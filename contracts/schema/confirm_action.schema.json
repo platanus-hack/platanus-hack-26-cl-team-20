@@ -1,0 +1,37 @@
+{
+  "$ref": "#/$defs/ConfirmAction",
+  "$defs": {
+    "ConfirmAction": {
+      "title": "ConfirmAction",
+      "description": "Consola local → nodo. Aprueba o rechaza una confirmación pendiente; debe repetir el `action_digest`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "confirm_action"
+          ]
+        },
+        "confirmation_id": {
+          "type": "string"
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "approve": {
+          "type": "boolean"
+        },
+        "operator": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "confirmation_id",
+        "action_digest",
+        "approve",
+        "operator"
+      ]
+    }
+  }
+}

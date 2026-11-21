@@ -1,0 +1,30 @@
+{
+  "type": "scene",
+  "rev": 12,
+  "t_send_ms": 1795231660123.4,
+  "surface": {"width_mm": 800, "height_mm": 500},
+  "transforms": [
+    {"from_frame": "table_mm", "to_frame": "proj:main", "kind": "homography",
+     "matrix": [2.16, 0, 96, 0, 2.16, 0, 0, 0, 1], "version": 3, "residual_mm": 1.8},
+    {"from_frame": "table_mm", "to_frame": "proj:main", "kind": "lut", "version": 4, "residual_mm": 0.6,
+     "lut": {"format": "npy_f32_hw2", "width": 800, "height": 500, "units": "output_px", "sampling": "integer_centers",
+             "grid_step": 1.0, "path": "/var/lib/pcx/calib/table_mm-proj_main-v4.npy",
+             "sha256": "9f2c4be1d0a7c3e5f6a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0"}},
+    {"from_frame": "cam:top", "to_frame": "table_mm", "kind": "homography",
+     "matrix": [0.42, 0, -12, 0, 0.42, -8, 0, 0, 1], "version": 2}
+  ],
+  "widgets": [
+    {"type": "label", "id": "lbl-taza", "anchor": {"object_id": "taza", "point_mm": [110, 314]},
+     "text": "Tu café ☕\nya está frío", "size_mm": 14, "color": "#FFFFFF", "bg": "#00000099", "z": 2},
+    {"type": "halo", "id": "halo-taza", "anchor": {"object_id": "taza"},
+     "polygon_mm": [[155, 370], [110, 415], [65, 370], [110, 325]], "color": "#00E5FF", "width_mm": 4, "pulse_hz": 1.5},
+    {"type": "arrow", "id": "flecha", "from_mm": [330, 120], "to_mm": [330, 221], "color": "#FFD400", "width_mm": 5},
+    {"type": "panel", "id": "receta", "rect_mm": [470, 220, 200, 110], "title": "Paso 1 de 3",
+     "body": "Pon el cuaderno abierto frente a ti.", "color": "#FFFFFF", "ttl_s": 120},
+    {"type": "button", "id": "siguiente", "rect_mm": [470, 340, 110, 45], "label": "Siguiente ✓",
+     "progress": 0.35, "color": "#00E676", "on_press": {"value": "next", "triggers": ["dwell", "pinch"], "dwell_ms": 700}},
+    {"type": "image", "id": "qr", "rect_mm": [700, 20, 80, 80], "src": "asset:qr-celular", "opacity": 1},
+    {"type": "effect", "id": "ondas", "shader": "ripple", "params": {"speed": 0.8, "color": [0.0, 0.9, 1.0]},
+     "polygon_mm": [[680, 300], [760, 300], [760, 360], [680, 360]], "z": -1}
+  ]
+}

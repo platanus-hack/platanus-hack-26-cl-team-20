@@ -1,0 +1,400 @@
+[
+ {
+  "root": "widget",
+  "why": "progress > 1",
+  "value": {
+   "type": "button",
+   "id": "b",
+   "rect_mm": [
+    0,
+    0,
+    10,
+    10
+   ],
+   "progress": 1.5
+  }
+ },
+ {
+  "root": "widget",
+  "why": "progress < 0",
+  "value": {
+   "type": "button",
+   "id": "b",
+   "rect_mm": [
+    0,
+    0,
+    10,
+    10
+   ],
+   "progress": -0.1
+  }
+ },
+ {
+  "root": "widget",
+  "why": "opacity > 1",
+  "value": {
+   "type": "image",
+   "id": "i",
+   "src": "asset:x",
+   "opacity": 2
+  }
+ },
+ {
+  "root": "widget",
+  "why": "color sin formato #RRGGBB",
+  "value": {
+   "type": "label",
+   "id": "l",
+   "color": "red"
+  }
+ },
+ {
+  "root": "widget",
+  "why": "bg de 5 dígitos",
+  "value": {
+   "type": "label",
+   "id": "l",
+   "bg": "#12345"
+  }
+ },
+ {
+  "root": "widget",
+  "why": "button color inválido",
+  "value": {
+   "type": "button",
+   "id": "b",
+   "rect_mm": [
+    0,
+    0,
+    10,
+    10
+   ],
+   "color": "#GG0000"
+  }
+ },
+ {
+  "root": "widget",
+  "why": "polígono con 2 vértices",
+  "value": {
+   "type": "halo",
+   "id": "h",
+   "polygon_mm": [
+    [
+     0,
+     0
+    ],
+    [
+     1,
+     1
+    ]
+   ]
+  }
+ },
+ {
+  "root": "widget",
+  "why": "punto con 3 componentes",
+  "value": {
+   "type": "arrow",
+   "id": "a",
+   "from_mm": [
+    1,
+    2,
+    3
+   ],
+   "to_mm": [
+    4,
+    5
+   ]
+  }
+ },
+ {
+  "root": "widget",
+  "why": "punto con 1 componente",
+  "value": {
+   "type": "arrow",
+   "id": "a",
+   "from_mm": [
+    1,
+    2
+   ],
+   "to_mm": [
+    4
+   ]
+  }
+ },
+ {
+  "root": "widget",
+  "why": "rect con 3 componentes",
+  "value": {
+   "type": "panel",
+   "id": "p",
+   "rect_mm": [
+    1,
+    2,
+    3
+   ]
+  }
+ },
+ {
+  "root": "widget",
+  "why": "vértice de polígono con 3 componentes",
+  "value": {
+   "type": "effect",
+   "id": "e",
+   "shader": "ripple",
+   "polygon_mm": [
+    [
+     0,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     1,
+     1,
+     1
+    ]
+   ]
+  }
+ },
+ {
+  "root": "widget",
+  "why": "anchor.offset_mm con 3 componentes",
+  "value": {
+   "type": "label",
+   "id": "l",
+   "anchor": {
+    "object_id": "x",
+    "offset_mm": [
+     0,
+     1,
+     2
+    ]
+   }
+  }
+ },
+ {
+  "root": "transform",
+  "why": "homografía sin matrix",
+  "value": {
+   "kind": "homography",
+   "from_frame": "table_mm",
+   "to_frame": "proj:main"
+  }
+ },
+ {
+  "root": "transform",
+  "why": "matrix de 8",
+  "value": {
+   "kind": "homography",
+   "from_frame": "table_mm",
+   "to_frame": "proj:main",
+   "matrix": [
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ {
+  "root": "transform",
+  "why": "matrix de 10",
+  "value": {
+   "kind": "homography",
+   "from_frame": "table_mm",
+   "to_frame": "proj:main",
+   "matrix": [
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1,
+    0
+   ]
+  }
+ },
+ {
+  "root": "transform",
+  "why": "LUT sin descriptor",
+  "value": {
+   "kind": "lut",
+   "from_frame": "table_mm",
+   "to_frame": "proj:main",
+   "lut_ref": "shm:lut/x"
+  }
+ },
+ {
+  "root": "transform",
+  "why": "LUT con sha256 inválido",
+  "value": {
+   "kind": "lut",
+   "from_frame": "table_mm",
+   "to_frame": "proj:main",
+   "lut": {
+    "format": "npy_f32_hw2",
+    "width": 800,
+    "height": 500,
+    "units": "output_px",
+    "sampling": "integer_centers",
+    "grid_step": 1.0,
+    "path": "/var/lib/pcx/calib/x.npy",
+    "sha256": "abc"
+   }
+  }
+ },
+ {
+  "root": "transform",
+  "why": "LUT con width 0",
+  "value": {
+   "kind": "lut",
+   "from_frame": "table_mm",
+   "to_frame": "proj:main",
+   "lut": {
+    "format": "npy_f32_hw2",
+    "width": 0,
+    "height": 500,
+    "units": "output_px",
+    "sampling": "integer_centers",
+    "grid_step": 1.0,
+    "path": "/var/lib/pcx/calib/x.npy",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+   }
+  }
+ },
+ {
+  "root": "transform",
+  "why": "LUT con grid_step 0",
+  "value": {
+   "kind": "lut",
+   "from_frame": "table_mm",
+   "to_frame": "proj:main",
+   "lut": {
+    "format": "npy_f32_hw2",
+    "width": 800,
+    "height": 500,
+    "units": "output_px",
+    "sampling": "integer_centers",
+    "grid_step": 0,
+    "path": "/var/lib/pcx/calib/x.npy",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+   }
+  }
+ },
+ {
+  "root": "transform",
+  "why": "LUT con formato desconocido",
+  "value": {
+   "kind": "lut",
+   "from_frame": "table_mm",
+   "to_frame": "proj:main",
+   "lut": {
+    "format": "png16",
+    "width": 800,
+    "height": 500,
+    "units": "output_px",
+    "sampling": "integer_centers",
+    "grid_step": 1.0,
+    "path": "/var/lib/pcx/calib/x.npy",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+   }
+  }
+ },
+ {
+  "root": "transform",
+  "why": "LUT con approx_matrix de 4",
+  "value": {
+   "kind": "lut",
+   "from_frame": "table_mm",
+   "to_frame": "proj:main",
+   "lut": {
+    "format": "npy_f32_hw2",
+    "width": 800,
+    "height": 500,
+    "units": "output_px",
+    "sampling": "integer_centers",
+    "grid_step": 1.0,
+    "path": "/var/lib/pcx/calib/x.npy",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+   },
+   "approx_matrix": [
+    1,
+    0,
+    0,
+    1
+   ]
+  }
+ },
+ {
+  "root": "transform",
+  "why": "kind desconocido",
+  "value": {
+   "kind": "affine",
+   "from_frame": "table_mm",
+   "to_frame": "proj:main",
+   "matrix": [
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ },
+ {
+  "root": "to_renderer",
+  "why": "blank de 0 ms",
+  "value": {
+   "type": "blank",
+   "request_id": "r",
+   "ms": 0,
+   "reason": "x"
+  }
+ },
+ {
+  "root": "to_renderer",
+  "why": "blank de 5000 ms",
+  "value": {
+   "type": "blank",
+   "request_id": "r",
+   "ms": 5000,
+   "reason": "x"
+  }
+ },
+ {
+  "root": "to_renderer",
+  "why": "homography legado de 8",
+  "value": {
+   "type": "scene",
+   "rev": 1,
+   "surface": {
+    "width_mm": 1,
+    "height_mm": 1
+   },
+   "homography": [
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0
+   ]
+  }
+ }
+]

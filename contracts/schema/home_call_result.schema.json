@@ -1,0 +1,72 @@
+{
+  "$ref": "#/$defs/HomeCallResult",
+  "$defs": {
+    "HomeCallResult": {
+      "title": "HomeCallResult",
+      "description": "Resultado inmediato de un `home_call` (va en `ToolResult.structured` de la tool `home`).",
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "denied",
+            "done",
+            "failed",
+            "pending"
+          ]
+        },
+        "confirmation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "action_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "expires_ns": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "request_id",
+        "status"
+      ]
+    }
+  }
+}

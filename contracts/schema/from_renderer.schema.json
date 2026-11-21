@@ -1,0 +1,104 @@
+{
+  "anyOf": [
+    {
+      "$ref": "#/$defs/Presented"
+    },
+    {
+      "$ref": "#/$defs/Stats"
+    },
+    {
+      "$ref": "#/$defs/RenderBlanked"
+    }
+  ],
+  "discriminator": {
+    "propertyName": "type",
+    "mapping": {
+      "presented": "#/$defs/Presented",
+      "stats": "#/$defs/Stats",
+      "blanked": "#/$defs/RenderBlanked"
+    }
+  },
+  "$defs": {
+    "Presented": {
+      "title": "Presented",
+      "description": "Una vez por `rev`, en el primer cuadro presentado que la contiene.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "presented"
+          ]
+        },
+        "rev": {
+          "type": "integer"
+        },
+        "t_present_ms": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "rev",
+        "t_present_ms"
+      ]
+    },
+    "Stats": {
+      "title": "Stats",
+      "description": "Cada 1 s.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "stats"
+          ]
+        },
+        "fps": {
+          "type": "number"
+        },
+        "frame_ms_p50": {
+          "type": "number"
+        },
+        "frame_ms_p95": {
+          "type": "number"
+        },
+        "dropped": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "type",
+        "fps",
+        "frame_ms_p50",
+        "frame_ms_p95"
+      ]
+    },
+    "RenderBlanked": {
+      "title": "RenderBlanked",
+      "description": "Intervalo en que la salida estuvo realmente negra: `t_start_ms` = presentación del primer cuadro negro,\n    `t_end_ms` = presentación del primer cuadro con escena otra vez (ms de época, como `presented`).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "blanked"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "t_start_ms": {
+          "type": "number"
+        },
+        "t_end_ms": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "t_start_ms",
+        "t_end_ms"
+      ]
+    }
+  }
+}
