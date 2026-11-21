@@ -896,9 +896,11 @@ const brief = (tool, args, data) =>
         : tool === "ask"
           ? `${args.question} → ${data.timed_out ? "sin respuesta" : data.answer}`
           : tool === "scenes"
-            ? `${args.action}${args.name ? ` ${args.name}` : ""} → activa: ${data.scene}`
+            ? args.action === "objects"
+              ? `objects: ${data.objects.length ? data.objects.join(", ") : "ninguno"}`
+              : `${args.action}${args.name ? ` ${args.name}` : ""} → activa: ${data.scene}`
           : tool === "look"
-            ? `${data.camera_id} · ${data.image_px.join("×")}`
+            ? `${data.camera_id} · ${data.image_px.join("×")}${data.clean ? ` · limpia (${data.blanked_ms} ms apagado)` : ""}`
             : tool === "calibrate"
               ? `${data.camera_id} · ${data.points_used ?? data.points_found}/${data.points_total} marcas · ${data.residual_mm} mm`
               : "";

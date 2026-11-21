@@ -94,13 +94,25 @@ SCENES_TOOL = {
     "proyector. action: list | create | activate | duplicate | delete | rename. create crea la escena `name` y la "
     "deja activa; duplicate copia `name` (o la activa) como `new_name`; rename cambia `name` a `new_name`. Siempre "
     "devuelve la escena activa y la lista. project, remove y scene aceptan `scene` para trabajar sobre una escena "
-    "que no está a la vista (por defecto, la activa).",
+    "que no está a la vista (por defecto, la activa). "
+    "action objects publica objetos al estado del mundo (para un cliente que hace la percepción afuera): reemplaza "
+    "world.objects con `objects` (máximo 50), así scene los trae y los widgets con anchor.object_id los siguen. Es "
+    "por sesión, no por escena, y el último que escribe gana; objects: [] los borra. "
+    "Además, en el nodo navegador look acepta clean: true: apaga lo proyectado un momento, toma la foto y repone "
+    "(foto limpia, sin luz del proyector); la respuesta dice cuánto estuvo apagado.",
     "inputSchema": {
         "type": "object",
         "properties": {
             "action": {
                 "type": "string",
-                "enum": ["list", "create", "activate", "duplicate", "delete", "rename"],
+                "enum": ["list", "create", "activate", "duplicate", "delete", "rename", "objects"],
+            },
+            "objects": {
+                "type": ["array", "null"],
+                "default": None,
+                "description": "Solo con action objects: lista completa de objetos del mundo (reemplaza la anterior). "
+                "Cada uno: id, label, polygon_mm [[x,y],…] (3 a 64 puntos) y, opcionales, center_mm, bbox_mm, confidence.",
+                "items": {"type": "object"},
             },
             "name": {"type": ["string", "null"], "default": None},
             "new_name": {"type": ["string", "null"], "default": None},

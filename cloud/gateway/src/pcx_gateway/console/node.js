@@ -607,9 +607,57 @@ export class BrowserNode extends EventTarget {
       if (this.scenes.length === 1) throw new Error("No se puede borrar la única escena.");
       this.scenes = this.scenes.filter((s) => s !== scene);
       if (this.active === scene.name) activate(this.scenes[0].name);
-    } else if (action !== "list") throw new Error("action debe ser list, create, activate, duplicate, delete o rename.");
+    } else if (action === "objects") {
+      return { ...this.setObjects(args.objects), ...this.sceneState() };
+    } else if (action !== "list") throw new Error("action debe ser list, create, activate, duplicate, delete, rename u objects.");
     if (action !== "list") this.persist();
     return this.sceneState();
+  }
+
+  /** Un cliente que hace la percepción afuera publica los objetos del mundo: reemplaza la lista completa.
+   *  Es por sesión (no por escena) y el último que escribe gana. Valida la forma del ObjectState del contrato. */
+  setObjects(list) {
+    if (!Array.isArray(list)) throw new Error("objects debe ser una lista (vacía para borrar todos).");
+    if (list.length > 50) throw new Error("Máximo 50 objetos.");
+    const pt = (p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite);
+    const now = Date.now() * 1e6;
+    const old = new Map(this.world.objects.map((o) => [o.id, o]));
+    const seen = new Set();
+    const next = list.map((o, i) => {
+      const where = `objects[${i}]`;
+      if (typeof o?.id !== "string" || !o.id || o.id.length > 64) throw new Error(`${where}.id debe ser un texto de 1 a 64 caracteres.`);
+      if (seen.has(o.id)) throw new Error(`${where}.id «${o.id}» está repetido.`);
+      seen.add(o.id);
+      const poly = o.polygon_mm;
+      if (!Array.isArray(poly) || poly.length < 3 || poly.length > 64 || !poly.every(pt))
+        throw new Error(`${where}.polygon_mm debe tener de 3 a 64 puntos [x, y] en mm.`);
+      if (o.center_mm != null && !pt(o.center_mm)) throw new Error(`${where}.center_mm debe ser [x, y].`);
+      if (o.bbox_mm != null && !(Array.isArray(o.bbox_mm) && o.bbox_mm.length === 4 && o.bbox_mm.every(Number.isFinite)))
+        throw new Error(`${where}.bbox_mm debe ser [x, y, ancho, alto].`);
+      const xs = poly.map((p) => p[0]);
+      const ys = poly.map((p) => p[1]);
+      return {
+        id: o.id,
+        label: String(o.label ?? "").slice(0, 80),
+        confidence: Number.isFinite(o.confidence) ? Math.min(1, Math.max(0, o.confidence)) : 1,
+        polygon_mm: poly.map((p) => [round(p[0]), round(p[1])]),
+        center_mm: (o.center_mm ?? [xs.reduce((a, v) => a + v, 0) / xs.length, ys.reduce((a, v) => a + v, 0) / ys.length]).map((v) => round(v)),
+        bbox_mm: o.bbox_mm ?? [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)].map((v) => round(v)),
+        since_ns: old.get(o.id)?.since_ns ?? now,
+        last_seen_ns: now,
+      };
+    });
+    this.world.objects = next;
+    this.changed(); // sube rev y manda el snapshot: scene los trae y los widgets anclados los siguen
+    // Eventos para quien espera con events_wait: aparece, se mueve más de 10 mm, desaparece.
+    for (const o of next) {
+      const was = old.get(o.id);
+      if (!was) this.emit({ type: "object_appeared", object: o });
+      else if (Math.hypot(o.center_mm[0] - was.center_mm[0], o.center_mm[1] - was.center_mm[1]) > 10)
+        this.emit({ type: "object_moved", object_id: o.id, center_mm: o.center_mm, polygon_mm: o.polygon_mm });
+    }
+    for (const o of old.values()) if (!seen.has(o.id)) this.emit({ type: "object_removed", object_id: o.id, label: o.label });
+    return { objects: next.map((o) => o.id), rev: this.world.rev, note: "Objetos del mundo reemplazados (por sesión; el último que escribe gana)." };
   }
 
   put(widgets, sceneName) {
@@ -705,7 +753,21 @@ export class BrowserNode extends EventTarget {
 
   tools = {
     async look(args) {
-      const { canvas, camera } = await this.hooks.frame(args.camera_id);
+      // clean: true → foto limpia: se apaga lo proyectado, se espera la demora proyector→cámara y se repone.
+      let blanked_ms = null;
+      let shot;
+      if (args.clean && !this.calibrating) {
+        const t0 = performance.now();
+        this.hooks.showCalib({ dots: [] }); // todo negro, también el html y la interfaz de la mesa
+        try {
+          await sleep(this.settle ? Math.min(1500, this.settle) : 350);
+          shot = await this.hooks.frame(args.camera_id);
+        } finally {
+          this.hooks.showCalib(null);
+        }
+        blanked_ms = Math.round(performance.now() - t0);
+      } else shot = await this.hooks.frame(args.camera_id);
+      const { canvas, camera } = shot;
       const { surface, widgets } = this.world;
       const calibrated = this.calib?.camera_id === camera.id;
       this.lookSize = [canvas.width, canvas.height];
@@ -716,6 +778,11 @@ export class BrowserNode extends EventTarget {
           camera_id: camera.id,
           camera: camera.meta.label,
           scene: this.active,
+          ...(args.clean
+            ? blanked_ms === null
+              ? { clean: false, clean_note: "Hay una calibración en curso: la foto no es limpia." }
+              : { clean: true, blanked_ms, clean_note: this.settle ? "Espera según la demora proyector→cámara medida por calibrate." : "Sin calibrate previo: espera fija de 350 ms." }
+            : {}),
           image_px: [canvas.width, canvas.height],
           surface_mm: [surface.width_mm, surface.height_mm],
           widgets: widgets.map((w) => w.id),

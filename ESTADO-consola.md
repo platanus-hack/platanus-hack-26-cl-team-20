@@ -110,6 +110,18 @@ registro de la consola y del visor. Sin `SpeechRecognition` graba el audio (qued
 consola) y el evento sale con `text: null, audio_pending: true`. El permiso del micrófono se da una vez con «Activar
 micrófono». El reconocimiento de Chrome usa el servicio de voz de Google: necesita internet.
 
+**Objetos publicados por un cliente** (pedido del motor de Max, que entra como cliente MCP y no como nodo).
+`scenes` con `action: "objects"` y `objects: [...]` reemplaza `world.objects` (forma del `ObjectState` del contrato:
+`id`, `label`, `polygon_mm` de 3 a 64 puntos; `center_mm`, `bbox_mm` y `confidence` opcionales y se calculan si faltan;
+máximo 50). Sube `rev`, manda snapshot y emite `object_appeared` / `object_moved` (más de 10 mm) / `object_removed`.
+`scene` los trae y los widgets con `anchor.object_id` los siguen (también los html). Es por sesión, no por escena, no se
+guarda en la DB, y el último que escribe gana.
+
+**Foto limpia.** `look` con `clean: true` apaga lo proyectado (widgets, html e interfaz de la mesa), espera la demora
+proyector→cámara medida por el último `calibrate` (350 ms si no hubo), toma el cuadro y repone. Vale con `annotate`
+true o false; la respuesta trae `clean` y `blanked_ms`. No está en el esquema de `look` (es el del contrato): lo
+documentan la descripción de `scenes` y las instrucciones del servidor MCP.
+
 ## Modelo de lente (pedido de Max)
 
 Método medido por el orquestador en `tools/mesa-agente/lente.py`; resultado de referencia en

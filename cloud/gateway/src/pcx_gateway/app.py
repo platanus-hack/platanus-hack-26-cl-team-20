@@ -62,6 +62,8 @@ home: la política del nodo decide; si responde pending, una PERSONA confirma co
 consola. Tú no puedes confirmar ni debes pedir que se omita. Espera home_call_done con events_wait.
 No presupongas que una tool produjo un efecto: espera su resultado y el estado reportado. Un timeout puede
 dejar un efecto en el nodo: consulta scene antes de reintentar.
+Nodo navegador (consola web): look acepta clean:true (foto sin lo proyectado); la tool scenes maneja las escenas
+(pestañas) y con action:objects publica objetos al mundo; voz y cambios de escena llegan como flow_emitted.
 """
 IMAGE_MAGIC = {b"\x89PNG": "image/png", b"\xff\xd8\xff": "image/jpeg", b"RIFF": "image/webp"}
 

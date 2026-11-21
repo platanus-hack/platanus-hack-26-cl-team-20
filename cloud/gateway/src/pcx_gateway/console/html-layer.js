@@ -52,7 +52,8 @@ export const isHtml = (w) => w.type === "effect" && w.shader === "html";
 export function htmlRect(w, world) {
   if (w.rect_mm) return w.rect_mm;
   const [sw, sh] = w.params?.size_mm ?? [300, 200];
-  const p = w.anchor?.point_mm ?? [world.surface.width_mm / 2, world.surface.height_mm / 2];
+  const obj = w.anchor?.object_id && (world.objects || []).find((x) => x.id === w.anchor.object_id); // sigue al objeto
+  const p = w.anchor?.point_mm ?? obj?.center_mm ?? [world.surface.width_mm / 2, world.surface.height_mm / 2];
   const o = w.anchor?.offset_mm ?? [0, 0];
   return [p[0] + o[0] - sw / 2, p[1] + o[1] - sh / 2, sw, sh];
 }
