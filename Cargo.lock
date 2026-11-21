@@ -3255,6 +3255,7 @@ dependencies = [
  "futures-util",
  "image",
  "nokhwa",
+ "pcx-contracts",
  "pcx-shm",
  "reqwest 0.12.28",
  "rmp-serde",

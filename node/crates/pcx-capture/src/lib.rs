@@ -19,7 +19,7 @@ pub mod runner;
 pub mod sink;
 pub mod sources;
 
-pub use contracts::{CaptureEvent, Device, DeviceChanged, DeviceKind, DeviceStatus, Envelope, FrameMeta};
+pub use contracts::{CaptureEvent, Device, DeviceKind, DeviceStatus, Envelope, Event, FrameMeta, Payload, ToMsgpack};
 pub use frame::{BoxError, Frame};
 pub use runner::{run, Publisher, RunConfig, RunStats};
 pub use sink::{default_ingest, ChannelSink, MetaSink};
