@@ -72,12 +72,24 @@
             </details>
           </div>
           <figure class="previa">
+            <div class="tabs escenas" id="escenas"></div>
             <div class="lienzo">
               <canvas id="previa" width="960" height="540"></canvas>
               <div id="previa-html"></div>
               <canvas id="previa-top" width="960" height="540"></canvas>
             </div>
             <figcaption>Lo que sale por el proyector <span id="previa-mm"></span></figcaption>
+            <div class="fila">
+              <input class="campo" id="escena-nombre" placeholder="Nombre de la escena" maxlength="40" />
+              <button class="btn" id="escena-crear">Nueva escena</button>
+              <button class="btn" id="escena-duplicar">Duplicar la activa</button>
+              <button class="btn" id="escena-borrar">Borrar la activa</button>
+            </div>
+            <div class="fila">
+              <label class="check"><input type="checkbox" id="ui-mesa" /> Pestañas y voz en la mesa</label>
+              <label class="check"><input type="checkbox" id="ui-girar" /> Girar esa interfaz 180°</label>
+            </div>
+            <p class="chico" id="escena-error"></p>
           </figure>
         </div>
       </section>

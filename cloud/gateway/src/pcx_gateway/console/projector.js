@@ -1,6 +1,6 @@
 // Ventana del proyector: dibuja lo que manda la consola (mismo origen, BroadcastChannel) y le devuelve toques.
 import { HtmlLayer } from "./html-layer.js";
-import { drawHands, drawScene, hit, trackTrails } from "./render.js";
+import { drawHands, drawScene, drawUi, hit, trackTrails } from "./render.js";
 
 const sid = new URLSearchParams(location.search).get("s");
 const bus = new BroadcastChannel(`pcx-proj-${sid}`);
@@ -31,6 +31,8 @@ let world = null;
 let pattern = true;
 let calib = null;
 let textScale = 1;
+let ui = null; // franja de pestañas y botón de voz
+let uiBounds = new Map();
 let hands = null; // {hands, hover, progress, fired, opts} + at
 const trails = [];
 let bounds = new Map();
@@ -65,6 +67,7 @@ bus.onmessage = ({ data }) => {
     pattern = data.pattern;
     calib = data.calib;
     textScale = data.textScale;
+    ui = data.ui;
     syncHtml();
   } else if (data.t === "hands") {
     hands = { ...data, at: performance.now() };
@@ -82,7 +85,8 @@ function frame(t) {
     tctx.setTransform(1, 0, 0, 1, 0, 0);
     tctx.clearRect(0, 0, top.width, top.height); // las manos van en un canvas encima del html
     tctx.translate(-off[0], -off[1]);
-    if (hands && !calib && now - hands.at < 300) drawHands(tctx, W, world, hands, trails, bounds, now);
+    uiBounds = calib ? new Map() : drawUi(tctx, W, world, ui, t);
+    if (hands && !calib && now - hands.at < 300) drawHands(tctx, W, world, hands, trails, new Map([...bounds, ...uiBounds]), now);
   }
   requestAnimationFrame(frame);
 }
@@ -104,6 +108,8 @@ addEventListener("beforeunload", () => bus.postMessage({ t: "closed" }));
 canvas.addEventListener("click", (e) => {
   if (!world) return;
   const pt = [(e.clientX + geo.ox) / scale(), (e.clientY + geo.oy) / scale()];
+  const tab = [...uiBounds].find(([, r]) => pt[0] >= r[0] && pt[0] <= r[0] + r[2] && pt[1] >= r[1] && pt[1] <= r[1] + r[3])?.[0];
+  if (tab) return bus.postMessage({ t: "press", id: tab, point_mm: pt });
   const w = hit(world, bounds, pt);
   if (w) bus.postMessage({ t: "press", id: w.id, point_mm: pt });
 });

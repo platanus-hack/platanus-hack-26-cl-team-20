@@ -3,7 +3,7 @@ import { BrowserNode } from "./node.js";
 import { pxToMm, solveH } from "./calib.js";
 import { HandTracker } from "./hands.js";
 import { HtmlLayer } from "./html-layer.js";
-import { drawHands, drawScene, hit, trackTrails } from "./render.js";
+import { drawHands, drawScene, drawUi, hit, trackTrails } from "./render.js";
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -348,6 +348,18 @@ let streaming = null;
 let encoding = false;
 const shareCanvas = document.createElement("canvas");
 
+// Interfaz propia de la mesa: franja de pestañas (escenas) y botón de voz, visibles en todas las escenas.
+let voiceUi = null; // lo llena el botón de voz
+const uiState = () => ({ enabled: node.ui.enabled, flip: node.ui.flip, scenes: node.scenes.map((s) => s.name), active: node.active, voice: voiceUi });
+let uiBounds = new Map();
+const uiAt = ([x, y]) => [...uiBounds].find(([, r]) => x >= r[0] && x <= r[0] + r[2] && y >= r[1] && y <= r[1] + r[3])?.[0];
+function pressUi(id, by) {
+  if (id.startsWith("pcx:tab:")) {
+    node.scenesTool({ action: "activate", name: id.slice(8) }, by);
+    note("escena", `${id.slice(8)} (${by === "touch" ? "con el dedo" : by === "viewer" ? "desde el visor" : "desde la consola"})`);
+  }
+}
+
 let streamCam = null; // deviceId elegido desde el visor; null = la cenital
 const streamCamera = () => cams.get(streamCam) || cams.get(mainCam);
 const viewState = () => ({
@@ -357,6 +369,7 @@ const viewState = () => ({
   pattern: $("patron").checked,
   textScale,
   calib: calibDots,
+  ui: uiState(),
   // Para rectificar el video en el visor; solo si la calibración es de la cámara que se está mandando.
   homography: node.calib && (SIM || node.calib.camera_id === streamCamera()?.id) ? { matrix: node.calib.matrix, image_px: node.calib.image_px, lens: node.calib.lens ?? null, residual_mm: node.calib.residual_mm } : null,
 });
@@ -443,7 +456,7 @@ $("compartir").onclick = async () => {
 
 function pushWorld() {
   node.sendView("world", viewState());
-  bus.postMessage({ t: "world", world: node.world, pattern: $("patron").checked, calib: calibDots, textScale });
+  bus.postMessage({ t: "world", world: node.world, pattern: $("patron").checked, calib: calibDots, textScale, ui: uiState() });
 }
 
 /** El motivo de un calibrate fallido queda a la vista hasta el próximo intento (también si lo pidió el agente). */
@@ -498,6 +511,7 @@ bus.onmessage = ({ data }) => {
     syncDevices();
     paintProjector();
   } else if (data.t === "press") {
+    if (data.id.startsWith("pcx:")) return pressUi(data.id, "console");
     const w = node.world.widgets.find((x) => x.id === data.id);
     if (w) node.press(w, data.point_mm, "api", data.value ?? undefined);
   }
@@ -527,8 +541,9 @@ function frame(t) {
   bounds = drawScene(pctx, previa.width, previa.height, node.world, t, { pattern: $("patron").checked, calib: calibDots, textScale });
   if (ptop.height !== h) ptop.height = h;
   tctx.clearRect(0, 0, ptop.width, ptop.height);
+  uiBounds = calibDots ? new Map() : drawUi(tctx, ptop.width, node.world, uiState(), t);
   if (!calibDots && performance.now() - handView.at < 300)
-    drawHands(tctx, ptop.width, node.world, handView, handTrails, bounds, performance.now());
+    drawHands(tctx, ptop.width, node.world, handView, handTrails, new Map([...bounds, ...uiBounds]), performance.now());
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -536,10 +551,52 @@ previa.onclick = (e) => {
   const r = previa.getBoundingClientRect();
   const k = node.world.surface.width_mm / r.width;
   const pt = [(e.clientX - r.left) * k, (e.clientY - r.top) * k];
+  const ui = uiAt(pt);
+  if (ui) return pressUi(ui, "console");
   const w = hit(node.world, bounds, pt);
   if (w) node.press(w, pt);
 };
 node.addEventListener("world", () => (pushWorld(), paintProjector(), syncHands(), syncHtml()));
+
+// ------------------------------------------------------------------ escenas (pestañas)
+function paintScenes() {
+  $("escenas").replaceChildren(
+    ...node.scenes.map((s) => {
+      const b = document.createElement("button");
+      b.textContent = s.name;
+      b.title = `${s.widgets.length} widgets`;
+      b.classList.toggle("on", s.name === node.active);
+      b.onclick = () => pressUi(`pcx:tab:${s.name}`, "console");
+      return b;
+    }),
+  );
+  $("escena-borrar").disabled = node.scenes.length < 2;
+}
+const sceneAction = (args) => {
+  try {
+    node.scenesTool(args, "console");
+    $("escena-nombre").value = "";
+    $("escena-error").textContent = "";
+  } catch (err) {
+    $("escena-error").textContent = err.message;
+  }
+};
+$("escena-crear").onclick = () => sceneAction({ action: "create", name: $("escena-nombre").value });
+$("escena-duplicar").onclick = () => sceneAction({ action: "duplicate", new_name: $("escena-nombre").value });
+$("escena-borrar").onclick = () => sceneAction({ action: "delete" });
+$("escena-nombre").onkeydown = (e) => e.key === "Enter" && $("escena-crear").click();
+node.addEventListener("scenes", () => (paintScenes(), pushWorld()));
+Object.assign(node.ui, store.get("ui") || {});
+for (const [id, key] of [["ui-mesa", "enabled"], ["ui-girar", "flip"]]) {
+  $(id).checked = node.ui[key];
+  $(id).onchange = () => {
+    node.ui[key] = $(id).checked;
+    store.set("ui", { enabled: node.ui.enabled, flip: node.ui.flip });
+    pushWorld();
+    syncHands();
+  };
+}
+paintScenes();
 
 // ------------------------------------------------------------------ calibración manual (por defecto)
 // Medida a mano el 21-nov con la webcam cenital (foto de look a 1280×720). Vale hasta que corra calibrate.
@@ -611,7 +668,7 @@ const mainVideo = () => cams.get(mainCam)?.video;
 function onHands(found) {
   const cfg = handsWidget();
   const c = node.calib;
-  if (!cfg || !c) return;
+  if ((!cfg && !node.ui.enabled) || !c) return;
   const [iw, ih] = c.image_px; // MediaPipe entrega 0..1: se escala al marco de la foto de look, sea cual sea su resolución
   smooth.length = found.length;
   const hands = found.map((h, i) => {
@@ -628,6 +685,12 @@ function onHands(found) {
   let value; // nombre del data-press cuando el dedo está sobre un elemento de un widget html
   for (const h of hands) {
     const [x, y] = (tip = h.mm[8]);
+    const ui = uiAt(tip); // la franja y el botón de voz mandan sobre lo que haya debajo
+    if (ui) {
+      hover = { id: ui, ui: true };
+      break;
+    }
+    if (!cfg) continue;
     const t = layer.targets().find(({ box: b }) => x >= b[0] && x <= b[0] + b[2] && y >= b[1] && y <= b[1] + b[3]);
     hover = t ? { ...t.widget, id: `${t.widget.id}#${t.name}`, on_press: null } : hit(node.world, bounds, tip);
     value = t?.name;
@@ -638,7 +701,8 @@ function onHands(found) {
     if (dwell?.id !== hover.id) dwell = { id: hover.id, t0: now, fired: false };
     if (!dwell.fired && now - dwell.t0 >= (hover.on_press?.dwell_ms ?? DWELL_MS)) {
       dwell.fired = true; // un toque por visita: hay que sacar el dedo para repetir
-      if (value === undefined) node.press(hover, tip.map(Math.round), "dwell");
+      if (hover.ui) pressUi(hover.id, "touch");
+      else if (value === undefined) node.press(hover, tip.map(Math.round), "dwell");
       else node.press({ id: hover.id.split("#")[0] }, tip.map(Math.round), "dwell", value);
     }
   }
@@ -647,7 +711,7 @@ function onHands(found) {
     hover: hover?.id ?? null,
     progress: hover ? Math.min(1, (now - dwell.t0) / (hover.on_press?.dwell_ms ?? DWELL_MS)) : 0,
     fired: !!dwell?.fired,
-    opts: cfg.params || {},
+    opts: cfg ? cfg.params || {} : { skeleton: false, trail: false }, // sin modo manos solo se ve la punta del dedo
     at: now,
   };
   trackTrails(handTrails, handView, now);
@@ -658,7 +722,7 @@ function onHands(found) {
   layer.hover(handView.hover, handView.progress, handView.fired);
   bus.postMessage({ t: "hands", ...handView });
   // scene (include_hands) se actualiza a 2 Hz: el dibujo va directo a la ventana del proyector, sin pasar por la nube.
-  if (now - lastHandSnap > 500 && (hands.length || node.world.hands.length)) {
+  if (cfg && now - lastHandSnap > 500 && (hands.length || node.world.hands.length)) {
     lastHandSnap = now;
     const camera_id = cams.get(mainCam)?.id ?? c.camera_id;
     node.setHands(
@@ -681,14 +745,16 @@ function paintHands(msg) {
   const on = !!handsWidget();
   $("manos").checked = on;
   $("manos-estado").textContent = !on
-    ? ""
+    ? tracker.running
+      ? `Dedo para las pestañas de la mesa: ${tracker.fps} cuadros/s. Deja esta pestaña a la vista.`
+      : ""
     : (msg ??
       (!node.calib
         ? "Manos: falta calibrar para saber dónde cae cada dedo."
         : `Manos: ${tracker.fps} cuadros/s, ${handView.hands.length && performance.now() - handView.at < 500 ? handView.hands.length : 0} en la mesa. Deja esta pestaña a la vista.`));
 }
 function syncHands() {
-  const on = !!handsWidget();
+  const on = !!handsWidget() || (node.ui.enabled && !!node.calib); // la franja de pestañas también se toca con el dedo
   if (on && !tracker.running) tracker.start();
   if (!on && tracker.running) tracker.stop();
   if (on !== $("manos").checked) paintHands();
@@ -703,6 +769,7 @@ const PROMPT =
   "Después proyecta con project un saludo corto al centro y vuelve a mirar con look para confirmar que se ve. " +
   "Si look dice calibrated=false, llama a calibrate (unos 10 s, proyecta marcas). Ya calibrado, look trae una grilla en mm y " +
   "puedes anclar widgets a lo que ves con anchor.point_px (píxeles de la foto de look). " +
+  "La mesa tiene escenas (pestañas): scenes(action:list) dice cuál está activa; project, remove y scene aceptan scene:'nombre' para editar una que no está a la vista. " +
   "Para interfaces completas proyecta html: {type:'effect', id:'ui', shader:'html', rect_mm:[300,150,400,250], params:{html:'<div class=c><h1>Hola</h1><button data-press=ok>Listo</button></div>', css:'.c{padding:20px;background:#222;border-radius:16px}', rotate_deg:0}}; 1 px de CSS = 1 mm y cada data-press emite widget_pressed con ese nombre. " +
   "Para manos en vivo proyecta un widget effect con shader hands: dibuja el esqueleto sobre la mano y un dedo quieto 0,4 s sobre un button dispara widget_pressed. " +
   "Cuéntame qué ves y pregúntame qué hacemos.";
@@ -735,6 +802,19 @@ $("nueva").onclick = () => {
 paintCommand();
 
 let lastCall = 0;
+/** Anota en el registro (consola y visor) algo que no fue una tool: cambio de escena con el dedo, voz. */
+function note(tool, text) {
+  const entry = { time: new Date().toLocaleTimeString("es-CL", { hour12: false }), tool, brief: text, ok: true, ms: 0 };
+  activityLog.unshift(entry);
+  activityLog.length = Math.min(activityLog.length, 40);
+  node.sendView("activity", { entry });
+  const li = document.createElement("li");
+  li.innerHTML = `<time></time><b></b><span></span><small></small>`;
+  li.querySelector("time").textContent = entry.time;
+  li.querySelector("b").textContent = tool;
+  li.querySelector("span").textContent = li.querySelector("span").title = text;
+  $("actividad").prepend(li);
+}
 const brief = (tool, args, data) =>
   !data || data.error
     ? data?.error || ""
@@ -744,6 +824,8 @@ const brief = (tool, args, data) =>
         ? (data.removed || []).join(", ") || "nada que borrar"
         : tool === "ask"
           ? `${args.question} → ${data.timed_out ? "sin respuesta" : data.answer}`
+          : tool === "scenes"
+            ? `${args.action}${args.name ? ` ${args.name}` : ""} → activa: ${data.scene}`
           : tool === "look"
             ? `${data.camera_id} · ${data.image_px.join("×")}`
             : tool === "calibrate"

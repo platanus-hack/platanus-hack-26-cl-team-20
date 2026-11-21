@@ -3,7 +3,7 @@
 // Todo llega por un WebSocket (/view) que el gateway alimenta con lo que manda el nodo navegador.
 import { invert } from "/calib.js";
 import { HtmlLayer } from "/html-layer.js";
-import { drawHands, drawScene, trackTrails } from "/render.js";
+import { drawHands, drawScene, drawUi, trackTrails } from "/render.js";
 
 const $ = (id) => document.getElementById(id);
 const token = location.pathname.split("/").pop();
@@ -137,6 +137,16 @@ const on = {
     const { width_mm, height_mm } = m.world.surface;
     const h = Math.round((previa.width * height_mm) / width_mm);
     for (const c of [previa, ptop, $("rect")]) if (c.height !== h) c.height = h;
+    // Pestañas de escenas: clic para activar (lo único que el visor puede cambiar en la mesa).
+    $("escenas").replaceChildren(
+      ...(m.ui?.scenes ?? []).map((name) => {
+        const b = document.createElement("button");
+        b.textContent = name;
+        b.classList.toggle("on", name === m.ui.active);
+        b.onclick = () => socket?.readyState === WebSocket.OPEN && socket.send(JSON.stringify({ type: "scene", name }));
+        return b;
+      }),
+    );
     // Selector de cámara: la cenital calibrada se puede rectificar; las demás se ven tal cual.
     const sel = $("camara-sel");
     const key = JSON.stringify(m.cameras ?? []);
@@ -225,7 +235,9 @@ function frame(t) {
   if (view) {
     const bounds = drawScene(pctx, previa.width, previa.height, view.world, t, view);
     tctx.clearRect(0, 0, ptop.width, ptop.height);
-    if (!view.calib && performance.now() - hands.at < 300) drawHands(tctx, ptop.width, view.world, hands, trails, bounds, performance.now());
+    const uiBounds = view.calib ? new Map() : drawUi(tctx, ptop.width, view.world, view.ui, t);
+    if (!view.calib && performance.now() - hands.at < 300)
+      drawHands(tctx, ptop.width, view.world, hands, trails, new Map([...bounds, ...uiBounds]), performance.now());
   }
   requestAnimationFrame(frame);
 }

@@ -379,3 +379,88 @@ export function drawHands(ctx, W, world, view, trails, bounds, now) {
   }
   ctx.restore();
 }
+
+// ------------------------------------------------------------------ interfaz propia de la mesa
+// Franja de pestañas (escenas) y botón de voz: zona reservada, visible en todas las escenas. Con `flip` todo gira
+// 180° alrededor del centro, para quien mira la mesa desde el otro lado.
+export const UI = { strip: 52, tab: 170, gap: 10, voice: 130 };
+
+const flipRect = ([x, y, w, h], { width_mm: W, height_mm: H }, flip) => (flip ? [W - x - w, H - y - h, w, h] : [x, y, w, h]);
+
+/** Rectángulos reservados en mm: [{id, rect}] (la franja completa, cada pestaña y la esquina de voz). */
+export function uiRects(surface, ui) {
+  if (!ui?.enabled) return [];
+  const { width_mm: W, height_mm: H } = surface;
+  const out = [{ id: "pcx:strip", rect: flipRect([0, 0, W - UI.voice - 10, UI.strip], surface, ui.flip) }];
+  const n = ui.scenes.length;
+  const tw = Math.min(UI.tab, (W - UI.voice - 30 - (n - 1) * UI.gap) / Math.max(1, n));
+  ui.scenes.forEach((name, i) => out.push({ id: `pcx:tab:${name}`, name, rect: flipRect([10 + i * (tw + UI.gap), 6, tw, UI.strip - 12], surface, ui.flip) }));
+  if (ui.voice) out.push({ id: "pcx:voice", rect: flipRect([W - UI.voice, 0, UI.voice, UI.voice], surface, ui.flip) });
+  return out;
+}
+
+/** Dibuja la franja y el botón de voz. Devuelve id → rect en mm para resolver toques (clic o dedo). */
+export function drawUi(ctx, W, world, ui, tMs) {
+  const bounds = new Map();
+  if (!ui?.enabled) return bounds;
+  const s = W / world.surface.width_mm;
+  const accent = "#FF5B24";
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const text = (label, cx, cy, size, maxW, color, weight = 600) => {
+    ctx.save();
+    ctx.translate(cx * s, cy * s);
+    if (ui.flip) ctx.rotate(Math.PI);
+    ctx.font = `${weight} ${size * s}px ${SANS}`;
+    ctx.fillStyle = color;
+    ctx.fillText(label, 0, 0, maxW * s);
+    ctx.restore();
+  };
+  for (const { id, name, rect } of uiRects(world.surface, ui)) {
+    const [x, y, w, h] = rect;
+    if (id === "pcx:strip") continue;
+    bounds.set(id, rect);
+    if (id === "pcx:voice") {
+      const v = ui.voice;
+      const [cx, cy] = [x + w / 2, y + h / 2];
+      const on = v.state === "listening";
+      const beat = on ? 1 + 0.12 * Math.sin((tMs / 1000) * 2 * Math.PI * 1.6) : 1;
+      ctx.lineWidth = (on ? 6 : 3) * s;
+      ctx.strokeStyle = on ? accent : "#F1EEE4";
+      ctx.fillStyle = on ? "#FF5B2440" : "#00000000";
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = on ? 24 * s : 0;
+      ctx.beginPath();
+      ctx.arc(cx * s, cy * s, (w / 2 - 14) * beat * s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      text(on ? "Te escucho" : v.state === "unsupported" ? "Sin voz" : "Hablar", cx, cy, 19, w - 44, on ? "#FFFFFF" : "#F1EEE4", 700);
+      if (v.text) {
+        // Lo que se va entendiendo, en una línea al lado del botón (hacia el centro de la mesa).
+        const line = v.text.length > 60 ? `…${v.text.slice(-60)}` : v.text;
+        const dir = ui.flip ? 1 : -1;
+        ctx.save();
+        ctx.translate((cx + dir * (w / 2 + 12)) * s, cy * s);
+        if (ui.flip) ctx.rotate(Math.PI);
+        ctx.font = `600 ${26 * s}px ${SANS}`;
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillText(line, 0, 0, (world.surface.width_mm - w - 60) * s);
+        ctx.restore();
+      }
+      continue;
+    }
+    const active = name === ui.active;
+    ctx.fillStyle = active ? accent : "#00000099";
+    ctx.strokeStyle = active ? accent : "#F1EEE4";
+    ctx.lineWidth = 2 * s;
+    roundRect(ctx, x * s, y * s, w * s, h * s, (h / 2) * s);
+    ctx.fill();
+    ctx.stroke();
+    text(name, x + w / 2, y + h / 2, 21, w - 24, active ? "#0B0C0A" : "#F1EEE4", active ? 800 : 600);
+  }
+  ctx.restore();
+  return bounds;
+}

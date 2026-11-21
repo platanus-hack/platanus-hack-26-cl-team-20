@@ -461,3 +461,31 @@ main {
 .previa .btn {
   margin-top: 10px;
 }
+
+/* Escenas */
+.escenas {
+  flex-wrap: wrap;
+}
+.escenas button {
+  border: 1px solid var(--linea);
+}
+.escenas button.on {
+  background: var(--senal);
+  border-color: var(--senal);
+  color: var(--mesa);
+  font-weight: 700;
+}
+.campo {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 9px 16px;
+  background: var(--mesa-2);
+  color: var(--luz);
+  border: 1px solid var(--linea);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.95rem;
+}
+.previa .fila .btn {
+  margin-top: 0;
+}

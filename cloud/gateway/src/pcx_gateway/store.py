@@ -138,6 +138,13 @@ confirmations = Table(
     Column("resolved_at", Float),
     Index("ix_confirmations_space_status", "space_id", "status"),
 )
+node_state = Table(  # estado propio del nodo navegador (escenas con sus widgets); un JSON opaco por nodo
+    "node_state",
+    metadata,
+    Column("node_id", ForeignKey("nodes.id"), primary_key=True),
+    Column("data", Text, nullable=False),
+    Column("updated_at", Float, nullable=False),
+)
 tool_calls = Table(
     "tool_calls",
     metadata,
@@ -184,6 +191,8 @@ class Store:
     async def start(self, settings: Settings):
         async with self.engine.begin() as db:
             await self._migrate(db)
+            # Tabla agregada después de la v2: se crea si falta, sin cambiar la versión del esquema.
+            await db.run_sync(lambda conn: node_state.create(conn, checkfirst=True))
             # Acciones de un proceso anterior nunca se reintentan solas.
             await db.execute(
                 update(tool_calls)
@@ -292,6 +301,15 @@ class Store:
                 )
             )
         return token
+
+    async def put_node_state(self, node_id: str, data: str):
+        async with self.engine.begin() as db:
+            await db.execute(delete(node_state).where(node_state.c.node_id == node_id))
+            await db.execute(insert(node_state).values(node_id=node_id, data=data, updated_at=time.time()))
+
+    async def node_state(self, node_id: str) -> str | None:
+        async with self.engine.connect() as db:
+            return await db.scalar(select(node_state.c.data).where(node_state.c.node_id == node_id))
 
     async def identity(self, token: str) -> Identity | None:
         async with self.engine.connect() as db:

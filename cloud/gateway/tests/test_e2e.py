@@ -59,7 +59,7 @@ async def test_mcp_full_roundtrip(live, node, http):
         initialized = await client.initialize()
         assert "table_mm" in initialized.instructions
         listed = await client.list_tools()
-        assert {t.name for t in listed.tools} == {t["name"] for t in mcp_tools()} | {"history"}
+        assert {t.name for t in listed.tools} == {t["name"] for t in mcp_tools()} | {"history", "scenes"}
         for tool, expected in zip(listed.tools, mcp_tools()):
             assert tool.input_schema == expected["inputSchema"]
         scene = data(await client.call_tool("scene", {}))

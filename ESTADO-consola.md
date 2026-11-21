@@ -83,6 +83,25 @@ Probado con cámara simulada, manos sintéticas y cliente MCP real. **No probado
 Los campos nuevos (`point_px`, `radius_mm`, shaders `hands`/`html`) no están en `contracts/`: el gateway los deja pasar
 porque el contrato no prohíbe campos extra, pero no salen en el esquema de `tools/list` ni los entiende el nodo Rust.
 
+## Interfaz propia de la mesa (pedido de Daniel)
+
+**Escenas (pestañas).** Una mesa tiene varias escenas con nombre; cada una con sus widgets (el modo manos es un widget,
+así que también va por escena) y una sola activa en el proyector.
+
+- Tool MCP nueva `scenes` (`action`: list, create, activate, duplicate, delete, rename). `project`, `remove` y `scene`
+  aceptan `scene: "nombre"` para trabajar sobre una escena que no está a la vista; todas responden con `scene` (sobre
+  cuál actuaron), `scene_active` y la lista. `scene` no se agregó a los esquemas de esas tres tools (son los del
+  contrato y hay un test que lo exige): lo documenta la descripción de `scenes`.
+- Viven en el nodo navegador y se guardan en la DB del gateway por sesión (tabla `node_state`, un JSON por nodo); al
+  recargar la consola se recuperan. Máximo 8.
+- Consola y visor: tira de pestañas, clic para activar (en la consola además crear, duplicar y borrar).
+- Mesa: franja proyectada con las pestañas, visible en todas las escenas; se cambian dejando el dedo 400 ms. Para eso
+  el seguimiento de manos queda prendido mientras la interfaz de la mesa esté activa y haya calibración. Casillas en
+  la consola: mostrarla o no, y girarla 180°.
+- Cambio de escena → evento `flow_emitted` con `event: "scene_changed"` y `data: {scene, by}` (no hay tipo de evento
+  nuevo: el contrato no deja agregar uno sin tocar `contracts/`).
+- Zona reservada: la franja y la esquina de voz. `project` devuelve `reserved` si un widget las pisa.
+
 ## Modelo de lente (pedido de Max)
 
 Método medido por el orquestador en `tools/mesa-agente/lente.py`; resultado de referencia en

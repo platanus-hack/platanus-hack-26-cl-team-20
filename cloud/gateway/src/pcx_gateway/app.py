@@ -34,7 +34,18 @@ from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from .config import Settings
-from .gateway import HISTORY_TOOL, MAX_VIEWERS, Connection, Gateway, Rejected, Viewer, iso, parse_time
+from .gateway import (
+    HISTORY_TOOL,
+    MAX_NODE_STATE,
+    MAX_VIEWERS,
+    SCENES_TOOL,
+    Connection,
+    Gateway,
+    Rejected,
+    Viewer,
+    iso,
+    parse_time,
+)
 from .pubsub import MemoryBus, RedisBus
 from .store import Store
 
@@ -67,7 +78,7 @@ async def receive_cloud(ws, timeout, max_size):
     # Fuera del contrato: lo que el nodo navegador manda para quienes miran en vivo se reenvía sin decodificar.
     if isinstance(raw, bytes) and raw.startswith(b"\xff\xd8"):
         return raw
-    if isinstance(raw, str) and raw.startswith('{"type":"view"'):
+    if isinstance(raw, str) and raw.startswith(('{"type":"view"', '{"type":"state"')):
         return raw
     return msgspec.json.decode(raw, type=CloudMessage)
 
@@ -137,7 +148,9 @@ def create_app(settings: Settings | None = None):
     store = Store(settings.database_url)
     bus = RedisBus(settings.redis_url) if settings.redis_url else MemoryBus()
     gateway = Gateway(store, bus, settings)
-    tools = [Tool.model_validate(tool) for tool in [*mcp_tools(), HISTORY_TOOL]]
+    # `scene` en project/remove/scene no se agrega a sus esquemas (son los del contrato): lo documenta la tool scenes.
+    specs = [*mcp_tools(), HISTORY_TOOL, SCENES_TOOL]
+    tools = [Tool.model_validate(tool) for tool in specs]
 
     async def list_tools(ctx, params):
         return ListToolsResult(tools=tools)
@@ -321,6 +334,9 @@ def create_app(settings: Settings | None = None):
                     kind, cam = ask["type"], ask.get("id")
                 except (msgspec.DecodeError, KeyError, TypeError, AttributeError):
                     continue
+                if kind == "scene" and isinstance(ask.get("name"), str):  # activar una pestaña desde el visor
+                    await gateway.to_browser(node_id, {"type": "scene", "name": ask["name"][:80]})
+                    continue
                 if kind not in last or time.monotonic() - last[kind] < (2 if kind == "photo" else 0.5):
                     continue
                 last[kind] = time.monotonic()
@@ -405,6 +421,9 @@ def create_app(settings: Settings | None = None):
                 )
             )
             await store.seen(node_id)
+            if conn.browser and (saved := await store.node_state(node_id)):
+                async with conn.lock:  # el nodo navegador recupera sus escenas guardadas
+                    await ws.send_text(saved)
 
             async def send_heartbeats():
                 while True:
@@ -416,7 +435,10 @@ def create_app(settings: Settings | None = None):
                 message = await receive_cloud(ws, settings.node_idle_s, settings.max_ws_frame)
                 if gateway.connections.get(node_id) is not conn:
                     break
-                if isinstance(message, (bytes, str)):
+                if isinstance(message, str) and message.startswith('{"type":"state"'):
+                    if len(message) <= MAX_NODE_STATE:  # escenas del nodo navegador: se guardan tal cual
+                        await store.put_node_state(node_id, message)
+                elif isinstance(message, (bytes, str)):
                     gateway.relay(node_id, message)
                 elif isinstance(message, StateSnapshot):
                     await gateway.accept_snapshot(conn, node_id, message)

@@ -3,7 +3,11 @@
 
 import { annotate, apply, components, diff, findDot, fitLens, invert, litArea, mmToPx, pxToMm, ransacH, signal, solveH } from "./calib.js";
 
+import { htmlRect, isHtml } from "./html-layer.js";
+import { uiRects } from "./render.js";
+
 const CONTRACT = 2;
+const SCENE_NAME = /^[^\s#:][^#:]{0,39}$/;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const round = (v, d = 1) => Math.round(v * 10 ** d) / 10 ** d;
 const now_ns = () => Date.now() * 1e6;
@@ -25,6 +29,11 @@ export class BrowserNode extends EventTarget {
     this.asks = new Map(); // request_id → {resolve, options, ids}
     this.ttl = new Map();
     this.viewers = 0;
+    // Escenas (pestañas): cada una con sus widgets; world.widgets es siempre la lista de la activa.
+    this.scenes = [{ name: "Principal", widgets: [] }];
+    this.active = "Principal";
+    this.pristine = true; // sin cambios locales: se pueden recuperar las escenas guardadas en el gateway
+    this.ui = { enabled: true, flip: false }; // franja de pestañas y botón de voz proyectados
     this.calib = null; // {camera_id, matrix (px de look → mm), image_px, residual_mm, points, version}
     this.world = {
       rev: 1,
@@ -91,6 +100,14 @@ export class BrowserNode extends EventTarget {
     if (msg.type === "hello_rejected") return this.status(msg.reason === "auth" ? "invalid" : "offline");
     if (msg.type === "tool_call") return this.call(msg);
     if (msg.type === "photo") this.dispatchEvent(new CustomEvent("photo"));
+    if (msg.type === "scene") this.scenesTool({ action: "activate", name: msg.name }, "viewer");
+    if (msg.type === "state" && this.pristine && msg.scenes?.list?.length) {
+      this.scenes = msg.scenes.list.map((s) => ({ name: String(s.name), widgets: s.widgets || [] }));
+      this.active = this.scenes.some((s) => s.name === msg.scenes.active) ? msg.scenes.active : this.scenes[0].name;
+      this.world.widgets = this.sceneOf().widgets;
+      this.changed();
+      this.dispatchEvent(new CustomEvent("scenes"));
+    }
     if (msg.type === "camera") this.dispatchEvent(new CustomEvent("camera", { detail: msg.id }));
     if (msg.type === "viewers") {
       this.viewers = msg.count;
@@ -116,6 +133,7 @@ export class BrowserNode extends EventTarget {
     this.ready = true;
     this.delay = 500;
     this.status("online");
+    if (!this.pristine) this.persist(); // cambios hechos sin conexión
   }
 
   // Para quienes miran en vivo (fuera del contrato; el gateway lo reenvía tal cual y solo si hay alguien mirando).
@@ -530,24 +548,129 @@ export class BrowserNode extends EventTarget {
     this.changed();
   }
 
-  put(widgets) {
+  // ------------------------------------------------------------------ escenas
+  sceneOf(name) {
+    const wanted = name ?? this.active;
+    const scene = this.scenes.find((s) => s.name === wanted);
+    if (!scene) throw new Error(`No existe la escena «${wanted}». Hay: ${this.scenes.map((s) => s.name).join(", ")}.`);
+    return scene;
+  }
+
+  /** Lo que el agente necesita para saber con qué escena está trabajando. */
+  sceneState() {
+    return { scene: this.active, scenes: this.scenes.map((s) => ({ name: s.name, widgets: s.widgets.length, active: s.name === this.active })) };
+  }
+
+  /** Guarda las escenas en el gateway (por sesión), sin apurarse: un mensaje fuera del contrato. */
+  persist() {
+    this.pristine = false;
+    clearTimeout(this.saving);
+    const save = () => ((this.saved = performance.now()), this.send({ type: "state", scenes: { active: this.active, list: this.scenes } }));
+    if (performance.now() - (this.saved ?? 0) > 400) save(); // al tiro; si vienen cambios seguidos, el último sale al final
+    else this.saving = setTimeout(save, 400);
+    this.dispatchEvent(new CustomEvent("scenes"));
+  }
+
+  scenesTool(args, by = "agent") {
+    const action = args.action ?? "list";
+    const name = args.name?.trim();
+    const fresh = (n) => {
+      if (!n || !SCENE_NAME.test(n)) throw new Error("El nombre de la escena debe tener de 1 a 40 caracteres, sin «#» ni «:».");
+      if (this.scenes.some((s) => s.name === n)) throw new Error(`Ya existe una escena «${n}».`);
+      if (this.scenes.length >= 8) throw new Error("Máximo 8 escenas por mesa (no caben más pestañas en la franja).");
+      return n;
+    };
+    const activate = (n) => {
+      if (n === this.active) return;
+      this.active = n;
+      this.world.widgets = this.sceneOf().widgets;
+      this.changed();
+      this.emit({ type: "flow_emitted", event: "scene_changed", data: { scene: n, by } });
+    };
+    if (action === "create") {
+      this.scenes.push({ name: fresh(name), widgets: [] });
+      activate(name);
+    } else if (action === "activate") {
+      activate(this.sceneOf(name).name);
+    } else if (action === "duplicate") {
+      const from = this.sceneOf(name);
+      const to = fresh(args.new_name?.trim());
+      this.scenes.push({ name: to, widgets: structuredClone(from.widgets) });
+    } else if (action === "rename") {
+      const scene = this.sceneOf(name);
+      const to = fresh(args.new_name?.trim());
+      if (this.active === scene.name) this.active = to;
+      scene.name = to;
+      this.changed();
+    } else if (action === "delete") {
+      const scene = this.sceneOf(name);
+      if (this.scenes.length === 1) throw new Error("No se puede borrar la única escena.");
+      this.scenes = this.scenes.filter((s) => s !== scene);
+      if (this.active === scene.name) activate(this.scenes[0].name);
+    } else if (action !== "list") throw new Error("action debe ser list, create, activate, duplicate, delete o rename.");
+    if (action !== "list") this.persist();
+    return this.sceneState();
+  }
+
+  put(widgets, sceneName) {
     widgets = widgets.map((w) => this.resolve(w));
-    const byId = new Map(this.world.widgets.map((w) => [w.id, w]));
+    const scene = this.sceneOf(sceneName);
+    const live = scene.name === this.active;
+    const byId = new Map(scene.widgets.map((w) => [w.id, w]));
     for (const w of widgets) {
       byId.set(w.id, w);
+      if (!live) continue;
       clearTimeout(this.ttl.get(w.id));
       if (w.ttl_s) this.ttl.set(w.id, setTimeout(() => this.drop([w.id]), w.ttl_s * 1000));
     }
-    this.world.widgets = [...byId.values()];
+    scene.widgets = [...byId.values()];
+    if (live) this.world.widgets = scene.widgets;
     this.changed();
+    if (!widgets.every((w) => w.id.startsWith("pcx:"))) this.persist(); // las preguntas de ask no se guardan
   }
 
-  drop(ids) {
-    const gone = this.world.widgets.filter((w) => ids.includes(w.id)).map((w) => w.id);
+  drop(ids, sceneName) {
+    const scene = this.sceneOf(sceneName);
+    const gone = scene.widgets.filter((w) => ids.includes(w.id)).map((w) => w.id);
     if (!gone.length) return gone;
-    this.world.widgets = this.world.widgets.filter((w) => !ids.includes(w.id));
+    scene.widgets = scene.widgets.filter((w) => !ids.includes(w.id));
+    if (scene.name === this.active) this.world.widgets = scene.widgets;
     this.changed();
+    if (!gone.every((id) => id.startsWith("pcx:"))) this.persist();
     return gone;
+  }
+
+  /** Aviso si un widget del agente pisa la zona reservada (franja de pestañas o esquina de voz). */
+  reservedHit(widgets) {
+    const zones = uiRects(this.world.surface, { ...this.ui, scenes: this.scenes.map((s) => s.name), voice: this.ui.voice ?? {} }).filter((z) =>
+      ["pcx:strip", "pcx:voice"].includes(z.id),
+    );
+    const box = (w) => {
+      if (w.shader === "hands") return null;
+      if (isHtml(w)) return htmlRect(w, this.world);
+      if (w.rect_mm) return w.rect_mm;
+      const poly = w.polygon_mm;
+      if (poly) {
+        const xs = poly.map((q) => q[0]);
+        const ys = poly.map((q) => q[1]);
+        return [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
+      }
+      const p = w.anchor?.point_mm;
+      if (!p) return null;
+      const r = w.type === "halo" ? (w.radius_mm ?? 60) : w.type === "label" ? (w.size_mm ?? 28) : 40;
+      return [p[0] - r, p[1] - r, 2 * r, 2 * r];
+    };
+    const hits = [];
+    for (const w of widgets) {
+      const b = box(w);
+      if (!b) continue;
+      for (const z of zones) {
+        const r = z.rect;
+        if (b[0] < r[0] + r[2] && b[0] + b[2] > r[0] && b[1] < r[1] + r[3] && b[1] + b[3] > r[1])
+          hits.push(`«${w.id}» pisa ${z.id === "pcx:strip" ? "la franja de pestañas" : "la esquina del botón de voz"} [${r.map(Math.round).join(", ")}] mm`);
+      }
+    }
+    return hits.length ? { reserved: `Zona reservada de la mesa: ${hits.join("; ")}. Se dibuja igual, pero la interfaz de la mesa queda encima.` } : {};
   }
 
   // ------------------------------------------------------------------ tools
@@ -559,7 +682,7 @@ export class BrowserNode extends EventTarget {
     let images = [];
     try {
       const fn = this.tools[tool];
-      if (!fn) throw new Error(`El nodo navegador todavía no soporta «${tool}». Disponibles: look, project, remove, ask, calibrate.`);
+      if (!fn) throw new Error(`El nodo navegador todavía no soporta «${tool}». Disponibles: look, project, remove, ask, calibrate, scenes.`);
       const out = await fn.call(this, args || {});
       data = out.data;
       images = out.images || [];
@@ -592,6 +715,7 @@ export class BrowserNode extends EventTarget {
         data: {
           camera_id: camera.id,
           camera: camera.meta.label,
+          scene: this.active,
           image_px: [canvas.width, canvas.height],
           surface_mm: [surface.width_mm, surface.height_mm],
           widgets: widgets.map((w) => w.id),
@@ -622,12 +746,39 @@ export class BrowserNode extends EventTarget {
       };
     },
 
+    // `scene` con escenas: la activa por defecto, o cualquier otra con scene:"nombre" aunque no esté a la vista.
+    async scene(args) {
+      const target = this.sceneOf(args.scene);
+      const { hands, devices, ...world } = this.world;
+      return {
+        data: {
+          ...world,
+          widgets: target.widgets,
+          ...(args.include_hands ? { hands } : {}),
+          ...(args.include_devices ? { devices } : {}),
+          ...this.sceneState(),
+          scene: target.name,
+          scene_active: target.name === this.active,
+        },
+      };
+    },
+
+    async scenes(args) {
+      return { data: this.scenesTool(args) };
+    },
+
     async project(args) {
-      this.put(args.widgets);
+      this.put(args.widgets, args.scene);
       const open = this.hooks.projectorOpen();
+      const target = this.sceneOf(args.scene).name;
       return {
         data: {
           ids: args.widgets.map((w) => w.id),
+          ...this.sceneState(),
+          scene: target,
+          scene_active: target === this.active,
+          ...(target === this.active ? {} : { scene_note: `Quedó en la escena «${target}», que no está a la vista (la activa es «${this.active}»).` }),
+          ...(this.ui.enabled ? this.reservedHit(args.widgets) : {}),
           surface_mm: [this.world.surface.width_mm, this.world.surface.height_mm],
           projector_open: open,
           ...(args.widgets.some((w) => ["label", "panel", "button"].includes(w.type))
@@ -656,7 +807,8 @@ export class BrowserNode extends EventTarget {
     },
 
     async remove(args) {
-      return { data: { removed: this.drop(args.ids) } };
+      const target = this.sceneOf(args.scene).name;
+      return { data: { removed: this.drop(args.ids, args.scene), scene: target, scene_active: target === this.active } };
     },
 
     async ask(args) {

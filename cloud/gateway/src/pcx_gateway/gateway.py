@@ -25,7 +25,16 @@ from .pubsub import Bus
 from .store import Identity, Store
 
 log = logging.getLogger(__name__)
-TOOL_TIMEOUTS = {"look": 20, "project": 15, "remove": 15, "run_flow": 15, "calibrate": 180, "home": 30}
+TOOL_TIMEOUTS = {
+    "scenes": 15,
+    "scene": 10,
+    "look": 20,
+    "project": 15,
+    "remove": 15,
+    "run_flow": 15,
+    "calibrate": 180,
+    "home": 30,
+}
 LOOK_PHOTO_ID = "pcx:look"
 MAX_LOOK_BYTES = 2 * 1024 * 1024
 MAX_BATCH_EVENTS = 1000
@@ -69,6 +78,38 @@ HISTORY_TOOL = {
     },
     "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
 }
+
+
+class ScenesArgs(Struct, kw_only=True):
+    action: str = "list"
+    name: str | None = None
+    new_name: str | None = None
+    request_id: str | None = None
+
+
+# Escenas (pestañas) de la mesa: las maneja el nodo navegador; el gateway las guarda y reenvía la tool.
+SCENES_TOOL = {
+    "name": "scenes",
+    "description": "Escenas (pestañas) de la mesa: cada una tiene sus propios widgets y solo una está activa en el "
+    "proyector. action: list | create | activate | duplicate | delete | rename. create crea la escena `name` y la "
+    "deja activa; duplicate copia `name` (o la activa) como `new_name`; rename cambia `name` a `new_name`. Siempre "
+    "devuelve la escena activa y la lista. project, remove y scene aceptan `scene` para trabajar sobre una escena "
+    "que no está a la vista (por defecto, la activa).",
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "action": {
+                "type": "string",
+                "enum": ["list", "create", "activate", "duplicate", "delete", "rename"],
+            },
+            "name": {"type": ["string", "null"], "default": None},
+            "new_name": {"type": ["string", "null"], "default": None},
+        },
+        "required": ["action"],
+    },
+    "annotations": {"readOnlyHint": False, "destructiveHint": False, "openWorldHint": False},
+}
+MAX_NODE_STATE = 2 * 1024 * 1024
 RELATIVE = re.compile(r"^(\d+(?:\.\d+)?)\s*([smhdw])$")
 UNITS = {"s": "seconds", "m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
 
@@ -197,6 +238,26 @@ class Gateway:
             self.tasks.add(task)
             task.add_done_callback(self.tasks.discard)
 
+    async def scene_view(self, node_id, wanted, data) -> dict:
+        """Para la tool `scene`: qué escena es la activa, cuáles hay y, si se pide otra, sus widgets guardados."""
+        blob = await self.store.node_state(node_id)
+        if not blob:
+            return {}
+        try:
+            scenes = json.loads(blob)["scenes"]
+            names = [s["name"] for s in scenes["list"]]
+        except (ValueError, KeyError, TypeError):
+            return {}
+        out = {"scene": scenes["active"], "scene_active": True, "scenes": names}
+        if wanted and wanted != scenes["active"]:
+            other = next((s for s in scenes["list"] if s["name"] == wanted), None)
+            if other is None:
+                out["scene_error"] = f"No existe la escena «{wanted}». Hay: {', '.join(names)}."
+            else:
+                data["widgets"] = other["widgets"]
+                out.update(scene=wanted, scene_active=False)
+        return out
+
     def view_status(self, node_id):
         connected = self.connected(node_id) is not None
         self.relay(node_id, json.dumps({"type": "view", "kind": "status", "connected": connected}))
@@ -233,6 +294,8 @@ class Gateway:
             if tool == "history":
                 args = msgspec.convert(raw, HistoryArgs)
                 since, until = parse_time(args.since), parse_time(args.until)
+            elif tool == "scenes":
+                args = msgspec.convert(raw, ScenesArgs)
             else:
                 args = parse_args(tool, raw)
         except (KeyError, ValueError, TypeError, msgspec.ValidationError) as exc:
@@ -284,7 +347,9 @@ class Gateway:
         if tool == "events_wait":
             # Sale de la DB: funciona aunque el nodo esté reconectando (p. ej. durante un deploy).
             return result(call_id, await self.wait_events(node_id, args))
-        if tool in ("scene", "devices"):
+        # Un nodo navegador conectado responde `scene` él mismo: sabe de escenas y no hay desfase con lo guardado.
+        live_scene = tool == "scene" and conn is not None and conn.browser
+        if tool in ("scene", "devices") and not live_scene:
             row = await self.store.node(node_id)
             if row["world"] is None:
                 raise NodeOffline(
@@ -307,6 +372,7 @@ class Gateway:
                 snapshot_cursor=row["snapshot_cursor"],
                 reported_cursor=row["reported_cursor"],
                 history_complete=row["history_complete"],
+                **(await self.scene_view(node_id, raw.get("scene"), data)),
                 node_id=node_id,
                 connected=conn is not None,
                 last_seen=row["last_seen"],
@@ -336,6 +402,9 @@ class Gateway:
             )
         if tool == "home" and answer.ok:
             return await self.home_result(call_id, identity, args, answer)
+        if live_scene and answer.ok and answer.structured is not None:
+            extra = {"cursor": await self.store.cursor(node_id), "node_id": node_id, "connected": True}
+            return result(call_id, {**answer.structured, **extra})
         if tool == "look":
             await self.keep_look(identity, answer)
         return answer
