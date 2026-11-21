@@ -394,6 +394,14 @@ export class BrowserNode extends EventTarget {
           ...(args.widgets.some((w) => ["label", "panel", "button"].includes(w.type))
             ? { text: `label.size_mm fija la altura del texto (por defecto 28 mm; para leerlo desde la cámara usa 30 o más). Escala de la consola: ×${this.hooks.textScale()}.` }
             : {}),
+          ...(args.widgets.some((w) => w.type === "effect")
+            ? {
+                effects:
+                  "El nodo navegador no corre los shaders WGSL del compositor. Solo «hands» es distinto: prende el modo manos " +
+                  "(esqueleto sobre la mano, estela del índice y toque por permanencia; params: skeleton, trail, color). " +
+                  "Cualquier otro shader se ve igual: anillos de luz que pulsan dentro de rect_mm o polygon_mm, con params.color.",
+              }
+            : {}),
           ...(open ? {} : { warning: "La ventana del proyector está cerrada: solo se ve en la vista previa de la consola." }),
         },
       };
