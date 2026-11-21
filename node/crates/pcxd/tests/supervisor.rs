@@ -129,7 +129,17 @@ fn instancia_unica() {
     let e = supervisor::lock_instance(dir.path()).err().expect("el segundo lock debe fallar").to_string();
     assert!(e.contains(&std::process::id().to_string()), "{e}");
     drop(a);
-    supervisor::lock_instance(dir.path()).unwrap();
+    // En Linux, `flock` se libera cuando se cierran todas las copias del descriptor: un test en paralelo
+    // que hace fork() en ese instante lo hereda hasta su exec(). Reintentamos un momento.
+    let mut ok = false;
+    for _ in 0..40 {
+        if supervisor::lock_instance(dir.path()).is_ok() {
+            ok = true;
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    assert!(ok, "el lock debe quedar libre tras soltarlo");
 }
 
 #[test]
