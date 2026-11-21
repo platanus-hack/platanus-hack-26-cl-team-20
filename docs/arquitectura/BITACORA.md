@@ -28,4 +28,11 @@ Registro cronológico para retomar el trabajo después de una compactación de c
 | 2 | Modos de las 3 escenas (Vibecoders Desk, Edu, Lab) + pcx-agent | Claude Fable | pendiente |
 | 3 | E2E simulado completo (gateway + nodo + Claude Code por MCP) | Claude | pendiente |
 | 3 | Distribución: instaladores y workflow de release | Codex | pendiente |
+| 1 | Plugin y skills para agentes (Claude Code plugin + Agent Skills para Codex y OpenCode + instalador), rama `feat/plugin-agentes` | Claude Fable | en curso |
 | — | **UI (landing y consola): NO** hasta que el equipo decida diseño | — | en pausa |
+
+## Registro nocturno
+- 05:45 · Disco llegó a 0,2 GB por 4 compilaciones en paralelo; limpieza de duplicados en `target/` (−9,7 GB). Monitor con limpieza automática (`ops/dedupe_target.py` fuera del repo) cuando el disco baja de 6 GB. Lección: máximo 2 frentes compilando Rust a la vez.
+- 05:50 · CI listo → PR #2 (las pruebas corren en GitHub, no en el disco local). PR general #1 (borrador) hacia `main`.
+- 05:54 · Codex alcanzó su límite de uso (se restablece 06:16). Seguridad (C) y despliegue quedaron con cambios sin commitear en sus worktrees; se reanudan solos a las 06:17.
+- 05:55 · Render: el equipo tiene **USD 50 en créditos** (cuenta de Manu). Investigando precios y plan de gasto; **no desplegar** hasta que Manu lo apruebe.
