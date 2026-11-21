@@ -2,6 +2,8 @@
 Port de `node/capture` (Python). Fuentes → anillo `pcx.cam.<id>` (`pcx-shm`, **mismo layout binario**: un worker
 Python lee con `RingReader` sin cambios) → `FrameMeta` por `MetaSink` (closure, `ChannelSink` tokio o `ZmqPush`).
 ```bash
+cargo run -p pcx-capture -- --list                               # cámaras con id estable, sin abrirlas (= `pcx cameras`)
+cargo run -p pcx-capture -- run --id c920 --source cam:0x1120000046d0892 --size 1280x720 --fps 30   # cámara nativa
 cargo run -p pcx-capture -- run --id cam0 --source replay:node/crates/pcx-capture/testdata/frames --size 640x360
 cargo run -p pcx-capture -- run --id quest --source mjpeg:http://127.0.0.1:8787/cam.mjpg --print --no-zmq
 cargo run -p pcx-capture -- run --id phone --source phone        # página getUserMedia + WS en :9220
@@ -21,9 +23,16 @@ tal cual en Windows (el escritor conserva el handle). `shared_memory` agrega su 
 Windows) y `memmap2` no crea mappings con nombre en Windows; son ~200 líneas. Seqlock con barreras Release/Acquire
 reales. Huérfano por SIGKILL: se reemplaza y los lectores viejos ven `closed`. **Windows: no compilado ni probado aquí.**
 
+**`cam:<id|nombre>` (nativa, recomendada)**: id estable exacto o subcadena única del nombre; nunca índice (B4).
+macOS: AVFoundation con `objc2` (`sources/avf.rs`): formato 420v real al tamaño pedido con el `minFrameDuration` exacto
+de su rango, reaplicado tras `startRunning` (B6/B7), NV12 → RGB propio (B10), hora de captura desde el PTS; exposición y
+balance de blancos best-effort con `--lock-exposure`/`--lock-white-balance` dentro de `objc2::exception::catch` (B8/B9).
+Windows (Media Foundation) y Linux (V4L2): por ahora `nokhwa` como respaldo detrás de `--features uvc`
+(`sources/camera.rs`, id = `misc()` de nokhwa); el backend nativo queda pendiente. Sin `uvc`, `cam:` falla con un error claro.
+
 Fuentes (salida bgr8 como Python): `replay` (carpeta jpg/png o `.mjpeg`, tiempo real, bucle; sin mp4: no hay ffmpeg),
 `mjpeg` (Content-Length o corte FFD8/FFD9, reconexión 1→5 s), `phone` (axum HTTP+WS; HTTPS para la LAN pendiente),
-`uvc` (nokhwa, `--features uvc`; compila en macOS). **Probar `uvc`** solo en la máquina del montaje, desde Terminal.app
+`uvc` (nokhwa, `--features uvc`; legado: en macOS no abre la C920). **Probar `uvc`** solo en la máquina del montaje, desde Terminal.app
 de la sesión gráfica (TCC): `PCX_CAMERA=0 cargo test -p pcx-capture --features uvc -- --ignored uvc_manual --nocapture`;
 luego `cargo run -p pcx-capture --features uvc -- run --id cam0 --source uvc:0` y `peek --id cam0` en otra terminal.
 

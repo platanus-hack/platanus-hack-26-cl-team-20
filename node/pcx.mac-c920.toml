@@ -1,0 +1,30 @@
+# `pcx up --config node/pcx.mac-c920.toml`: el montaje de Manu (MacBook Pro M1 Pro + webcam C920 + proyector T749).
+# Rutas relativas a este archivo. `pcx` = este mismo binario. Ver `node/pcx.toml` para el formato.
+# Cámara por uniqueID de AVFoundation (`pcx cameras` la lista sin abrirla); nunca por índice (B4).
+# Renderer por nombre real del display (`pcx-renderer --list-displays`); si no está el T749, aborta (no cae en otro).
+
+[node]
+id = "mesa-1"
+
+[supervisor]
+max_crashes = 5        # caídas dentro de la ventana → el proceso queda «failed»
+crash_window_s = 60
+
+[env]
+PCX_PORT = "9200"
+PCX_NODE_ID = "mesa-1"
+PCX_INGEST = "ipc:///tmp/pcx/ingest.sock"
+PCX_EVENTS = "ipc:///tmp/pcx/events.sock"
+
+[process.core]
+cmd = ["pcx", "serve"]
+health = "http://127.0.0.1:9200/health"
+
+[process.capture]
+cmd = ["pcx", "worker", "capture", "--id", "c920", "--source", "cam:0x1120000046d0892", "--size", "1280x720", "--fps", "30", "--lock-exposure"]
+
+[process.hands]
+cmd = ["pcx", "worker", "hands", "--camera", "c920", "--backend", "cpu"]
+
+[process.renderer]
+cmd = ["../target/release/pcx-renderer", "--display", "T749", "--ws", "ws://127.0.0.1:9200/render"]

@@ -13,12 +13,20 @@ use std::time::{Duration, Instant};
 #[derive(Parser)]
 #[command(name = "pcx-capture", about = "Fuentes de cámara → anillo pcx.cam.<id> + FrameMeta")]
 pub struct Cli {
+    /// Lista las cámaras (id estable para `cam:<id>`) sin abrirlas.
+    #[arg(long)]
+    pub list: bool,
     #[command(subcommand)]
-    pub cmd: Cmd,
+    pub cmd: Option<Cmd>,
 }
 
 #[derive(Subcommand)]
 pub enum Cmd {
+    /// Lista las cámaras (id estable, nombre, modelo) sin abrirlas. `--json` para máquinas.
+    List {
+        #[arg(long)]
+        json: bool,
+    },
     /// Captura: fuente → anillo → FrameMeta.
     Run(RunArgs),
     /// Fps y edad del último cuadro de un anillo (sin ventanas).
@@ -56,7 +64,7 @@ pub struct RunArgs {
     /// Id de la cámara: anillo `pcx.cam.<id>` (≤ 22 caracteres).
     #[arg(long)]
     pub id: String,
-    /// `replay:<carpeta|archivo.mjpeg>` · `uvc:<índice>` · `mjpeg:<url>` · `phone[:<puerto>]`.
+    /// `cam:<id|nombre>` · `replay:<carpeta|archivo.mjpeg>` · `uvc:<índice>` (nokhwa) · `mjpeg:<url>` · `phone[:<puerto>]`.
     #[arg(long)]
     pub source: SourceSpec,
     #[arg(long, value_parser = parse_size, default_value = "1280x720")]
@@ -89,6 +97,12 @@ pub struct RunArgs {
     /// Interfaz de `phone` (0.0.0.0 = LAN).
     #[arg(long, default_value = "0.0.0.0")]
     pub bind: std::net::IpAddr,
+    /// Fija la exposición (best-effort; la C920 en macOS no lo respeta, B9).
+    #[arg(long)]
+    pub lock_exposure: bool,
+    /// Fija el balance de blancos (best-effort).
+    #[arg(long)]
+    pub lock_white_balance: bool,
 }
 
 async fn stop_signal() {
@@ -106,8 +120,17 @@ async fn stop_signal() {
 
 /// Corre la captura hasta Ctrl-C/SIGTERM (el anillo se libera al salir). Requiere runtime tokio.
 pub async fn run_cmd(a: RunArgs) -> Result<RunStats, BoxError> {
-    let opts =
-        SourceOpts { size: Some(a.size), fps: a.fps, max_speed: a.max_speed, looped: !a.no_loop, bind_ip: a.bind };
+    let opts = SourceOpts {
+        size: Some(a.size),
+        fps: a.fps,
+        max_speed: a.max_speed,
+        looped: !a.no_loop,
+        bind_ip: a.bind,
+        controls: crate::sources::camera::CamControls {
+            lock_exposure: a.lock_exposure,
+            lock_white_balance: a.lock_white_balance,
+        },
+    };
     let src = open_source(&a.source, &opts).await?;
     let mut sinks: Vec<Box<dyn MetaSink>> = Vec::new();
     let ingest = a.ingest.clone().unwrap_or_else(default_ingest);
@@ -130,6 +153,19 @@ pub async fn run_cmd(a: RunArgs) -> Result<RunStats, BoxError> {
         verbose: true,
     };
     run(cfg, src, &mut sinks, stop_signal()).await
+}
+
+/// Imprime las cámaras: `id<TAB>nombre<TAB>modelo` (o JSON).
+pub fn list_cmd(json: bool) -> Result<(), BoxError> {
+    let cams = crate::sources::camera::list()?;
+    if json {
+        println!("{}", serde_json::to_string_pretty(&cams)?);
+    } else {
+        for c in &cams {
+            println!("{}\t{}\t{}", c.id, c.name, c.model);
+        }
+    }
+    Ok(())
 }
 
 fn peek(id: &str, secs: f64) -> Result<(), BoxError> {
@@ -165,7 +201,16 @@ fn peek(id: &str, secs: f64) -> Result<(), BoxError> {
 
 pub fn main() -> ExitCode {
     let cli = Cli::parse();
-    let res: Result<(), BoxError> = match cli.cmd {
+    let cmd = match (cli.list, cli.cmd) {
+        (true, _) => Cmd::List { json: false },
+        (false, Some(c)) => c,
+        (false, None) => {
+            eprintln!("[pcx-capture] falta un subcomando (list | run | peek | bench); --help");
+            return ExitCode::FAILURE;
+        }
+    };
+    let res: Result<(), BoxError> = match cmd {
+        Cmd::List { json } => list_cmd(json),
         Cmd::Run(a) => tokio::runtime::Runtime::new()
             .map_err(BoxError::from)
             .and_then(|rt| rt.block_on(run_cmd(a)))
