@@ -63,13 +63,33 @@ cd cloud/gateway && PORT=9215 PCX_OPEN_SESSIONS=1 uv run python -m pcx_gateway
 # Chrome: http://localhost:9215/ → permitir cámara → Lanzar proyección → Copiar → pegar en una terminal
 ```
 
+## Agregado después (tarde del 21-nov)
+
+Desplegado en `https://pcx-gateway.onrender.com` desde esta rama (cada push despliega). Todo vive en el nodo navegador:
+
+- **`calibrate`** (quick, precise, verify): proyecta marcas una a una, las busca en la cámara cenital por diferencia de
+  cuadros y guarda la homografía píxeles de `look` → mm. `look` trae grilla cada 100 mm; `project` acepta
+  `anchor.point_px`, `polygon_px` (halo) y `from_px`/`to_px` (arrow). Sin calibrar rige la **manual de 4 puntos**,
+  editable en la consola.
+- **Manos** (`effect` con `shader: "hands"`, o la casilla «Manos»): MediaPipe Hands en la pestaña de la consola; la
+  ventana del proyector dibuja esqueleto, estela del índice y resalta lo que hay bajo el dedo; 400 ms quieto =
+  `widget_pressed{trigger: "dwell"}`. `scene` con `include_hands` trae las manos (2 Hz).
+- **UI html** (`effect` con `shader: "html"`, `rect_mm`, `params: {html, css, rotate_deg}`): iframe aislado (sin scripts
+  del agente, sin red salvo imágenes https), 1 px de CSS = 1 mm; `data-press="nombre"` emite `widget_pressed` con ese valor.
+- Halo con `radius_mm`, cenital externa por defecto, label de 28 mm y escala de texto en la consola.
+- `?sim=1` abre la consola con una cámara simulada que ve la proyección girada 180° (para probar sin equipo).
+
+Probado con cámara simulada, manos sintéticas y cliente MCP real. **No probado por mí con mano y proyector reales.**
+Los campos nuevos (`point_px`, `radius_mm`, shaders `hands`/`html`) no están en `contracts/`: el gateway los deja pasar
+porque el contrato no prohíbe campos extra, pero no salen en el esquema de `tools/list` ni los entiende el nodo Rust.
+
 ## Falta
 
 - **Probar con cámara y proyector reales** y con Claude Code de verdad (acá se probó con cámara simulada y cliente MCP).
 - **Pantalla completa**: el navegador exige un clic en la ventana del proyector si no la abre ya completa.
-- **Calibración y coordenadas**: hoy la superficie es la ventana (1000 mm de ancho) y `look` va sin anotar; el agente
-  ubica cosas proyectando marcas y mirando. Siguiente paso: calibrar con 4 esquinas y anotar `look` con grilla en mm.
-- **Sin soporte en el navegador**: `calibrate`, `run_flow`, `home`, manos, objetos, tracking. Responden un error claro.
+- **Escala real**: la superficie mide 1000 unidades de ancho; son mm solo si la proyección mide 1 m.
+- **Sin soporte en el navegador**: `run_flow`, `home`, detección y tracking de objetos. Responden un error claro.
+- **Manos**: la pestaña de la consola debe quedar a la vista; tapada, el navegador la frena a ~1 cuadro/s.
 - **Nodo Rust local**: que la consola lo detecte y le pase la sesión.
 - **Deploy** (no hecho, falta OK): `render.yaml` ya trae `PCX_OPEN_SESSIONS=1`, pero el Blueprint despliega
   `manu/plataforma`; hay que mergear esta rama ahí o apuntar el servicio a `daniel/consola`.

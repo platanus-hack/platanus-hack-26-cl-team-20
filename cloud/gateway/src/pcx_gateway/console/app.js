@@ -2,6 +2,7 @@
 import { BrowserNode } from "./node.js";
 import { apply, solveH } from "./calib.js";
 import { HandTracker } from "./hands.js";
+import { HtmlLayer } from "./html-layer.js";
 import { drawHands, drawScene, hit, trackTrails } from "./render.js";
 
 const $ = (id) => document.getElementById(id);
@@ -351,7 +352,7 @@ bus.onmessage = ({ data }) => {
     paintProjector();
   } else if (data.t === "press") {
     const w = node.world.widgets.find((x) => x.id === data.id);
-    if (w) node.press(w, data.point_mm);
+    if (w) node.press(w, data.point_mm, "api", data.value ?? undefined);
   }
 };
 setInterval(() => {
@@ -365,14 +366,22 @@ setInterval(() => {
 // Vista previa: el mismo dibujo que la ventana del proyector.
 const previa = $("previa");
 const pctx = previa.getContext("2d");
+const ptop = $("previa-top");
+const tctx = ptop.getContext("2d");
+const layer = new HtmlLayer($("previa-html"), (w, name, pt) => node.press(w, pt, "api", name));
+const syncHtml = () =>
+  layer.sync(calibDots ? { ...node.world, widgets: [] } : node.world, previa.getBoundingClientRect().width / node.world.surface.width_mm);
+new ResizeObserver(syncHtml).observe(previa);
 let bounds = new Map();
 function frame(t) {
   const { width_mm, height_mm } = node.world.surface;
   const h = Math.round((previa.width * height_mm) / width_mm);
   if (previa.height !== h) previa.height = h;
   bounds = drawScene(pctx, previa.width, previa.height, node.world, t, { pattern: $("patron").checked, calib: calibDots, textScale });
+  if (ptop.height !== h) ptop.height = h;
+  tctx.clearRect(0, 0, ptop.width, ptop.height);
   if (!calibDots && performance.now() - handView.at < 300)
-    drawHands(pctx, previa.width, node.world, handView, handTrails, bounds, performance.now());
+    drawHands(tctx, ptop.width, node.world, handView, handTrails, bounds, performance.now());
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -383,7 +392,7 @@ previa.onclick = (e) => {
   const w = hit(node.world, bounds, pt);
   if (w) node.press(w, pt);
 };
-node.addEventListener("world", () => (pushWorld(), paintProjector(), syncHands()));
+node.addEventListener("world", () => (pushWorld(), paintProjector(), syncHands(), syncHtml()));
 
 // ------------------------------------------------------------------ calibración manual (por defecto)
 // Medida a mano el 21-nov con la webcam cenital (foto de look a 1280×720). Vale hasta que corra calibrate.
@@ -445,19 +454,21 @@ function onHands(found) {
   const now = performance.now();
   let hover = null;
   let tip = null;
+  let value; // nombre del data-press cuando el dedo está sobre un elemento de un widget html
   for (const h of hands) {
-    hover = hit(node.world, bounds, h.mm[8]);
-    if (hover) {
-      tip = h.mm[8];
-      break;
-    }
+    const [x, y] = (tip = h.mm[8]);
+    const t = layer.targets().find(({ box: b }) => x >= b[0] && x <= b[0] + b[2] && y >= b[1] && y <= b[1] + b[3]);
+    hover = t ? { ...t.widget, id: `${t.widget.id}#${t.name}`, on_press: null } : hit(node.world, bounds, tip);
+    value = t?.name;
+    if (hover) break;
   }
   if (!hover) dwell = null;
   else {
     if (dwell?.id !== hover.id) dwell = { id: hover.id, t0: now, fired: false };
     if (!dwell.fired && now - dwell.t0 >= (hover.on_press?.dwell_ms ?? DWELL_MS)) {
       dwell.fired = true; // un toque por visita: hay que sacar el dedo para repetir
-      node.press(hover, tip.map(Math.round), "dwell");
+      if (value === undefined) node.press(hover, tip.map(Math.round), "dwell");
+      else node.press({ id: hover.id.split("#")[0] }, tip.map(Math.round), "dwell", value);
     }
   }
   handView = {
@@ -469,6 +480,7 @@ function onHands(found) {
     at: now,
   };
   trackTrails(handTrails, handView, now);
+  layer.hover(handView.hover, handView.progress, handView.fired);
   bus.postMessage({ t: "hands", ...handView });
   // scene (include_hands) se actualiza a 2 Hz: el dibujo va directo a la ventana del proyector, sin pasar por la nube.
   if (now - lastHandSnap > 500 && (hands.length || node.world.hands.length)) {
@@ -516,6 +528,7 @@ const PROMPT =
   "Después proyecta con project un saludo corto al centro y vuelve a mirar con look para confirmar que se ve. " +
   "Si look dice calibrated=false, llama a calibrate (unos 10 s, proyecta marcas). Ya calibrado, look trae una grilla en mm y " +
   "puedes anclar widgets a lo que ves con anchor.point_px (píxeles de la foto de look). " +
+  "Para interfaces completas proyecta html: {type:'effect', id:'ui', shader:'html', rect_mm:[300,150,400,250], params:{html:'<div class=c><h1>Hola</h1><button data-press=ok>Listo</button></div>', css:'.c{padding:20px;background:#222;border-radius:16px}', rotate_deg:0}}; 1 px de CSS = 1 mm y cada data-press emite widget_pressed con ese nombre. " +
   "Para manos en vivo proyecta un widget effect con shader hands: dibuja el esqueleto sobre la mano y un dedo quieto 0,4 s sobre un button dispara widget_pressed. " +
   "Cuéntame qué ves y pregúntame qué hacemos.";
 const mcpUrl = `${location.origin}/mcp`;

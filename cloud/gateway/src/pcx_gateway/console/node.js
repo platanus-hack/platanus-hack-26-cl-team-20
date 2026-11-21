@@ -154,13 +154,13 @@ export class BrowserNode extends EventTarget {
   }
 
   /** Toque sobre un widget (clic en la ventana del proyector o en la vista previa). */
-  press(widget, point_mm, trigger = "api") {
+  press(widget, point_mm, trigger = "api", value = widget.on_press?.value ?? null) {
     const m = /^pcx:ask:(.+):(\d+)$/.exec(widget.id);
     if (m && this.asks.has(m[1])) return this.asks.get(m[1]).resolve(Number(m[2]));
     this.emit({
       type: "widget_pressed",
       widget_id: widget.id,
-      value: widget.on_press?.value ?? null,
+      value,
       trigger,
       point_mm,
     });
@@ -242,6 +242,7 @@ export class BrowserNode extends EventTarget {
           prev = b;
           await sleep(120);
         }
+        if (!px.length && targets.indexOf(t) >= 2) break; // tres marcas sin verse: la cámara no mira la proyección
       }
     } finally {
       this.hooks.showCalib(null);
@@ -397,7 +398,9 @@ export class BrowserNode extends EventTarget {
           ...(args.widgets.some((w) => w.type === "effect")
             ? {
                 effects:
-                  "El nodo navegador no corre los shaders WGSL del compositor. Solo «hands» es distinto: prende el modo manos " +
+                  "El nodo navegador no corre los shaders WGSL del compositor. Dos shaders son especiales. «html»: monta params.html (+ params.css, " +
+                  "params.rotate_deg) como página aislada dentro de rect_mm, con 1 px de CSS = 1 mm; los elementos con data-press=\"nombre\" " +
+                  "emiten widget_pressed{widget_id, value: nombre} con el dedo o el clic; sin scripts ni red, salvo imágenes https. «hands»: modo manos " +
                   "(esqueleto sobre la mano, estela del índice y toque por permanencia; params: skeleton, trail, color). " +
                   "Cualquier otro shader se ve igual: anillos de luz que pulsan dentro de rect_mm o polygon_mm, con params.color.",
               }

@@ -205,7 +205,7 @@ const draw = {
 
   // El navegador no corre los shaders WGSL del compositor: muestra un pulso de luz en la misma zona.
   effect(ctx, w, world, s, t) {
-    if (w.shader === "hands") return null; // modo manos: lo dibuja drawHands con los datos en vivo
+    if (w.shader === "hands" || w.shader === "html") return null; // hands: drawHands; html: iframe de html-layer.js
     const r = w.rect_mm || [0, 0, world.surface.width_mm, world.surface.height_mm];
     ctx.save();
     ctx.beginPath();
