@@ -318,6 +318,7 @@
               "api",
               "dwell",
               "pinch",
+              "rest",
               "shadow"
             ]
           }

@@ -1,0 +1,10 @@
+{
+  "type": "hands_gone",
+  "v": 2,
+  "seq": 4190,
+  "t_capture_ns": 1795231662500000000,
+  "t_pub_ns": 1795231662510000000,
+  "source": "perception-hands",
+  "node_id": "mesa-max",
+  "payload": {"type": "hands_gone", "t_capture_ns": 1795231662500000000, "episode_start_ns": 1795231655000000000}
+}

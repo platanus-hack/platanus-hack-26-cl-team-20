@@ -14,7 +14,8 @@ from msgspec import Meta, Struct, field
 from .geometry import PointMM, PolygonMM, RectMM
 
 Color = Annotated[str, Meta(pattern=r"^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$")]
-Trigger = Literal["dwell", "pinch", "shadow", "api"]
+Trigger = Literal["dwell", "pinch", "shadow", "api", "rest"]
+"""`rest` (v2.1): apoyo, la palma o los dedos apoyados en la mesa (contacto inferido por visión)."""
 
 
 class Anchor(Struct, kw_only=True):

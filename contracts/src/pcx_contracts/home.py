@@ -7,8 +7,9 @@ La política (`HomePolicy`) vive en la configuración del nodo; ni el agente ni 
 - `allow`: se ejecuta → `HomeCallResult{status: "done" | "failed"}`.
 - `confirm`: no se ejecuta todavía → `HomeCallResult{status: "pending", confirmation_id, action_digest}` y el
   evento `confirmation_requested`. El nodo proyecta un botón reservado `pcx:confirm:<confirmation_id>` que solo
-  acepta toques físicos (`dwell`/`pinch`, nunca `api`), y la consola local puede responder con `ConfirmAction`.
-  `ConfirmAction` **no** es un `Command`: no existe tool MCP ni `tool_call` que lo produzca.
+  acepta toques físicos (`dwell`/`pinch`, nunca `api`), y la consola (local o vía la nube) puede responder con `ConfirmAction`.
+  `ConfirmAction` **no** es un `Command`: no existe tool MCP ni `tool_call` que lo produzca (viaja como
+  `CloudMessage` desde la consola de la nube, nunca desde un agente).
   La confirmación queda vinculada a la acción por `confirmation_id` + `action_digest` (sha256 de la acción
   canónica); si no coinciden, el nodo la rechaza. Al resolverse: `confirmation_resolved` y luego `home_call_done`.
 """
@@ -70,10 +71,12 @@ class HomeCallResult(Struct, kw_only=True):
 
 
 class ConfirmAction(Struct, kw_only=True, tag_field="type", tag="confirm_action"):
-    """Consola local → nodo. Aprueba o rechaza una confirmación pendiente; debe repetir el `action_digest`."""
+    """Consola (local o en la nube, como `CloudMessage`) → nodo. Aprueba o rechaza una confirmación pendiente;
+    debe repetir el `action_digest`. v2.1: `approve` → `approved`, nuevo `by`, `operator` opcional."""
 
     confirmation_id: str
+    approved: bool
+    by: ConfirmVia = "console"
     action_digest: Sha256
-    approve: bool
-    operator: str
-    """Quién confirma en la consola (para auditoría)."""
+    operator: str | None = None
+    """Quién confirma (para auditoría)."""

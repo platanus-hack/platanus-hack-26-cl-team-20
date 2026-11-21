@@ -46,6 +46,11 @@ FIXTURES: dict[str, Any] = {
     "tool_call.json": CloudMessage,
     "envelope_widget_pressed.json": Envelope,
     "blank.json": Command,
+    "pattern.json": ToRenderer,
+    "resync.json": FromRenderer,
+    "confirm_action.json": CloudMessage,
+    "envelope_frame_meta.json": Envelope,
+    "envelope_hands_gone.json": Envelope,
 }
 
 json_encoder = msgspec.json.Encoder()

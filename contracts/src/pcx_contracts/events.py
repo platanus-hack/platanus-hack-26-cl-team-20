@@ -92,12 +92,23 @@ class FlowEmitted(EventBase, kw_only=True, tag="flow_emitted"):
     data: dict[str, Any] = {}
 
 
+PixelFormat = Literal["bgr8", "rgb8", "gray8"]
+
+
 class FrameMeta(EventBase, kw_only=True, tag="frame_meta"):
+    """Cuadro nuevo en el anillo de memoria compartida `segment` (v2.1: `segment`, `format`, `stride`)."""
+
     camera_id: str
     seq: int
+    """Secuencia del cuadro en la cámara (no confundir con `Envelope.seq`)."""
     t_capture_ns: int
     w: int
     h: int
+    segment: str | None = None
+    """Nombre del segmento de memoria compartida (`pcx-shm`), p. ej. `pcx.cam.cam0`. None = sin anillo."""
+    format: PixelFormat = "bgr8"
+    stride: Annotated[int, Meta(ge=0)] | None = None
+    """Bytes por fila (None = `w * canales`, sin relleno)."""
 
 
 class ConfirmationRequested(EventBase, kw_only=True, tag="confirmation_requested"):
@@ -139,6 +150,15 @@ class Blanked(EventBase, kw_only=True, tag="blanked"):
     t_end_ms: float
 
 
+class HandsGone(EventBase, kw_only=True, tag="hands_gone"):
+    """Fin de un episodio de manos: hubo manos y ya no hay (la mesa está libre para una foto limpia)."""
+
+    t_capture_ns: int
+    """Cuadro que cerró el episodio."""
+    episode_start_ns: int | None = None
+    last_hand_ns: int | None = None
+
+
 class DeviceChanged(EventBase, kw_only=True, tag="device_changed"):
     device: Device
 
@@ -146,5 +166,5 @@ class DeviceChanged(EventBase, kw_only=True, tag="device_changed"):
 Event = Union[
     ObjectAppeared, ObjectMoved, ObjectRemoved, TouchDown, TouchMove, TouchUp, WidgetPressed, Dwell, AskAnswered,
     CalibrationDrift, FlowStateChanged, FlowEmitted, FrameMeta, DeviceChanged, ConfirmationRequested,
-    ConfirmationResolved, HomeCallDone, Blanked,
+    ConfirmationResolved, HomeCallDone, Blanked, HandsGone,
 ]
