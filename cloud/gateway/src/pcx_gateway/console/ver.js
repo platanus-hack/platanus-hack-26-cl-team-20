@@ -99,11 +99,12 @@ function layout() {
       ? `La mesa, ${view.world.surface.width_mm} × ${view.world.surface.height_mm} mm: cámara rectificada + lo proyectado`
       : canRectify()
         ? "Lo que sale por el proyector"
-        : "Lo que sale por el proyector (la mesa no está calibrada: no se puede combinar con la cámara)";
+        : "Lo que sale por el proyector (esta cámara no está calibrada: no se puede combinar con ella)";
   syncHtml();
   drawCamera();
 }
 $("mezcla").oninput = layout;
+$("camara-sel").onchange = () => socket?.readyState === WebSocket.OPEN && socket.send(JSON.stringify({ type: "camera", id: $("camara-sel").value }));
 $("rectificar").onchange = layout;
 
 const syncHtml = () =>
@@ -130,6 +131,14 @@ const on = {
     const { width_mm, height_mm } = m.world.surface;
     const h = Math.round((previa.width * height_mm) / width_mm);
     for (const c of [previa, ptop, $("rect")]) if (c.height !== h) c.height = h;
+    // Selector de cámara: la cenital calibrada se puede rectificar; las demás se ven tal cual.
+    const sel = $("camara-sel");
+    const key = JSON.stringify(m.cameras ?? []);
+    if (sel.dataset.key !== key) {
+      sel.dataset.key = key;
+      sel.replaceChildren(...(m.cameras ?? []).map((c) => new Option(`${c.id} · ${c.label}${c.main ? " (cenital)" : ""}`, c.id)));
+    }
+    if (m.stream_camera) sel.value = m.stream_camera;
     layout();
   },
   hands(m) {

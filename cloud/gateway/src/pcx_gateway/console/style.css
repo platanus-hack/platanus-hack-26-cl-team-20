@@ -414,6 +414,9 @@ main {
   font: 400 0.72rem var(--mono);
 }
 
+.controles select {
+  max-width: 220px;
+}
 .check select {
   background: var(--mesa-2);
   color: var(--luz);

@@ -133,6 +133,7 @@ async function refreshCams() {
 // `?sim=1`: cámara simulada que «ve» la proyección rotada 180°, para probar sin proyector ni cámara.
 const SIM = new URLSearchParams(location.search).has("sim");
 const simCam = { id: "cam-sim", kind: "camera", adapter: "sim", caps: ["frames"], status: "online", meta: { label: "Cámara simulada", main: true } };
+const SIM_HIDE = (new URLSearchParams(location.search).get("tapa") || "").split(";").filter(Boolean).map((r) => r.split(",").map(Number));
 let calibDots = null;
 // `?sim=ruido`: además agrega objetos, un foco y una «mano» que se mueve, para probar calibrate en condiciones malas.
 const SIM_NOISE = new URLSearchParams(location.search).get("sim") === "ruido";
@@ -160,6 +161,10 @@ function simFrame() {
   const scene = Object.assign(document.createElement("canvas"), { width: 800, height: Math.round((800 * height_mm) / width_mm) });
   drawScene(scene.getContext("2d"), scene.width, scene.height, node.world, performance.now(), { calib: calibDots });
   if (SIM_NOISE) simNoise(scene);
+  // `&tapa=x0,y0,x1,y1;…` (mm): zonas de la proyección que la cámara simulada no ve.
+  const sctx = scene.getContext("2d");
+  sctx.fillStyle = "#2a2a2a";
+  for (const r of SIM_HIDE) sctx.fillRect(r[0] * 0.8, r[1] * 0.8, (r[2] - r[0]) * 0.8, (r[3] - r[1]) * 0.8);
   const c = Object.assign(document.createElement("canvas"), { width: 1280, height: 720 });
   const ctx = c.getContext("2d");
   ctx.fillStyle = "#2a2a2a";
@@ -342,13 +347,17 @@ let streaming = null;
 let encoding = false;
 const shareCanvas = document.createElement("canvas");
 
+let streamCam = null; // deviceId elegido desde el visor; null = la cenital
+const streamCamera = () => cams.get(streamCam) || cams.get(mainCam);
 const viewState = () => ({
+  cameras: SIM ? [{ id: simCam.id, label: simCam.meta.label, main: true }] : [...cams.values()].map((c) => ({ id: c.id, label: c.label, main: c.deviceId === mainCam })),
+  stream_camera: SIM ? simCam.id : (streamCamera()?.id ?? null),
   world: node.world,
   pattern: $("patron").checked,
   textScale,
   calib: calibDots,
   // Para rectificar el video en el visor; solo si la calibración es de la cámara que se está mandando.
-  homography: node.calib && (SIM || node.calib.camera_id === cams.get(mainCam)?.id) ? { matrix: node.calib.matrix, image_px: node.calib.image_px } : null,
+  homography: node.calib && (SIM || node.calib.camera_id === streamCamera()?.id) ? { matrix: node.calib.matrix, image_px: node.calib.image_px } : null,
 });
 
 // Calidad del video: parte en la mejor y baja un escalón solo si quien mira (o la subida) no da abasto.
@@ -366,7 +375,7 @@ node.addEventListener("slow", slower);
 /** Video para quienes miran: la cenital a 640 px y ~9 cuadros/s, solo mientras haya alguien. */
 function streamFrame() {
   if (encoding) return;
-  const src = SIM ? simFrame().canvas : mainVideo();
+  const src = SIM ? simFrame().canvas : streamCamera()?.video;
   const [vw, vh] = [src?.videoWidth ?? src?.width, src?.videoHeight ?? src?.height];
   if (!vw) return;
   if (level > floor() && performance.now() - lastSlow > 15000) {
@@ -388,7 +397,10 @@ node.addEventListener("viewers", ({ detail: n }) => {
   clearInterval(streaming);
   streaming = n ? setInterval(streamFrame, 110) : null;
   level = Math.max(level, floor());
-  if (!n) level = 0;
+  if (!n) {
+    level = 0;
+    streamCam = null;
+  }
   if (n) {
     node.sendView("world", viewState()); // quien llega recibe el estado completo
     node.sendView("activity", { all: activityLog });
@@ -396,9 +408,16 @@ node.addEventListener("viewers", ({ detail: n }) => {
 });
 
 // Quien mira pide una foto: cuadro actual de la cenital a resolución completa, sin anotar.
+// Quien mira elige qué cámara ver (vale para todos los que miran; al quedar sin público vuelve a la cenital).
+node.addEventListener("camera", ({ detail: id }) => {
+  const cam = [...cams.values()].find((c) => c.id === id);
+  streamCam = cam && cam.deviceId !== mainCam ? cam.deviceId : null;
+  node.sendView("world", viewState());
+});
+
 node.addEventListener("photo", async () => {
   try {
-    const { canvas } = SIM ? simFrame() : await camFrame(undefined, 4096);
+    const { canvas } = SIM ? simFrame() : await camFrame(streamCamera()?.id, 4096);
     node.sendView("photo", { data: canvas.toDataURL("image/jpeg", 0.92), size: [canvas.width, canvas.height] });
   } catch (err) {
     node.sendView("photo", { error: err.message });
@@ -432,7 +451,8 @@ function showCalibError(err) {
   $("calib-aviso").hidden = false;
   $("calib-aviso").textContent =
     `La calibración automática falló y sigue rigiendo la anterior. ${err.message}` +
-    (marks?.length ? ` Marcas vistas (mm): ${marks.map((m) => m.mm.join(",")).join(" · ")}.` : "");
+    (marks?.length ? ` Marcas vistas (mm): ${marks.map((m) => m.mm.join(",")).join(" · ")}.` : "") +
+    (err.detail?.unseen_mm?.length ? ` No vistas (mm): ${err.detail.unseen_mm.map((m) => m.join(",")).join(" · ")}.` : "");
 }
 
 function paintProjector() {
@@ -451,12 +471,12 @@ function paintProjector() {
       ? "La ventana del proyector no está en pantalla completa. Lo proyectado cae en su lugar, pero se corta lo que tapan la barra de menú y el Dock. Aprieta «Pantalla completa aquí» en esa ventana (o F)."
       : "La ventana del proyector no está en pantalla completa y no puedo medir dónde quedó: la calibración NO vale y todo cae corrido. Aprieta «Pantalla completa aquí» en esa ventana (o F).";
   const c = node.calib;
-  if (c && !$("calibrar").disabled)
+  if (c && !node.calibrating)
     $("calib-estado").textContent =
       c.source === "manual"
         ? `Calibración manual de 4 puntos sobre ${c.camera_id}. «Calibrar» la reemplaza por una automática.`
-        : `Calibrada con ${c.camera_id}: ${c.points} de ${c.total ?? c.points} marcas, error ${c.residual_mm} mm. El agente ya puede apuntar en píxeles de la foto.`;
-  else if (!c && !$("calib-estado").textContent)
+        : `Calibrada con ${c.camera_id}: ${c.points} de ${c.total ?? c.points} marcas, error ${c.residual_mm} mm. ${c.warning || "El agente ya puede apuntar en píxeles de la foto."}`;
+  else if (!c && !node.calibrating)
     $("calib-estado").textContent = "Sin calibrar: el agente ve la foto, pero no sabe dónde cae cada punto de la mesa.";
   const { width_mm, height_mm } = node.world.surface;
   $("previa-mm").textContent = `· ${width_mm} × ${height_mm} mm`;

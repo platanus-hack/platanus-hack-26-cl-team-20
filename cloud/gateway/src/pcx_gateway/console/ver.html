@@ -80,11 +80,12 @@
         </figure>
         <figure class="previa" id="fig-cruda" hidden>
           <div class="lienzo"><canvas id="cruda" width="640" height="360"></canvas></div>
-          <figcaption>Cámara cenital, sin rectificar</figcaption>
+          <figcaption>Cámara, sin rectificar</figcaption>
         </figure>
         <div class="controles">
           <label class="check desliza">Proyección <input type="range" id="mezcla" min="0" max="100" value="50" /> <span id="mezcla-valor">50 %</span></label>
           <label class="check"><input type="checkbox" id="rectificar" checked /> Rectificar la cámara a la mesa</label>
+          <label class="check">Cámara <select id="camara-sel"></select></label>
           <button class="btn" id="foto">Descargar foto</button>
         </div>
         <p class="chico" id="video-nota">Sin video todavía.</p>

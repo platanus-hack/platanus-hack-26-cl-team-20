@@ -91,6 +91,7 @@ export class BrowserNode extends EventTarget {
     if (msg.type === "hello_rejected") return this.status(msg.reason === "auth" ? "invalid" : "offline");
     if (msg.type === "tool_call") return this.call(msg);
     if (msg.type === "photo") this.dispatchEvent(new CustomEvent("photo"));
+    if (msg.type === "camera") this.dispatchEvent(new CustomEvent("camera", { detail: msg.id }));
     if (msg.type === "viewers") {
       this.viewers = msg.count;
       if (msg.slow) this.dispatchEvent(new CustomEvent("slow")); // alguien que mira está perdiendo cuadros
@@ -309,28 +310,53 @@ export class BrowserNode extends EventTarget {
     const total = targets.length;
     const need = Math.ceil(total * (2 / 3)); // 6 de 9
     const marks = found.map((f) => ({ mm: f.mm.map(Math.round), px: f.px.map(Math.round), z: f.z }));
-    if (found.length < 4)
-      throw fail(`Solo vi ${found.length} de ${total} marcas en la cámara ${camera_id}; con menos de 4 no se puede calcular.`, { marks });
+    // Zona de la superficie donde cae una marca, en palabras («arriba» es y = 0, donde el patrón de prueba dice 0,0).
+    const zone = ([x, y]) => {
+      const col = x < W / 3 ? "izquierda" : x > (2 * W) / 3 ? "derecha" : "";
+      const row = y < H / 3 ? "superior" : y > (2 * H) / 3 ? "inferior" : "";
+      if (col && row) return `la esquina ${row} ${col}`;
+      if (row) return `el borde ${row}`;
+      if (col) return `el borde ${col === "izquierda" ? "izquierdo" : "derecho"}`;
+      return "el centro";
+    };
+    const zones = (list) => [...new Set(list.map(zone))].join(", ");
     const px = found.map((f) => f.px);
     const mm = found.map((f) => f.mm);
+    const unseen = targets.filter((t) => !found.some((f) => f.mm === t));
+    const fit = mode === "verify" || found.length < 4 ? null : ransacH(px, mm);
+    const odd = fit ? found.filter((_, k) => !fit.inliers.includes(k)).map((f) => f.mm) : [];
+    // Qué faltó y hacia dónde corregir: va en el error, en el resultado y en la consola.
+    const missing = [
+      unseen.length ? `No vi ${unseen.length === 1 ? "la marca" : "las marcas"} de ${zones(unseen)}: mueve o abre la cámara para que esa zona entre en la foto.` : "",
+      odd.length ? `Vi algo en ${zones(odd)} pero no calza con el resto (reflejo, objeto brillante o algo que se movió).` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const detail = { marks, unseen_mm: unseen.map((t) => t.map(Math.round)), inconsistent_mm: odd.map((t) => t.map(Math.round)) };
+    if (found.length < 4)
+      throw fail(`Solo vi ${found.length} de ${total} marcas en la cámara ${camera_id}; con menos de 4 no se puede calcular. ${missing}`, detail);
     if (mode === "verify") {
       const e = px.map((p, i) => Math.hypot(...apply(this.calib.matrix, p).map((v, a) => v - mm[i][a])));
       const rms = Math.sqrt(e.reduce((a, v) => a + v * v, 0) / e.length);
-      return { camera_id, mode, points_found: px.length, points_total: total, residual_mm: round(rms), max_error_mm: round(Math.max(...e)), ok: rms < 12 };
+      return { camera_id, mode, points_found: px.length, points_total: total, residual_mm: round(rms), max_error_mm: round(Math.max(...e)), ok: rms < 12, missing };
     }
-    const fit = ransacH(px, mm);
     const good = fit?.inliers.length ?? 0;
-    if (good < need)
+    const residual_mm = fit ? round(fit.residual) : null;
+    // Una homografía se define con 4 puntos: con 5 que calcen bien (≤ 8 mm) se acepta, avisando que es de calidad reducida.
+    const reduced = good < need && good >= 5 && residual_mm <= 8;
+    if (good < need && !reduced)
       throw fail(
-        `Vi ${found.length} de ${total} marcas, pero solo ${good} calzan entre sí (necesito ${need}); el resto son reflejos o cosas que se movieron.`,
-        { marks },
+        `Vi ${found.length} de ${total} marcas, pero solo ${good} calzan entre sí${good >= 5 ? ` y con ${residual_mm} mm de error (con 5 acepto hasta 8 mm)` : ` (necesito ${need}, o 5 con error bajo)`}. ${missing}`,
+        detail,
       );
-    const residual_mm = round(fit.residual);
-    if (residual_mm > 12) throw fail(`${good} marcas calzan, pero con ${residual_mm} mm de error: no la guardé.`, { marks });
+    if (residual_mm > 12) throw fail(`${good} marcas calzan, pero con ${residual_mm} mm de error: no la guardé. ${missing}`, detail);
     const M = fit.H;
     const toPx = invert(M);
     const corners = [[0, 0], [W, 0], [W, H], [0, H]].map((p) => apply(toPx, p).map((v) => Math.round(v)));
-    const calib = { camera_id, matrix: M, image_px, residual_mm, points: good, total, version: (this.calib?.version ?? 0) + 1 };
+    const warning = reduced
+      ? `Calidad reducida: solo ${good} de ${total} marcas. Vale cerca de las marcas vistas y pierde precisión hacia la zona que falta. ${missing}`
+      : missing;
+    const calib = { camera_id, matrix: M, image_px, residual_mm, points: good, total, reduced, warning, version: (this.calib?.version ?? 0) + 1 };
     this.setCalib(calib);
     this.hooks.saveCalib(calib);
     return {
@@ -340,6 +366,10 @@ export class BrowserNode extends EventTarget {
       points_used: good,
       points_total: total,
       residual_mm,
+      quality: reduced ? "reducida" : "buena",
+      ...(warning ? { warning } : {}),
+      unseen_mm: detail.unseen_mm,
+      inconsistent_mm: detail.inconsistent_mm,
       image_px,
       matrix_px_to_mm: M.map((v) => round(v, 6)),
       surface_corners_px: corners,

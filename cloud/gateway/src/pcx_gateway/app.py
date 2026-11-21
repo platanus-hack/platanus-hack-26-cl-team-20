@@ -313,12 +313,21 @@ def create_app(settings: Settings | None = None):
         try:
             gateway.view_status(node_id)
             await gateway.tell_viewers(node_id)
-            last_photo = 0.0
+            last = {"photo": 0.0, "camera": 0.0}
             while (frame := await ws.receive())["type"] != "websocket.disconnect":
-                # Lo único que puede pedir quien mira: una foto de la cenital (a lo más una cada 2 s).
-                if '"photo"' in (frame.get("text") or "")[:40] and time.monotonic() - last_photo > 2:
-                    last_photo = time.monotonic()
+                # Lo único que puede pedir quien mira: una foto (una cada 2 s) o cambiar la cámara que se muestra.
+                try:
+                    ask = msgspec.json.decode((frame.get("text") or "")[:200])
+                    kind, cam = ask["type"], ask.get("id")
+                except (msgspec.DecodeError, KeyError, TypeError, AttributeError):
+                    continue
+                if kind not in last or time.monotonic() - last[kind] < (2 if kind == "photo" else 0.5):
+                    continue
+                last[kind] = time.monotonic()
+                if kind == "photo":
                     await gateway.to_browser(node_id, {"type": "photo"})
+                elif isinstance(cam, str) and len(cam) <= 32:
+                    await gateway.to_browser(node_id, {"type": "camera", "id": cam})
         except (WebSocketDisconnect, RuntimeError, OSError):
             pass
         finally:
