@@ -1,0 +1,30 @@
+[package]
+name = "pcx-objects"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Seguimiento de objetos sobre la mesa: cascada de niveles 0-5 (port en Rust de seguidor_v4.py)."
+publish = false
+
+[features]
+default = []
+# Nivel 3 local: Grounding DINO + MobileSAM con ONNX Runtime (ort baja el binario de ORT al compilar).
+onnx = ["dep:ort", "dep:tokenizers"]
+
+[dependencies]
+pcx-contracts = { path = "../../../contracts/rust/pcx-contracts" }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+imageproc = { version = "0.25", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+base64 = "0.22"
+sha2 = "0.10"
+dirs = "6"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+ort = { workspace = true, optional = true }
+tokenizers = { version = "0.21", optional = true, default-features = false, features = ["onig"] }
+
+[[bench]]
+name = "niveles"
+harness = false

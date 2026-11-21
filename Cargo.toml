@@ -10,3 +10,7 @@ members = [
 [workspace.package]
 edition = "2021"
 license = "MIT"
+
+# Versiones únicas para dependencias compartidas (evita que dos crates pidan versiones incompatibles).
+[workspace.dependencies]
+ort = { version = "=2.0.0-rc.15", default-features = false, features = ["std", "download-binaries", "copy-dylibs", "tls-rustls", "api-22"] }
