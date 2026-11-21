@@ -133,6 +133,13 @@ class Gateway:
         self.store, self.bus, self.settings = store, bus, settings
         self.connections: dict[str, Connection] = {}
 
+    async def wake(self, node_id):
+        """Despierta a events_wait. Los datos ya son durables: si el bus falla, se registra y el WSS sigue."""
+        try:
+            await self.bus.publish(node_id)
+        except Exception:
+            log.warning("bus.publish falló para %s; events_wait lo verá al vencer", node_id, exc_info=True)
+
     def connected(self, node_id) -> Connection | None:
         conn = self.connections.get(node_id)
         return conn if conn is not None and conn.ready else None
@@ -319,7 +326,7 @@ class Gateway:
         if gap.from_ < 1 or (gap.to is not None and gap.to < gap.from_):
             raise ValueError("history_gap con rango inválido")
         await self.store.gap(node_id, gap)
-        await self.bus.publish(node_id)
+        await self.wake(node_id)
 
     async def accept_events(self, conn: Connection, node_id, batch):
         if batch.stream_id != conn.stream_id:
@@ -338,7 +345,7 @@ class Gateway:
                 raise ValueError("event_batch: node_id o versión inválidos")
         fresh = await self.store.append(node_id, batch)
         await self.track_confirmations(node_id, fresh)
-        await self.bus.publish(node_id)
+        await self.wake(node_id)
 
     async def track_confirmations(self, node_id, fresh):
         row = None

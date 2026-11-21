@@ -1,0 +1,18 @@
+# Allowlist for the repository-root gateway build context: no secrets or caches.
+**
+!contracts/
+!contracts/pyproject.toml
+!contracts/src/
+!contracts/src/**
+!cloud/
+!cloud/gateway/
+!cloud/gateway/Dockerfile
+!cloud/gateway/pyproject.toml
+!cloud/gateway/uv.lock
+!cloud/gateway/src/
+!cloud/gateway/src/**
+**/__pycache__/
+**/*.pyc
+**/.env*
+**/*.pem
+**/*.key
