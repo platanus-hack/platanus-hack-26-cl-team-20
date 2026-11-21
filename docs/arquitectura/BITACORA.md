@@ -50,3 +50,10 @@ Registro cronológico para retomar el trabajo después de una compactación de c
 - 07:10 · PR #4 y #5: la revisión encontró P0 (foto contaminada; objeto fantasma acromático) y sus autores los están arreglando. **Distribución** → PR #10 (workflow de release propio + instaladores; `dist` descartado porque no empaqueta las dylibs de `ort`).
 - 07:20–11:00 · Claude sin cuota (límite de 5 h) y Codex sin cuota hasta las 11:17. Los agentes quedaron pausados; los retomé a las 11:01.
 - 11:05 · **Integrados #3 (cableado), #4 (foto limpia, squash) y #5 (objetos rápidos)** en `manu/plataforma`, con CI en verde y la revisión atendida. PR #6 (plugin) tiene los arreglos pusheados: 2 P1 del instalador, 9 discrepancias y skills ajustadas al modelo de seguridad de #9; conviene mergearlo junto con #9. **pcx-agent → PR #11**: 14 tests con Claude simulado, `home` apagado por defecto y el worker queda quieto al agotar el presupuesto. Revisión de #8 con Claude; revisiones de #10 y #11 con Codex a las 11:18.
+- 11:35 · **#8 (despliegue) integrado**, después de la revisión de Claude: rotación de tokens arreglada, el bus tolera la caída de Key Value y el smoke es de solo lectura. **Decisión de Manu:** quitar Key Value (USD 23,30 → 13,30/mes). Revisiones de Codex 11:18–11:30:
+  - #10 (distribución): «mergeable con arreglos». Arreglado en `b03dab5`, pero el `git push` del subagente fue bloqueado por permisos y queda **pendiente de Manu**.
+  - #11 (pcx-agent): 4 P1 → arreglados (27 tests).
+  - #7 (modos): 2 P1 más → arreglados (39 tests).
+  - #12 (catálogo v2, S1): 5 P1 (pérdida de recortes, colisiones, límites de memoria) → en arreglo.
+  - #9 (seguridad): cableado de `pcx-auth` en el worker de manos y `presented` en el renderer, para que la confirmación con la mano siga funcionando.
+- 11:30 · **Codex sin cuota hasta las 16:18** (3.ª vez). El módulo de BD (SQLAlchemy 2 + Alembic) quedó a medias → lo termina Claude. Las re-verificaciones de #7 y #11 las hace Claude. R2 (worker de objetos) sigue en curso con Claude Fable.
