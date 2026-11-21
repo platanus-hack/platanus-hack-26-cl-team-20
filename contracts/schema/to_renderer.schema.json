@@ -1,0 +1,1229 @@
+{
+  "anyOf": [
+    {
+      "$ref": "#/$defs/SceneSnapshot"
+    },
+    {
+      "$ref": "#/$defs/SceneDiff"
+    },
+    {
+      "$ref": "#/$defs/RenderBlank"
+    },
+    {
+      "$ref": "#/$defs/Pattern"
+    },
+    {
+      "$ref": "#/$defs/PatternClear"
+    }
+  ],
+  "discriminator": {
+    "propertyName": "type",
+    "mapping": {
+      "scene": "#/$defs/SceneSnapshot",
+      "scene_diff": "#/$defs/SceneDiff",
+      "blank": "#/$defs/RenderBlank",
+      "pattern": "#/$defs/Pattern",
+      "pattern_clear": "#/$defs/PatternClear"
+    }
+  },
+  "$defs": {
+    "SceneSnapshot": {
+      "title": "SceneSnapshot",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "scene"
+          ]
+        },
+        "rev": {
+          "type": "integer"
+        },
+        "t_send_ms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "surface": {
+          "$ref": "#/$defs/Surface"
+        },
+        "transforms": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/HomographyTransform"
+              },
+              {
+                "$ref": "#/$defs/LutTransform"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "homography": "#/$defs/HomographyTransform",
+                "lut": "#/$defs/LutTransform"
+              }
+            }
+          },
+          "default": []
+        },
+        "widgets": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Label"
+              },
+              {
+                "$ref": "#/$defs/Halo"
+              },
+              {
+                "$ref": "#/$defs/Arrow"
+              },
+              {
+                "$ref": "#/$defs/Panel"
+              },
+              {
+                "$ref": "#/$defs/Button"
+              },
+              {
+                "$ref": "#/$defs/Image"
+              },
+              {
+                "$ref": "#/$defs/Effect"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "label": "#/$defs/Label",
+                "halo": "#/$defs/Halo",
+                "arrow": "#/$defs/Arrow",
+                "panel": "#/$defs/Panel",
+                "button": "#/$defs/Button",
+                "image": "#/$defs/Image",
+                "effect": "#/$defs/Effect"
+              }
+            }
+          },
+          "default": []
+        },
+        "homography": {
+          "anyOf": [
+            {
+              "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "rev",
+        "surface"
+      ]
+    },
+    "Surface": {
+      "title": "Surface",
+      "description": "Superficie útil de la mesa en mm.",
+      "type": "object",
+      "properties": {
+        "width_mm": {
+          "type": "number"
+        },
+        "height_mm": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "width_mm",
+        "height_mm"
+      ]
+    },
+    "HomographyTransform": {
+      "title": "HomographyTransform",
+      "description": "`matrix` lleva puntos de `from_frame` a `to_frame` (coordenadas homogéneas, fila mayor).",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "homography"
+          ]
+        },
+        "from_frame": {
+          "type": "string"
+        },
+        "to_frame": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "default": 1
+        },
+        "residual_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "matrix": {
+          "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 9,
+          "minItems": 9
+        }
+      },
+      "required": [
+        "kind",
+        "from_frame",
+        "to_frame",
+        "matrix"
+      ]
+    },
+    "LutTransform": {
+      "title": "LutTransform",
+      "description": "LUT precisa (gray code). `approx_matrix`: homografía aproximada opcional para consumidores sin LUT.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "lut"
+          ]
+        },
+        "from_frame": {
+          "type": "string"
+        },
+        "to_frame": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "default": 1
+        },
+        "residual_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lut": {
+          "$ref": "#/$defs/LutDescriptor"
+        },
+        "approx_matrix": {
+          "anyOf": [
+            {
+              "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "kind",
+        "from_frame",
+        "to_frame",
+        "lut"
+      ]
+    },
+    "LutDescriptor": {
+      "title": "LutDescriptor",
+      "description": "LUT densa en un archivo `.npy`.\n\n    - `format`: `npy_f32_hw2` = array float32 de forma `(height, width, 2)`, C-order.\n    - Índice: `lut[v, u]` corresponde a la muestra del marco de entrada (`from_frame`) cuyo **centro** está en las\n      coordenadas enteras `(u * grid_step, v * grid_step)` (convención `integer_centers`: el centro del px (0,0) es\n      (0,0), no (0.5,0.5)). `grid_step` está en unidades de `from_frame` (px, o mm si es `table_mm`).\n    - Valor: `(x, y)` en **px de salida** (`to_frame`, que debe ser `proj:*` o `cam:*`). NaN = sin dato.\n    - `path`: ruta local o `shm:` del nodo; `sha256`: del archivo `.npy` completo (verificar antes de usar).",
+      "type": "object",
+      "properties": {
+        "format": {
+          "enum": [
+            "npy_f32_hw2"
+          ],
+          "default": "npy_f32_hw2"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "units": {
+          "enum": [
+            "output_px"
+          ],
+          "default": "output_px"
+        },
+        "sampling": {
+          "enum": [
+            "integer_centers"
+          ],
+          "default": "integer_centers"
+        },
+        "grid_step": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1.0
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "path",
+        "sha256"
+      ]
+    },
+    "Label": {
+      "title": "Label",
+      "description": "Texto centrado en `anchor` (admite `\\n` y Unicode).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "label"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "text": {
+          "type": "string",
+          "default": ""
+        },
+        "size_mm": {
+          "type": "number",
+          "default": 12.0
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+          "default": "#FFFFFF"
+        },
+        "bg": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ]
+    },
+    "Anchor": {
+      "title": "Anchor",
+      "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "point_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PointMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "offset_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PointMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": []
+    },
+    "PointMM": {
+      "title": "PointMM",
+      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]` (exactamente 2 números).",
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "OnPress": {
+      "title": "OnPress",
+      "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+      "type": "object",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "triggers": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "api",
+              "dwell",
+              "pinch",
+              "rest",
+              "shadow"
+            ]
+          }
+        },
+        "dwell_ms": {
+          "type": "integer",
+          "default": 800
+        }
+      },
+      "required": []
+    },
+    "Halo": {
+      "title": "Halo",
+      "description": "Borde luminoso animado. Sin `polygon_mm`, el core usa el polígono del objeto anclado.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "halo"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "polygon_mm": {
+          "anyOf": [
+            {
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PointMM"
+              },
+              "minItems": 3
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+          "default": "#00E5FF"
+        },
+        "width_mm": {
+          "type": "number",
+          "default": 4.0
+        },
+        "pulse_hz": {
+          "type": "number",
+          "default": 1.0
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ]
+    },
+    "Arrow": {
+      "title": "Arrow",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "arrow"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "from_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PointMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "to_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PointMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+          "default": "#FFD400"
+        },
+        "width_mm": {
+          "type": "number",
+          "default": 5.0
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ]
+    },
+    "Panel": {
+      "title": "Panel",
+      "description": "Título + párrafo con ajuste de línea.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "panel"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rect_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RectMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "title": {
+          "type": "string",
+          "default": ""
+        },
+        "body": {
+          "type": "string",
+          "default": ""
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+          "default": "#FFFFFF"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ]
+    },
+    "RectMM": {
+      "title": "RectMM",
+      "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "Button": {
+      "title": "Button",
+      "description": "Botón tocable; `progress` (0..1) dibuja el anillo de permanencia.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "button"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rect_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RectMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "label": {
+          "type": "string",
+          "default": ""
+        },
+        "progress": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.0
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+          "default": "#00E676"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ]
+    },
+    "Image": {
+      "title": "Image",
+      "description": "Imagen en un rectángulo. `src`: `asset:<id>`, `data:<mime>;base64,...` o `https://...`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "image"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rect_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RectMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "src": {
+          "type": "string"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 1.0
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "src"
+      ]
+    },
+    "Effect": {
+      "title": "Effect",
+      "description": "Efecto de shader WGSL por nombre (catálogo del compositor), con parámetros numéricos o vectores.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "effect"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "z": {
+          "type": "integer",
+          "default": 0
+        },
+        "ttl_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "on_press": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OnPress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "shader": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object",
+          "default": {}
+        },
+        "rect_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RectMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "polygon_mm": {
+          "anyOf": [
+            {
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PointMM"
+              },
+              "minItems": 3
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "shader"
+      ]
+    },
+    "SceneDiff": {
+      "title": "SceneDiff",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "scene_diff"
+          ]
+        },
+        "rev": {
+          "type": "integer"
+        },
+        "base_rev": {
+          "type": "integer"
+        },
+        "t_send_ms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "upsert": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Label"
+              },
+              {
+                "$ref": "#/$defs/Halo"
+              },
+              {
+                "$ref": "#/$defs/Arrow"
+              },
+              {
+                "$ref": "#/$defs/Panel"
+              },
+              {
+                "$ref": "#/$defs/Button"
+              },
+              {
+                "$ref": "#/$defs/Image"
+              },
+              {
+                "$ref": "#/$defs/Effect"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "label": "#/$defs/Label",
+                "halo": "#/$defs/Halo",
+                "arrow": "#/$defs/Arrow",
+                "panel": "#/$defs/Panel",
+                "button": "#/$defs/Button",
+                "image": "#/$defs/Image",
+                "effect": "#/$defs/Effect"
+              }
+            }
+          },
+          "default": []
+        },
+        "remove": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "transforms": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/HomographyTransform"
+                  },
+                  {
+                    "$ref": "#/$defs/LutTransform"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "kind",
+                  "mapping": {
+                    "homography": "#/$defs/HomographyTransform",
+                    "lut": "#/$defs/LutTransform"
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "rev",
+        "base_rev"
+      ]
+    },
+    "RenderBlank": {
+      "title": "RenderBlank",
+      "description": "Salida completamente negra durante `ms` desde el próximo vsync (encima de la escena, que sigue viva).\n    Un `blank` nuevo mientras hay uno activo lo reemplaza (extiende o acorta desde ese momento).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "blank"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "ms",
+        "reason"
+      ]
+    },
+    "Pattern": {
+      "title": "Pattern",
+      "description": "Imagen a pantalla completa en px nativos del proyector, **sin warp y sin widgets** (calibración).\n    Reemplaza a cualquier `pattern` previo y tapa la escena (que sigue viva) hasta `pattern_clear` o `until_ms`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "pattern"
+          ]
+        },
+        "pattern_id": {
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/$defs/PatternImage"
+        },
+        "until_ms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "pattern_id",
+        "image"
+      ]
+    },
+    "PatternImage": {
+      "title": "PatternImage",
+      "description": "Exactamente uno: `path` (archivo local legible por el renderer) o `data_uri` (`data:image/png;base64,...`).",
+      "type": "object",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "data_uri": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": []
+    },
+    "PatternClear": {
+      "title": "PatternClear",
+      "description": "Quita el patrón activo y vuelve a la escena.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "pattern_clear"
+          ]
+        }
+      },
+      "required": [
+        "type"
+      ]
+    }
+  }
+}

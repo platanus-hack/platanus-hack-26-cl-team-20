@@ -15,6 +15,24 @@ Para traer cambios nuevos de Max: `git subtree pull --prefix=engine git@github.c
 
 Cómo correr el engine: `engine/README.md` (Python 3.12 o 3.13, no 3.14).
 
+## Plataforma pcx (rama `manu/plataforma`)
+
+Nueva versión técnica: **contexto físico para agentes de IA**. Nodo local en Rust (macOS/Windows/Linux) + cerebro en Render + MCP para Claude Code, Codex y OpenCode. Arquitectura, decisiones y diagramas UML en [`docs/arquitectura/`](docs/arquitectura/README.md).
+
+![Arquitectura de pcx: vista de sistema](docs/arquitectura/diagramas/1-sistema.png)
+
+![Arquitectura de pcx: nodo local en Rust](docs/arquitectura/diagramas/2-nodo.png)
+
+| Carpeta | Qué es | Cómo probar |
+|---|---|---|
+| `contracts/` | Mensajes tipados (Python → JSON Schema → Rust/TS), fuente única | `cd contracts && uv run pytest` |
+| `node/crates/` | Nodo Rust: `pcxd` (binario `pcx`), `pcx-core`, `pcx-shm`, `pcx-capture`, `pcx-hands`, `pcx-objects`, `pcx-calib` | `cargo test --workspace` (raíz) |
+| `renderer/` | Compositor del proyector (wgpu): widgets, homografía/LUT, efectos WGSL | `cargo test -p pcx-renderer` |
+| `cloud/gateway/` | Gateway para Render: MCP remoto, WSS de nodos, memoria | `cd cloud/gateway && uv run pytest` |
+| `web/` | Landing (Astro) con 3 propuestas de hero | `cd web && pnpm i && pnpm dev` |
+| `tools/demo-techo/` | Demo calibrada en hardware real (techo con viga) | ver su README |
+| `docs/pruebas/hardware-manu/` | Pruebas en hardware real: 60 fps, 215 ms de latencia, bugs | — |
+
 ## Estructura
 
 | Carpeta | Qué va | Responsable |

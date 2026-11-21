@@ -1,0 +1,215 @@
+---
+// Editorial: titular enorme iluminado por un haz; al bajar, la interfaz se proyecta y se rectifica sobre la mesa.
+---
+
+<section data-c class="hero-c relative isolate min-h-[100svh] overflow-hidden" aria-labelledby="titulo-c">
+  <div class="cono pointer-events-none absolute inset-0" aria-hidden="true"></div>
+  <div class="haz-c pointer-events-none absolute inset-0" aria-hidden="true"></div>
+  <div class="relative z-10 mx-auto flex min-h-[100svh] max-w-[1440px] flex-col justify-center px-5 pt-24 sm:px-8">
+    <h1 id="titulo-c" data-lit class="lit display text-[clamp(3rem,10.4vw,10.5rem)]">
+      La interfaz sale de la pantalla.
+    </h1>
+    <div class="mt-10 grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
+      <p class="max-w-[48ch] text-luz-2 md:text-lg md:leading-snug">
+        pcx le da a tu agente una cámara para mirar la mesa y un proyector para escribir sobre ella. Botones en la madera, guías
+        sobre la masa, avisos junto a las llaves.
+      </p>
+      <a href="/#instalar" class="btn-luz justify-self-start"><span class="marca" aria-hidden="true"></span><span data-os-cta>Instalar</span></a>
+    </div>
+  </div>
+</section>
+
+<section data-c-pin class="relative h-[260vh]" aria-labelledby="titulo-c2">
+  <div class="sticky top-0 grid h-[100svh] items-center overflow-hidden">
+    <div class="mx-auto grid w-full max-w-[1440px] gap-10 px-5 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+      <h2 id="titulo-c2" data-split class="display text-[clamp(2.3rem,5vw,4.6rem)]">Cualquier objeto puede ser una pantalla.</h2>
+
+      <div class="superficie relative mx-auto aspect-[4/3] w-full max-w-[640px]" aria-hidden="true">
+        <div class="plano absolute inset-0">
+          <div class="tablero absolute inset-0"></div>
+          <div class="bol absolute"></div>
+          <div class="proy absolute inset-0">
+            <div class="anillo-bol absolute"></div>
+            <div class="tarjeta absolute">
+              <p class="num text-[11px] text-luz-2">paso 3 de 6</p>
+              <p class="mt-1 text-lg leading-tight wide">Agrega 120 g de harina</p>
+              <div class="barra mt-3"><i></i></div>
+              <p class="num mt-2 text-[11px] text-luz-2"><span data-gramos>0</span> / 120 g</p>
+            </div>
+            <div class="flecha-c absolute"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cono {
+    background:
+      conic-gradient(from 198deg at 78% -12%, transparent 0deg, color-mix(in srgb, var(--color-haz) 6%, transparent) 9deg, color-mix(in srgb, var(--color-haz) 10%, transparent) 14deg, transparent 26deg),
+      radial-gradient(60% 50% at 70% 10%, color-mix(in srgb, var(--color-haz) 5%, transparent), transparent 70%);
+    animation: respira 9s ease-in-out infinite alternate;
+    transform-origin: 78% -12%;
+  }
+  @keyframes respira {
+    from { transform: rotate(-3deg); opacity: 0.85; }
+    to { transform: rotate(4deg); opacity: 1; }
+  }
+  /* Titular en color sólido; el haz pasa por detrás, como luz sobre la mesa. */
+  .lit {
+    color: var(--color-luz);
+    font-weight: 280;
+  }
+  .hero-c {
+    --bx: 30%;
+    --by: 45%;
+  }
+  .haz-c {
+    background: radial-gradient(
+      30vw 22vw at var(--bx) var(--by),
+      color-mix(in srgb, var(--color-haz) 20%, transparent) 0%,
+      color-mix(in srgb, var(--color-haz) 7%, transparent) 45%,
+      transparent 75%
+    );
+  }
+  .superficie {
+    perspective: 1100px;
+  }
+  .plano {
+    transform: rotateX(48deg) rotateZ(-14deg);
+    transform-style: preserve-3d;
+  }
+  .tablero {
+    background:
+      linear-gradient(color-mix(in srgb, var(--color-luz) 4.3%, transparent) 1px, transparent 1px) 0 0 / 32px 32px,
+      linear-gradient(90deg, color-mix(in srgb, var(--color-luz) 4.3%, transparent) 1px, transparent 1px) 0 0 / 32px 32px,
+      radial-gradient(70% 60% at 50% 45%, var(--k-1a1c17), var(--k-0d0e0b));
+    outline: 1px solid var(--k-2b2e28);
+  }
+  .bol {
+    left: 14%;
+    top: 22%;
+    width: 38%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle at 45% 40%, var(--k-2b2e27), var(--k-12130f) 70%);
+    box-shadow: 18px 26px 40px #000a;
+    outline: 1px solid var(--k-3a3d35);
+  }
+  .proy {
+    transform-origin: 50% 50%;
+  }
+  .anillo-bol {
+    left: calc(14% - 3%);
+    top: calc(22% - 4%);
+    width: 44%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid var(--color-luz);
+    filter: drop-shadow(1.5px 0 0 rgb(255 61 46 / 0.55)) drop-shadow(-1.5px 0 0 rgb(46 201 255 / 0.55));
+  }
+  .tarjeta {
+    left: 58%;
+    top: 26%;
+    width: 36%;
+    padding: 14px 14px 12px;
+    border: 1px solid color-mix(in srgb, var(--color-luz) 70%, transparent);
+    background: color-mix(in srgb, var(--color-luz) 6%, transparent);
+  }
+  .barra {
+    height: 4px;
+    background: color-mix(in srgb, var(--color-luz) 15%, transparent);
+  }
+  .barra i {
+    display: block;
+    height: 100%;
+    width: var(--g, 0%);
+    background: var(--color-senal);
+  }
+  .flecha-c {
+    left: 50%;
+    top: 40%;
+    width: 9%;
+    height: 2px;
+    background: var(--color-luz);
+  }
+</style>
+
+<script>
+  import { bucleVisible, cuandoOcioso, reducido } from "../scripts/suave";
+
+  const quieto = reducido();
+  const lit = document.querySelector<HTMLElement>("[data-lit]");
+  const hero = document.querySelector<HTMLElement>("[data-c]");
+
+  // Haz detrás del titular: se mueve solo y sigue al puntero.
+  if (lit && hero && !quieto) {
+    let bx = 30, by = 40, tx = 30, ty = 40, ultimo = -1e9;
+    hero.addEventListener("pointermove", (e) => {
+      const r = hero.getBoundingClientRect();
+      tx = ((e.clientX - r.left) / r.width) * 100;
+      ty = ((e.clientY - r.top) / r.height) * 100;
+      ultimo = performance.now();
+    });
+    bucleVisible(hero, (t, dt) => {
+      if (t - ultimo > 2000) {
+        tx = 50 + Math.sin(t / 2300) * 42;
+        ty = 50 + Math.cos(t / 1700) * 38;
+      }
+      const k = 1 - Math.pow(0.94, dt / 16);
+      bx += (tx - bx) * k;
+      by += (ty - by) * k;
+      hero.style.setProperty("--bx", `${bx.toFixed(2)}%`);
+      hero.style.setProperty("--by", `${by.toFixed(2)}%`);
+    });
+  }
+
+  // Revelado con scroll: GSAP + ScrollTrigger + SplitText, cargados cuando el hilo está libre.
+  cuandoOcioso(async () => {
+    const pin = document.querySelector<HTMLElement>("[data-c-pin]");
+    if (!pin) return;
+    const proy = pin.querySelector<HTMLElement>(".proy")!;
+    const gramos = pin.querySelector<HTMLElement>("[data-gramos]")!;
+    const barra = pin.querySelector<HTMLElement>(".barra")!;
+    if (quieto) {
+      gramos.textContent = "120";
+      barra.style.setProperty("--g", "100%");
+      return;
+    }
+    const [{ gsap }, { ScrollTrigger }, { SplitText }] = await Promise.all([
+      import("gsap"),
+      import("gsap/ScrollTrigger"),
+      import("gsap/SplitText"),
+    ]);
+    gsap.registerPlugin(ScrollTrigger, SplitText);
+    const lenis = (window as any).__lenis;
+    if (lenis) lenis.on("scroll", ScrollTrigger.update);
+
+    const h2 = pin.querySelector<HTMLElement>("[data-split]")!;
+    const split = SplitText.create(h2, { type: "words,chars", aria: "auto" });
+    gsap.set(split.chars, { opacity: 0.16 });
+
+    const tl = gsap.timeline({
+      scrollTrigger: { trigger: pin, start: "top top", end: "bottom bottom", scrub: 0.6 },
+    });
+    tl.to(split.chars, { opacity: 1, stagger: 0.02, ease: "none", duration: 0.6 }, 0)
+      // Encendido con parpadeo de lámpara, desalineado.
+      .fromTo(
+        proy,
+        { opacity: 0, transform: "perspective(600px) rotateX(-16deg) rotateY(12deg) skewX(8deg) scale(1.12) translate(6%, -4%)" },
+        { opacity: 1, duration: 0.25, ease: "steps(5)" },
+        0.15,
+      )
+      // Homografía corregida: calza con la mesa.
+      .to(proy, { transform: "perspective(600px) rotateX(0deg) rotateY(0deg) skewX(0deg) scale(1) translate(0%, 0%)", duration: 0.45, ease: "power3.inOut" }, 0.42)
+      .to({ g: 0 }, {
+        g: 120, duration: 0.4, ease: "none",
+        onUpdate() {
+          const g = Math.round((this.targets()[0] as { g: number }).g);
+          gramos.textContent = String(g);
+          barra.style.setProperty("--g", `${(g / 120) * 100}%`);
+        },
+      }, 0.75);
+  });
+</script>

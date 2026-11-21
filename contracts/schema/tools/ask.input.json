@@ -1,0 +1,91 @@
+{
+  "description": "Proyecta una pregunta con un botón por opción; responde con `ask_answered{request_id}` o vence.",
+  "type": "object",
+  "properties": {
+    "request_id": {
+      "description": "Clave de idempotencia (obligatoria)",
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 1
+    },
+    "question": {
+      "type": "string"
+    },
+    "options": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 1
+    },
+    "timeout_s": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 600,
+      "default": 60.0
+    },
+    "anchor": {
+      "title": "Anchor",
+      "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "object_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "point_mm": {
+          "title": "PointMM",
+          "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]` (exactamente 2 números).",
+          "type": [
+            "array",
+            "null"
+          ],
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2,
+          "default": null
+        },
+        "offset_mm": {
+          "title": "PointMM",
+          "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]` (exactamente 2 números).",
+          "type": [
+            "array",
+            "null"
+          ],
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2,
+          "default": null
+        }
+      },
+      "required": [],
+      "default": null
+    }
+  },
+  "required": [
+    "request_id",
+    "question",
+    "options"
+  ]
+}

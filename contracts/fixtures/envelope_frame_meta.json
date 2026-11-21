@@ -1,0 +1,11 @@
+{
+  "type": "frame_meta",
+  "v": 2,
+  "seq": 77,
+  "t_capture_ns": 1795231660101000000,
+  "t_pub_ns": 1795231660102000000,
+  "source": "capture-cam0",
+  "node_id": "mesa-max",
+  "payload": {"type": "frame_meta", "camera_id": "cam0", "seq": 9120, "t_capture_ns": 1795231660101000000,
+              "w": 1280, "h": 720, "segment": "pcx.cam.cam0", "format": "bgr8", "stride": 3840}
+}
