@@ -135,3 +135,6 @@ Agent Wrapped, panel de decisiones, Meet Proxy Maxing, Token Maxing. El «Superh
 2. Max comparte el repo o el estado del engine para saber qué existe.
 3. 3D: medir proyector y cámara y diseñar el rig.
 4. Resolver dashboard y bases (código previo, entregables, hora de corte).
+
+### Update Manu sáb 03:23 (pcx)
+Nodo local en Rust (cámaras, manos, objetos, calibración, renderer GPU) + cerebro en Render (MCP, memoria). 8 módulos, 112 tests verdes; seguidor v4 portado a Rust; LUT corrige paralaje en simulación. Hardware real: renderer 60 fps, latencia punta a punta 215 ms (original 313 ms). Próximo: `pcx up` y prueba completa calibrar → Claude proyecta por MCP → cámara verifica. **Sigue pidiendo el caso de demo.**
