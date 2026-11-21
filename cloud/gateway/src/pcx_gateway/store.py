@@ -7,6 +7,7 @@ es el cursor de `events_wait` y sobrevive a `stream_reset` del nodo (el `seq` de
 import hashlib
 import hmac
 import json
+import logging
 import time
 from dataclasses import dataclass
 
@@ -32,6 +33,7 @@ from sqlalchemy import (
     delete,
     func,
     insert,
+    not_,
     or_,
     select,
     text,
@@ -43,6 +45,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from .config import Settings
 from .reported import apply_reported
+
+log = logging.getLogger(__name__)
 
 SCHEMA_VERSION = 2
 GAP = "history_gap"
@@ -201,33 +205,56 @@ class Store:
             raise RuntimeError(f"Esquema DB v{current}; este gateway espera v{SCHEMA_VERSION}")
 
     async def provision(self, s: Settings):
-        """Aprovisionamiento explícito por env; no reasigna dueños existentes por accidente."""
-        rows = [
-            (users, users.c.id == s.user_id, {"id": s.user_id}),
-            (spaces, spaces.c.id == s.space_id, {"id": s.space_id, "user_id": s.user_id}),
-            (
-                nodes,
-                nodes.c.id == s.node_id,
-                {"id": s.node_id, "space_id": s.space_id, "token_hash": digest(s.node_token)},
-            ),
-        ]
-        for token, scope in ((s.user_token, "mcp"), (s.console_token, "console")):
-            if token:
-                values = {"hash": digest(token), "user_id": s.user_id, "space_id": s.space_id, "scope": scope}
-                rows.append((tokens, tokens.c.hash == values["hash"], values))
+        """Aprovisionamiento por env: el entorno manda sobre las credenciales, no sobre los dueños.
+
+        Rotar = cambiar el env y redesplegar. El token de nodo se reemplaza, y los tokens de usuario y consola
+        que ya no están en el env quedan revocados (sin PCX_CONSOLE_TOKEN no hay acceso de consola).
+        Nunca reasigna un espacio ni un nodo a otro dueño.
+        """
         if len({s.user_token, s.node_token, s.console_token} - {None}) != sum(
             bool(t) for t in (s.user_token, s.node_token, s.console_token)
         ):
             raise ValueError("Los tokens de usuario, nodo y consola deben ser distintos")
+        node_hash = digest(s.node_token)
+        wanted = {digest(t): scope for t, scope in ((s.user_token, "mcp"), (s.console_token, "console")) if t}
         async with self.engine.begin() as db:
-            for table, key, values in rows:
-                existing = (await db.execute(select(table).where(key))).mappings().first()
+
+            async def row(table, key):
+                return (await db.execute(select(table).where(key))).mappings().first()
+
+            if await row(users, users.c.id == s.user_id) is None:
+                await db.execute(insert(users).values(id=s.user_id))
+            space = await row(spaces, spaces.c.id == s.space_id)
+            if space is None:
+                await db.execute(insert(spaces).values(id=s.space_id, user_id=s.user_id))
+            elif space["user_id"] != s.user_id:
+                raise ValueError("El aprovisionamiento choca con spaces: el espacio tiene otro dueño")
+            node = await row(nodes, nodes.c.id == s.node_id)
+            if node is None:
+                await db.execute(
+                    insert(nodes).values(id=s.node_id, space_id=s.space_id, token_hash=node_hash)
+                )
+            elif node["space_id"] != s.space_id:
+                raise ValueError("El aprovisionamiento choca con nodes: el nodo pertenece a otro espacio")
+            elif node["token_hash"] != node_hash:
+                await db.execute(update(nodes).where(nodes.c.id == s.node_id).values(token_hash=node_hash))
+                log.warning("PCX_NODE_TOKEN rotado para %s: el token anterior queda revocado", s.node_id)
+            # Revoca todo token de este usuario y espacio que no sea exactamente un (hash, scope) del env.
+            stale = and_(tokens.c.user_id == s.user_id, tokens.c.space_id == s.space_id)
+            if wanted:
+                keep = [and_(tokens.c.hash == h, tokens.c.scope == scope) for h, scope in wanted.items()]
+                stale = and_(stale, not_(or_(*keep)))
+            revoked = (await db.execute(delete(tokens).where(stale))).rowcount
+            if revoked:
+                log.warning("Revocados %d tokens de usuario o consola que ya no están en el env", revoked)
+            for h, scope in wanted.items():
+                existing = await row(tokens, tokens.c.hash == h)
                 if existing is None:
-                    await db.execute(insert(table).values(**values))
-                elif any(existing[k] != v for k, v in values.items()):
-                    raise ValueError(
-                        f"El aprovisionamiento choca con {table.name}; rota explícitamente en DB"
+                    await db.execute(
+                        insert(tokens).values(hash=h, user_id=s.user_id, space_id=s.space_id, scope=scope)
                     )
+                elif (existing["user_id"], existing["space_id"]) != (s.user_id, s.space_id):
+                    raise ValueError("El aprovisionamiento choca con tokens: el token pertenece a otro dueño")
 
     async def identity(self, token: str) -> Identity | None:
         async with self.engine.connect() as db:

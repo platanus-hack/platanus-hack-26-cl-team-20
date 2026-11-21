@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import time
 
 import msgspec
@@ -170,3 +171,66 @@ async def test_redis_adapter_subscription_ack_and_broadcast():
 def test_distinct_tokens_required():
     with pytest.raises(ValueError, match="distintos"):
         asyncio.run(Store("sqlite+aiosqlite://").provision(Settings(user_token="x", node_token="x")))
+
+
+async def test_provision_env_is_authoritative(tmp_path):
+    url = f"sqlite+aiosqlite:///{tmp_path}/rotate.db"
+    first = Settings(database_url=url, user_token="u1", node_token="n1", console_token="c1")
+    store = Store(url)
+    try:
+        await store.start(first)
+        rotated = dataclasses.replace(first, user_token="u2", node_token="n2", console_token="c2")
+        await store.start(rotated)  # No falla: el entorno manda.
+        assert await store.identity("u1") is None and await store.identity("c1") is None
+        assert (await store.identity("u2")).scope == "mcp"
+        assert (await store.identity("c2")).scope == "console"
+        assert not await store.authenticate_node("demo-node", "n1")
+        assert await store.authenticate_node("demo-node", "n2")
+        # Intercambiar user y consola no deja un token con dos scopes.
+        swapped = dataclasses.replace(rotated, user_token="c2", console_token="u2")
+        await store.start(swapped)
+        assert (await store.identity("c2")).scope == "mcp" and (await store.identity("u2")).scope == "console"
+        # Sin PCX_CONSOLE_TOKEN no queda acceso de consola.
+        await store.start(dataclasses.replace(swapped, console_token=None))
+        assert await store.identity("u2") is None and await store.identity("c2") is not None
+        # Los dueños no se reasignan desde el env.
+        with pytest.raises(ValueError, match="otro dueño"):
+            await store.provision(dataclasses.replace(first, user_id="intruso", user_token="x1"))
+        with pytest.raises(ValueError, match="otro espacio"):
+            await store.provision(dataclasses.replace(first, space_id="otro", user_token="x2"))
+    finally:
+        await store.close()
+
+
+async def test_publish_failure_is_logged_not_raised(tmp_path, caplog):
+    class BrokenBus(MemoryBus):
+        async def publish(self, node_id):
+            raise ConnectionError("Key Value caído")
+
+    store = Store(f"sqlite+aiosqlite:///{tmp_path}/bus.db")
+    settings = Settings(user_token="u", node_token="n")
+    gateway = Gateway(store, BrokenBus(), settings)
+    try:
+        await store.start(settings)
+        fake = FakeNode(token="n")
+        conn = Connection(None, stream_id=fake.stream_id)
+        await gateway.accept_snapshot(
+            conn, fake.node_id, StateSnapshot(stream_id=fake.stream_id, cursor=0, world=fake.world)
+        )
+        event = fake.record(FlowEmitted(event="one"))
+        await gateway.accept_events(
+            conn, fake.node_id, EventBatch(stream_id=fake.stream_id, cursor=1, events=[event])
+        )
+        assert await store.cursor(fake.node_id) == 1
+        assert "bus.publish falló" in caplog.text
+    finally:
+        await store.close()
+
+
+def test_memory_bus_without_redis_url(monkeypatch, tmp_path):
+    from pcx_gateway.app import create_app
+
+    monkeypatch.setenv("REDIS_URL", "")
+    assert Settings.from_env().redis_url is None
+    app = create_app(Settings(database_url=f"sqlite+aiosqlite:///{tmp_path}/m.db"))
+    assert isinstance(app.state.gateway.bus, MemoryBus)

@@ -17,11 +17,11 @@ Desde la raíz del repo, con `uv` instalado y los mismos tokens exportados desde
 ```sh
 export PCX_GATEWAY_URL=https://HOST.onrender.com
 curl --fail --show-error --silent "$PCX_GATEWAY_URL/health" # {"ok":true,...}
-./scripts/smoke-cloud.sh # necesita PCX_USER_TOKEN y PCX_NODE_TOKEN; PCX_NODE_ID=demo-node por defecto
+./scripts/smoke-cloud.sh # solo lectura; necesita PCX_USER_TOKEN y PCX_NODE_TOKEN; PCX_NODE_ID=demo-node por defecto
 claude mcp add --transport http pcx "$PCX_GATEWAY_URL/mcp" --header "Authorization: Bearer $PCX_USER_TOKEN"
 codex mcp add pcx --url "$PCX_GATEWAY_URL/mcp" --bearer-token-env-var PCX_USER_TOKEN
 ```
-Ejecutar smoke **antes del nodo real**: escribe estado sintético persistente y rechaza un nodo ya conectado; el snapshot real lo reemplaza. Sale distinto de cero ante error y cierra el fake al terminar.
+El smoke contra Render es **de solo lectura** (`PCX_SMOKE_MODE=readonly`, por defecto): `/health`, 401 con token inválido, `tools/list` de MCP y handshake WSS `hello`→`welcome` sin snapshot ni eventos. No escribe objetos ni historial (solo `last_seen` del nodo). Si el nodo real está conectado, omite el handshake para no desplazarlo. `PCX_SMOKE_MODE=full` (nodo sintético con un objeto «cup» y round trip de `look`) solo se permite contra un gateway local. Sale distinto de cero ante error.
 OpenCode **v2**, agregar a `opencode.json` (sustituir HOST; en v1, `pcx` va directamente bajo `mcp`):
 ```json
 {"mcp":{"servers":{"pcx":{"type":"remote","url":"https://HOST.onrender.com/mcp","headers":{"Authorization":"Bearer {env:PCX_USER_TOKEN}"},"oauth":false}}}}
@@ -36,26 +36,29 @@ Verificar `connected_nodes:1` en `/health` y `scene` por MCP; los IDs deben coin
 
 ## Costo y rollback
 
-USD/mes aproximados, [tarifas oficiales](https://render.com/pricing): web `starter` **7**, Postgres `basic-256mb` **6** + 1 GB **0,30**, Key Value `256mb` **10** = **23,30/mes**. Workspace Hobby **0**; impuestos, tráfico excedente y aumentos de capacidad aparte. Todos los recursos elegidos son pagos y no duermen; Free no sirve para WSS continuo.
+USD/mes aproximados, [tarifas oficiales](https://render.com/pricing): web `starter` **7**, Postgres `basic-256mb` **6** + 1 GB **0,30**, Key Value `256mb` **10** = **23,30/mes**. Opción: quitar `pcx-events` (Key Value) → **USD 13,30/mes**; con una instancia, el gateway usa el bus en memoria si no hay `REDIS_URL` (decisión pendiente de Manu). Workspace Hobby **0**; impuestos, tráfico excedente y aumentos de capacidad aparte. Todos los recursos elegidos son pagos y no duermen; Free no sirve para WSS continuo.
 Presupuesto USD 50: unos **USD 30,60 por 40 días**, margen **USD 19,40**, sin extras. Confirmar créditos en el mismo workspace Hobby antes del alta; sin scaling ni previews, disco fijo de 1 GB. Limitar gasto de builds a USD 0 y revisar Billing: no hay tope de cómputo. Los alias `starter`/`basic-256mb` siguen válidos ([planes](https://render.com/docs/compute-plans)).
 Rollback: servicio → **Events → deploy sano → Rollback**; verificar `/health`, reconexión y `scene`. Render desactiva autodeploy tras rollback: conservarlo apagado hasta corregir/revertir el commit y luego reactivar `checksPass`/sincronizar Blueprint.
-Rollback de código no revierte DB: mantener compatibilidad con `schema_meta.version=2`; ante una futura migración incompatible restaurar backup/PITR en otra DB y cambiar su enlace. No borrar la DB ni cambiar los tokens para hacer rollback (su rotación requiere actualización explícita en DB).
+Rollback de código no revierte DB: mantener compatibilidad con `schema_meta.version=2`; ante una futura migración incompatible restaurar backup/PITR en otra DB y cambiar su enlace. No borrar la DB para hacer rollback.
+**Rotar un token** (p. ej., si se filtró): generar uno nuevo con `openssl rand -hex 32`, reemplazarlo en Render → `pcx-gateway` → Environment y guardar (redeploy). Al arrancar, el entorno manda: el token de nodo se reemplaza y los tokens de usuario y consola que ya no están en el env quedan revocados (dan 401). Actualizar el mismo valor en los agentes o en el nodo. Quitar `PCX_CONSOLE_TOKEN` revoca el acceso de consola.
 
 ## Desarrollo local y evidencia
 
 Con Docker disponible mañana: exportar los tres tokens y `PCX_POSTGRES_PASSWORD=$(openssl rand -hex 32)`; ejecutar `docker compose -f cloud/compose.yaml up --build -d`. Gateway en `http://127.0.0.1:9215`, Postgres 16 + Valkey privados, healthchecks en los tres; detener con `docker compose -f cloud/compose.yaml down` (conserva DB).
-Sin Docker: `cd cloud/gateway && PORT=9215 uv run python -m pcx_gateway`, con tokens exportados, `DATABASE_URL`/`REDIS_URL` ausentes para SQLite/memoria; smoke desde otra terminal con `PCX_GATEWAY_URL=http://127.0.0.1:9215`; detener gateway con Ctrl-C.
-Prueba ejecutada con `uv run` en 9215, SQLite temporal, tokens efímeros; salida real:
+Sin Docker: `cd cloud/gateway && PORT=9215 uv run python -m pcx_gateway`, con tokens exportados, `DATABASE_URL`/`REDIS_URL` ausentes para SQLite/memoria; smoke desde otra terminal con `PCX_GATEWAY_URL=http://127.0.0.1:9215` (agregar `PCX_SMOKE_MODE=full` para el nodo sintético); detener gateway con Ctrl-C.
+Prueba ejecutada con `uv run` en un puerto local, SQLite temporal y tokens efímeros. Salida real de `PCX_SMOKE_MODE=full` (en `readonly` termina con `PASS WSS hello/welcome ...` y `SMOKE OK (readonly)`, y la DB queda sin eventos ni snapshot):
 ```text
+MODE full
 PASS /health
+PASS invalid bearer -> 401
 PASS MCP tools/list (11 tools)
+PASS WSS /node rejects invalid node token
 PASS fake node hello/welcome + snapshot + /api/nodes connected
 PASS MCP look round trip via fake node
 PASS fake node disconnected (no background process)
-SMOKE OK
-PASS local gateway stopped
+SMOKE OK (full)
 ```
-`cd cloud/gateway && uv run pytest`: **19 passed in 5.68s**. No procesos vivos ni despliegues. Docker daemon apagado: **no se construyeron ni arrancaron imágenes**; Compose no se probó en ejecución.
+`cd cloud/gateway && uv run pytest`: **24 passed** (incluye rotación de tokens y caída del bus). No procesos vivos ni despliegues. Docker daemon apagado: **no se construyeron ni arrancaron imágenes**; Compose no se probó en ejecución.
 Validación: `docker compose ... config --quiet`, `bash -n scripts/smoke-cloud.sh`, Hadolint vía `uvx --from hadolint-bin hadolint cloud/gateway/Dockerfile`, sin hallazgos; instalación de producción no editable comprobada fuera de Docker.
 Blueprint validado con `jsonschema.Draft202012Validator` + PyYAML contra [JSON Schema oficial](https://render.com/schema/render.yaml.json); repetir descargando ese schema y validando `yaml.safe_load(open("render.yaml"))`. Esto valida estructura, no capacidad/cuotas de la cuenta.
 

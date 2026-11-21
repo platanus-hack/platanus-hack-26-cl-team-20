@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import dataclasses
 import time
 
 import httpx
@@ -449,3 +450,55 @@ async def test_flows_and_home_routing(live, node):
 async def test_fake_node_class_is_v2():
     fake = FakeNode(token="x")
     assert fake.contract_versions == [2] and fake.stream_id
+
+
+async def test_token_rotation_on_redeploy(live):
+    """Cambiar los tokens en el env y redesplegar: arranca, el viejo da 401 y el nuevo 200."""
+    _app, _, _ws_url, old = live
+    rotated = dataclasses.replace(
+        old, user_token="rotated-user", node_token="rotated-node", console_token="rotated-console"
+    )
+    async with live_server(rotated) as (_second, url, second_ws):
+        async with httpx.AsyncClient(base_url=url) as client:
+            for token, status in (
+                (old.user_token, 401),
+                (old.console_token, 401),
+                (rotated.user_token, 200),
+                (rotated.console_token, 200),
+            ):
+                response = await client.get("/api/nodes", headers={"Authorization": f"Bearer {token}"})
+                assert response.status_code == status, token
+        async with connect(second_ws) as ws:
+            await ws.send(hello(rotated, old.node_token))
+            rejected = msgspec.json.decode(await ws.recv(), type=CloudMessage)
+            assert isinstance(rejected, HelloRejected) and rejected.reason == "auth"
+        async with connect(second_ws) as ws:
+            await ws.send(hello(rotated))
+            assert isinstance(msgspec.json.decode(await ws.recv(), type=CloudMessage), Welcome)
+
+
+async def test_bus_failure_keeps_node_socket(live, node, caplog):
+    """Si Key Value falla, el evento queda en la DB, se registra y el WSS del nodo sigue vivo."""
+    app, _, _, settings = live
+    gateway = app.state.gateway
+
+    class BrokenBus:
+        async def publish(self, node_id):
+            raise ConnectionError("Key Value caído")
+
+    gateway.bus = BrokenBus()
+    conn = gateway.connections[settings.node_id]
+    await node.emit(FlowEmitted(event="sin-bus"))
+
+    async def stored():
+        return await gateway.store.cursor(settings.node_id) == 1
+
+    await eventually(stored)
+    await node.emit(FlowEmitted(event="sigue-conectado"))
+
+    async def stored_again():
+        return await gateway.store.cursor(settings.node_id) == 2
+
+    await eventually(stored_again)
+    assert gateway.connections.get(settings.node_id) is conn and conn.ready
+    assert "bus.publish falló" in caplog.text
