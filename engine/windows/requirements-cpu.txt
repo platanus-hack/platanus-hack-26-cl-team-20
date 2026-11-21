@@ -1,0 +1,10 @@
+# Variante sin GPU (pruebas en el Mac o un PC sin NVIDIA).
+numpy
+scipy
+opencv-python
+pyserial
+pyyaml
+pytest
+websockets
+fastapi
+uvicorn

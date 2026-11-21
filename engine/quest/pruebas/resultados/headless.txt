@@ -1,0 +1,614 @@
+· smoke: 4.8s
+· sim: 80.3s
+· xr: 14.6s
+· e2e: 30.3s
+· peerjs: 39.2s
+{
+ "base": "http://localhost:8800",
+ "fecha": "2026-11-05 18:44:11",
+ "chrome": "Chrome/156.0.8078.80",
+ "smoke": {
+  "quest_errores": [],
+  "proyector_errores": [],
+  "capacidades_chrome_mac": {
+   "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+   "seguro": true,
+   "webgl2": true,
+   "trackGenerator": true,
+   "videoFrame": true,
+   "captureStream": true,
+   "rtc": true,
+   "xrAR": false,
+   "codecsEnvio": [
+    "VP8",
+    "rtx",
+    "H264",
+    "AV1",
+    "VP9",
+    "H265",
+    "red",
+    "ulpfec"
+   ],
+   "h264Perfiles": [
+    "42001f",
+    "42001f",
+    "42e01f",
+    "42e01f",
+    "4d001f",
+    "4d001f",
+    "640034"
+   ],
+   "encH264": {
+    "soportado": true,
+    "fluido": true,
+    "eficiente": false
+   }
+  },
+  "capturas": [
+   "pruebas/capturas/smoke-quest.png",
+   "pruebas/capturas/smoke-proyector.png"
+  ]
+ },
+ "sim": {
+  "cabeza_ruido1cm_8semillas_error_modelo_2m_px": {
+   "mediana": 9.279,
+   "min": 2.841,
+   "max": 14.21
+  },
+  "pozo_colocado": [
+   -1.2,
+   0.74,
+   -1.2761662348876794
+  ],
+  "cabeza_ruido1cm": {
+   "resultado": {
+    "ok": true,
+    "modo": "cabeza",
+    "puntos": 12,
+    "saltadas": 0,
+    "ruidoCm": 1,
+    "rmsPx": 11.124,
+    "metodo": "pnp(general)+lm(fxfy)",
+    "dobleToque": false,
+    "errorModelo2mPx": {
+     "rms": 7.257,
+     "max": 9.512
+    },
+    "dFpct": -1.233,
+    "dCxPx": 13.33,
+    "dCyPx": 7.35,
+    "dRdeg": 0.5079,
+    "dCentroCm": 2.553,
+    "Kest": [
+     [
+      2123.48,
+      0,
+      988.33
+     ],
+     [
+      0,
+      2123.48,
+      937.35
+     ],
+     [
+      0,
+      0,
+      1
+     ]
+    ],
+    "Kverdad": [
+     [
+      2150,
+      0,
+      975
+     ],
+     [
+      0,
+      2150,
+      930
+     ],
+     [
+      0,
+      0,
+      1
+     ]
+    ]
+   },
+   "autotest_proyeccion_px": 2.6812987050722663e-13,
+   "errores": [],
+   "capturas": [
+    "pruebas/capturas/sim-1-antes-sin-calibrar.png",
+    "pruebas/capturas/sim-2-cabeza_ruido1cm-calibrado-wireframe.png",
+    "pruebas/capturas/sim-3-aristas.png",
+    "pruebas/capturas/sim-4-mesa.png",
+    "pruebas/capturas/sim-5-pozo.png",
+    "pruebas/capturas/sim-6-cruz-calibracion.png"
+   ]
+  },
+  "cabeza_sin_ruido": {
+   "resultado": {
+    "ok": true,
+    "modo": "cabeza",
+    "puntos": 12,
+    "saltadas": 0,
+    "ruidoCm": 0,
+    "rmsPx": 0.005,
+    "metodo": "pnp(general)+lm(fxfy)",
+    "dobleToque": false,
+    "errorModelo2mPx": {
+     "rms": 0.004,
+     "max": 0.006
+    },
+    "dFpct": 0.002,
+    "dCxPx": 0.01,
+    "dCyPx": -0.04,
+    "dRdeg": 0.0005,
+    "dCentroCm": 0.003,
+    "Kest": [
+     [
+      2150.04,
+      0,
+      975.01
+     ],
+     [
+      0,
+      2150.04,
+      929.96
+     ],
+     [
+      0,
+      0,
+      1
+     ]
+    ],
+    "Kverdad": [
+     [
+      2150,
+      0,
+      975
+     ],
+     [
+      0,
+      2150,
+      930
+     ],
+     [
+      0,
+      0,
+      1
+     ]
+    ]
+   },
+   "autotest_proyeccion_px": 2.6812987050722663e-13,
+   "errores": [],
+   "capturas": []
+  },
+  "fijo_ruido1cm_8semillas_error_modelo_2m_px": {
+   "mediana": 5.297,
+   "min": 2.741,
+   "max": 11.589
+  },
+  "fijo_ruido1cm": {
+   "resultado": {
+    "ok": true,
+    "modo": "fijo",
+    "puntos": 21,
+    "saltadas": -9,
+    "ruidoCm": 1,
+    "rmsPx": 6.355,
+    "metodo": "pnp(general)+lm(fxfy)",
+    "dobleToque": true,
+    "errorModelo2mPx": {
+     "rms": 7.414,
+     "max": 15.036
+    },
+    "dFpct": 1.586,
+    "dCxPx": 3.55,
+    "dCyPx": -44.87,
+    "dRdeg": 0.9295,
+    "dCentroCm": 3.51,
+    "Kest": [
+     [
+      2184.09,
+      0,
+      978.55
+     ],
+     [
+      0,
+      2184.09,
+      885.13
+     ],
+     [
+      0,
+      0,
+      1
+     ]
+    ],
+    "Kverdad": [
+     [
+      2150,
+      0,
+      975
+     ],
+     [
+      0,
+      2150,
+      930
+     ],
+     [
+      0,
+      0,
+      1
+     ]
+    ]
+   },
+   "autotest_proyeccion_px": 2.6812987050722663e-13,
+   "errores": [],
+   "capturas": [
+    "pruebas/capturas/sim-2-fijo_ruido1cm-calibrado-wireframe.png"
+   ]
+  },
+  "cabeza_20pts_ruido1cm_8semillas_error_modelo_2m_px": {
+   "mediana": 9.765,
+   "min": 4.76,
+   "max": 13.544
+  },
+  "cabeza_20pts_ruido1cm": {
+   "resultado": {
+    "ok": true,
+    "modo": "cabeza",
+    "puntos": 20,
+    "saltadas": 0,
+    "ruidoCm": 1,
+    "rmsPx": 10.944,
+    "metodo": "dlt+lm(fxfy)",
+    "dobleToque": false,
+    "errorModelo2mPx": {
+     "rms": 11.633,
+     "max": 19.282
+    },
+    "dFpct": 5.759,
+    "dCxPx": 27.67,
+    "dCyPx": 67.45,
+    "dRdeg": 1.8293,
+    "dCentroCm": 10.585,
+    "Kest": [
+     [
+      2273.81,
+      0,
+      1002.67
+     ],
+     [
+      0,
+      2273.81,
+      997.45
+     ],
+     [
+      0,
+      0,
+      1
+     ]
+    ],
+    "Kverdad": [
+     [
+      2150,
+      0,
+      975
+     ],
+     [
+      0,
+      2150,
+      930
+     ],
+     [
+      0,
+      0,
+      1
+     ]
+    ]
+   },
+   "autotest_proyeccion_px": 2.6812987050722663e-13,
+   "errores": [],
+   "capturas": []
+  }
+ },
+ "xr_mock": {
+  "inicio": {
+   "sala": {
+    "mallas": 1,
+    "tris": 1684,
+    "planos": 3,
+    "mesas": 1
+   },
+   "features": [
+    "local-floor",
+    "hit-test",
+    "plane-detection",
+    "mesh-detection",
+    "anchors",
+    "hand-tracking",
+    "depth-sensing"
+   ],
+   "ref": "local-floor",
+   "depth": "gpu-optimized/luminance-alpha (ignorado)",
+   "panelVisible": true,
+   "cuadros": 93
+  },
+  "clic_panel_calibrar": true,
+  "toques": {
+   "calibrado": true,
+   "info": {
+    "rms": 0.005401236258634042,
+    "metodo": "dlt+lm(fxfy)",
+    "n": 12,
+    "fecha": "2026-11-05T21:45:50.186Z",
+    "modo": "cabeza",
+    "puntos": 12
+   },
+   "saltadas": 0,
+   "Kverdad": [
+    [
+     2304,
+     0,
+     960
+    ],
+    [
+     0,
+     2304,
+     540
+    ],
+    [
+     0,
+     0,
+     1
+    ]
+   ],
+   "Kest": [
+    [
+     2304.0173918585647,
+     0,
+     960.0363330068424
+    ],
+    [
+     0,
+     2304.0173918585647,
+     539.9062218394939
+    ],
+    [
+     0,
+     0,
+     1
+    ]
+   ],
+   "dRdeg": 0.0024790505386104843,
+   "dt_cm": 0.00035408581476486893
+  },
+  "pozo": true,
+  "ajuste": {
+   "modo": "giro",
+   "dyaw": 0.9891999999880796
+  },
+  "fin": true,
+  "errores": [],
+  "capturas": [
+   "pruebas/capturas/xr-1-cruz-panel.png",
+   "pruebas/capturas/xr-2-vistas-casco-pozo.png"
+  ]
+ },
+ "e2e_ws": {
+  "segundos_hasta_video": 0.0,
+  "proyector": {
+   "estado": "connected",
+   "cuadrosPintados": 0,
+   "video": "960x540",
+   "rttMs": 1,
+   "fps": 29,
+   "decodificados": 715,
+   "caidos": 0,
+   "perdidos": 0,
+   "jitterBufferMsProm": 27,
+   "jitterBufferMs": 76,
+   "decodMs": 1.3,
+   "kbps": 8266,
+   "codec": "video/H264"
+  },
+  "emisor": [
+   {
+    "id": "pea14",
+    "estado": "connected",
+    "rttMs": 0,
+    "fps": 29,
+    "w": 960,
+    "h": 540,
+    "kbps": 9028,
+    "encMs": 9.8,
+    "limit": "bandwidth",
+    "codec": "video/H264"
+   }
+  ],
+  "por_efecto_cabeza_moviendose": {
+   "mesa": {
+    "proyector": {
+     "estado": "connected",
+     "cuadrosPintados": 0,
+     "video": "1280x720",
+     "rttMs": 1,
+     "fps": 30,
+     "decodificados": 312,
+     "caidos": 0,
+     "perdidos": 0,
+     "jitterBufferMsProm": 8,
+     "jitterBufferMs": 10,
+     "decodMs": 1,
+     "kbps": 1841,
+     "codec": "video/H264"
+    },
+    "emisor": [
+     {
+      "id": "pea14",
+      "estado": "connected",
+      "rttMs": 1,
+      "fps": 30,
+      "w": 1280,
+      "h": 720,
+      "kbps": 1966,
+      "encMs": 3.2,
+      "limit": "none",
+      "codec": "video/H264"
+     }
+    ]
+   },
+   "aristas": {
+    "proyector": {
+     "estado": "connected",
+     "cuadrosPintados": 0,
+     "video": "1280x720",
+     "rttMs": 0,
+     "fps": 31,
+     "decodificados": 543,
+     "caidos": 0,
+     "perdidos": 0,
+     "jitterBufferMsProm": 16,
+     "jitterBufferMs": 35,
+     "decodMs": 1.1,
+     "kbps": 9339,
+     "codec": "video/H264"
+    },
+    "emisor": [
+     {
+      "id": "pea14",
+      "estado": "connected",
+      "rttMs": 1,
+      "fps": 30,
+      "w": 1280,
+      "h": 720,
+      "kbps": 9855,
+      "encMs": 6.5,
+      "limit": "none",
+      "codec": "video/H264"
+     }
+    ]
+   },
+   "wireframe": {
+    "proyector": {
+     "estado": "connected",
+     "cuadrosPintados": 0,
+     "video": "960x540",
+     "rttMs": 1,
+     "fps": 29,
+     "decodificados": 715,
+     "caidos": 0,
+     "perdidos": 0,
+     "jitterBufferMsProm": 27,
+     "jitterBufferMs": 76,
+     "decodMs": 1.3,
+     "kbps": 8266,
+     "codec": "video/H264"
+    },
+    "emisor": [
+     {
+      "id": "pea14",
+      "estado": "connected",
+      "rttMs": 0,
+      "fps": 29,
+      "w": 960,
+      "h": 540,
+      "kbps": 9028,
+      "encMs": 9.8,
+      "limit": "bandwidth",
+      "codec": "video/H264"
+     }
+    ]
+   }
+  },
+  "fuente_video": "generador",
+  "quest_errores": [],
+  "proyector_errores": [],
+  "capturas": [
+   "pruebas/capturas/e2e-ws-proyector.png",
+   "pruebas/capturas/e2e-ws-quest-sim.png"
+  ]
+ },
+ "e2e_peerjs": {
+  "segundos_hasta_video": 5.8,
+  "proyector": {
+   "estado": "connected",
+   "cuadrosPintados": 0,
+   "video": "960x540",
+   "rttMs": 0,
+   "fps": 30,
+   "decodificados": 768,
+   "caidos": 0,
+   "perdidos": 0,
+   "jitterBufferMsProm": 54,
+   "jitterBufferMs": 136,
+   "decodMs": 1.5,
+   "kbps": 8273,
+   "codec": "video/H264"
+  },
+  "emisor": null,
+  "por_efecto_cabeza_moviendose": {
+   "mesa": {
+    "proyector": {
+     "estado": "connected",
+     "cuadrosPintados": 0,
+     "video": "1280x720",
+     "rttMs": 1,
+     "fps": 30,
+     "decodificados": 292,
+     "caidos": 0,
+     "perdidos": 0,
+     "jitterBufferMsProm": 2,
+     "jitterBufferMs": 0,
+     "decodMs": 1.4,
+     "kbps": 1531,
+     "codec": "video/H264"
+    },
+    "emisor": null
+   },
+   "aristas": {
+    "proyector": {
+     "estado": "connected",
+     "cuadrosPintados": 0,
+     "video": "1280x720",
+     "rttMs": 1,
+     "fps": 30,
+     "decodificados": 530,
+     "caidos": 0,
+     "perdidos": 0,
+     "jitterBufferMsProm": 22,
+     "jitterBufferMs": 63,
+     "decodMs": 1.5,
+     "kbps": 9903,
+     "codec": "video/H264"
+    },
+    "emisor": null
+   },
+   "wireframe": {
+    "proyector": {
+     "estado": "connected",
+     "cuadrosPintados": 0,
+     "video": "960x540",
+     "rttMs": 0,
+     "fps": 30,
+     "decodificados": 768,
+     "caidos": 0,
+     "perdidos": 0,
+     "jitterBufferMsProm": 54,
+     "jitterBufferMs": 136,
+     "decodMs": 1.5,
+     "kbps": 8273,
+     "codec": "video/H264"
+    },
+    "emisor": null
+   }
+  },
+  "fuente_video": "generador",
+  "quest_errores": [],
+  "proyector_errores": [],
+  "capturas": [
+   "pruebas/capturas/e2e-peerjs-proyector.png",
+   "pruebas/capturas/e2e-peerjs-quest-sim.png"
+  ]
+ }
+}

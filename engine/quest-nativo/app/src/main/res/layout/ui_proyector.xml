@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical"
+  android:background="#E6101418"
+  android:padding="22dp">
+
+  <TextView
+    android:id="@+id/title"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="PROYECTOR · MAPPING SIN COMPUTADOR"
+    android:textColor="#54CBB9"
+    android:textSize="22sp"
+    android:letterSpacing="0.15"
+    android:textStyle="bold" />
+
+  <TextView
+    android:id="@+id/status"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:layout_marginTop="10dp"
+    android:text="Iniciando..."
+    android:textColor="#E9EEEA"
+    android:textSize="14sp"
+    android:lineSpacingExtra="3dp"
+    android:fontFamily="monospace" />
+
+  <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:orientation="horizontal" android:layout_marginTop="8dp">
+    <Button android:id="@+id/btn_calibrar" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:text="CALIBRAR VISTA" android:textSize="15sp" android:backgroundTint="#0E6B62" android:textColor="#FFFFFF" />
+    <Button android:id="@+id/btn_cancelar" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:layout_marginStart="8dp" android:text="CANCELAR" android:textSize="15sp" android:backgroundTint="#8A1E1E" android:textColor="#FFFFFF" />
+  </LinearLayout>
+
+  <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:orientation="horizontal" android:layout_marginTop="6dp">
+    <Button android:id="@+id/btn_verificar" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:text="VERIFICAR LAZO" android:textSize="15sp" android:backgroundTint="#3D4744" android:textColor="#FFFFFF" />
+    <Button android:id="@+id/btn_reiniciar" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:layout_marginStart="8dp" android:text="BORRAR VISTAS" android:textSize="15sp" android:backgroundTint="#3D4744" android:textColor="#FFFFFF" />
+  </LinearLayout>
+
+  <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:orientation="horizontal" android:layout_marginTop="6dp">
+    <Button android:id="@+id/btn_modo" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:text="MODO: CABEZA" android:textSize="15sp" android:backgroundTint="#0E6B62" android:textColor="#FFFFFF" />
+    <Button android:id="@+id/btn_efecto" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:layout_marginStart="8dp" android:text="EFECTO: ARISTAS" android:textSize="15sp" android:backgroundTint="#0E6B62" android:textColor="#FFFFFF" />
+  </LinearLayout>
+
+  <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:orientation="horizontal" android:layout_marginTop="6dp">
+    <Button android:id="@+id/btn_proyectar" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:text="VER: MAPEO" android:textSize="15sp" android:backgroundTint="#3D4744" android:textColor="#FFFFFF" />
+    <Button android:id="@+id/btn_salida" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:layout_marginStart="8dp" android:text="SALIDA: AUTO" android:textSize="15sp" android:backgroundTint="#3D4744" android:textColor="#FFFFFF" />
+  </LinearLayout>
+
+  <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:orientation="horizontal" android:layout_marginTop="6dp">
+    <Button android:id="@+id/btn_guardar" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:text="GUARDAR" android:textSize="15sp" android:backgroundTint="#0E6B62" android:textColor="#FFFFFF" />
+    <Button android:id="@+id/btn_cargar" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:layout_marginStart="8dp" android:text="CARGAR" android:textSize="15sp" android:backgroundTint="#0E6B62" android:textColor="#FFFFFF" />
+  </LinearLayout>
+
+  <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:orientation="horizontal" android:layout_marginTop="6dp">
+    <Button android:id="@+id/btn_profundidad" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:text="MALLA PROFUNDIDAD" android:textSize="15sp" android:backgroundTint="#3D4744" android:textColor="#FFFFFF" />
+    <Button android:id="@+id/btn_sala" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:layout_marginStart="8dp" android:text="SPACE SETUP" android:textSize="15sp" android:backgroundTint="#3D4744" android:textColor="#FFFFFF" />
+  </LinearLayout>
+
+  <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:orientation="horizontal" android:layout_marginTop="6dp">
+    <Button android:id="@+id/btn_escanear" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:text="ESCANEAR PIEZA" android:textSize="15sp" android:backgroundTint="#0E6B62" android:textColor="#FFFFFF" />
+    <Button android:id="@+id/btn_marcadores" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+      android:layout_marginStart="8dp" android:text="MARCADORES QR" android:textSize="15sp" android:backgroundTint="#3D4744" android:textColor="#FFFFFF" />
+  </LinearLayout>
+
+  <TextView
+    android:id="@+id/hint"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:text="Control: A calibrar · B cabeza/fijo · X efecto · Y guardar · stick der. mueve (gatillo: rota/escala) · Menú: ocultar panel. Por adb: am broadcast -a com.smartup.proyector.CMD -p com.smartup.proyector --es c &quot;estado&quot;"
+    android:textColor="#8A9892"
+    android:textSize="12sp" />
+</LinearLayout>

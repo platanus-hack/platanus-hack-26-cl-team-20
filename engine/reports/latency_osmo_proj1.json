@@ -1,0 +1,15 @@
+{
+  "trials": 5,
+  "per_trial_ms": [
+    null,
+    1337.2,
+    null,
+    null,
+    null
+  ],
+  "latency_ms_mean": 1337.2375829999328,
+  "latency_ms_std": 0.0,
+  "latency_ms_max": 1337.2375829999328,
+  "camera_fps": 25.0,
+  "settle_ms_recommended": 1417.2375829999328
+}

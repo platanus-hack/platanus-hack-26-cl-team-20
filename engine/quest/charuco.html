@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Referencia Pixel</title>
+<style>
+  :root { --fondo: #fff; --texto: #111; --aviso: #c00; }
+  html, body { margin: 0; height: 100%; background: var(--fondo); color: var(--texto); overflow: hidden;
+               font: 13px system-ui, sans-serif; -webkit-user-select: none; user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// Referencia métrica en la pantalla del Pixel 9 (1080x2424, 422 ppi) para calibrar el proyector de la mesa con el Quest.
+// Dibuja en píxeles físicos (canvas a devicePixelRatio) con mm reales: px_fisico/mm = ppi / 25,4.
+// Modos (?modo=): grilla (default) = ArUco DICT_4X4_50 2x4, ids 40..47 (GridBoard de OpenCV, filas de arriba abajo);
+//                 charuco = ChArUco 4x7, cuadro 15 mm, marcador 11 mm, ids 24..37 (casilla de arriba a la izquierda negra).
+// Parámetros: ?ppi=422 &mm=24 (lado del marcador de la grilla) &sep=5 &cuadro=15 &marca=11 &negro=1 (fondo negro).
+// Los ids evitan 0..23 (la grilla ArUco que proyecta la app del casco). Al cargar manda la geometría a /api/log.
+const BITS = {"24":"000000011110011100001000001110000000","25":"000000010010001000001110000010000000","26":"000000010100011000011100001000000000","27":"000000010100001010001010001000000000","28":"000000000100000010000100000110000000","29":"000000000110001000001100011110000000","30":"000000001000001000000010001010000000","31":"000000001010001110010110000100000000","32":"000000010010011100011000011110000000","33":"000000011110000000011000010110000000","34":"000000000000010000010100011100000000","35":"000000000000010010000100010010000000","36":"000000000010010000001110001010000000","37":"000000000000001000011110011110000000","38":"000000000000011010011110001100000000","39":"000000000010011000001010010100000000","40":"000000000010001110000010010000000000","41":"000000000100010100000100010000000000","42":"000000000110000100010000011000000000","43":"000000000110010000010110000100000000","44":"000000000100001000011100010000000000","45":"000000000100011100011100010110000000","46":"000000000100011010000110011110000000","47":"000000001000010110001100001000000000"};
+const q = new URLSearchParams(location.search);
+const num = (k, d) => { const v = parseFloat(q.get(k)); return Number.isFinite(v) && v > 0 ? v : d; };
+const MODO = q.get("modo") === "charuco" ? "charuco" : "grilla";
+const PPI = num("ppi", 422);
+const cv = document.getElementById("c");
+const ctx = cv.getContext("2d");
+let enviado = "";
+
+function marcador(id, x, y, lado) {           // x, y, lado en px físicos; 6x6 celdas con borde negro
+  const b = BITS[id], c = lado / 6;
+  ctx.fillStyle = "#000"; ctx.fillRect(x, y, lado, lado);
+  ctx.fillStyle = "#fff";
+  for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++)
+    if (b[i * 6 + j] === "1") ctx.fillRect(x + j * c, y + i * c, c, c);
+}
+
+function dibujar() {
+  const dpr = window.devicePixelRatio || 1;
+  const W = Math.round(innerWidth * dpr), H = Math.round(innerHeight * dpr);
+  cv.width = W; cv.height = H;
+  const pxmm = PPI / 25.4;                    // px físicos por mm
+  const negro = q.get("negro") === "1";
+  ctx.fillStyle = negro ? "#000" : "#fff"; ctx.fillRect(0, 0, W, H);
+  const texto = 18 * dpr;                     // alto de una línea de texto (px físicos)
+  const libreW = W / pxmm - 8, libreH = (H - texto * 3.2) / pxmm - 8;   // mm disponibles (4 mm de margen por lado)
+  let geo, aviso = "";
+  if (MODO === "grilla") {
+    let mm = num("mm", 24), sep = num("sep", 5);
+    const cabe = Math.min((libreW - sep) / 2, (libreH - 3 * sep) / 4);
+    if (mm > cabe) { aviso = `no cabe ${mm} mm: uso ${Math.floor(cabe * 2) / 2} mm`; mm = Math.floor(cabe * 2) / 2; }
+    const bw = 2 * mm + sep, bh = 4 * mm + 3 * sep;
+    const x0 = (W - bw * pxmm) / 2, y0 = (H - texto * 3.2 - bh * pxmm) / 2;
+    ctx.fillStyle = "#fff"; ctx.fillRect(x0 - 4 * pxmm, y0 - 4 * pxmm, (bw + 8) * pxmm, (bh + 8) * pxmm);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 2; c++)
+      marcador(40 + r * 2 + c, x0 + c * (mm + sep) * pxmm, y0 + r * (mm + sep) * pxmm, mm * pxmm);
+    geo = { modo: "grilla", dict: "DICT_4X4_50", cols: 2, filas: 4, ids: [40, 47], marcador_mm: mm, separacion_mm: sep,
+            tablero_mm: [bw, bh] };
+  } else {
+    let sq = num("cuadro", 15), mk = num("marca", 11);
+    const cabe = Math.min(libreW / 4, libreH / 7);
+    if (sq > cabe) { const f = Math.floor(cabe * 2) / 2 / sq; aviso = `no cabe ${sq} mm: uso ${(sq * f).toFixed(1)} mm`; sq *= f; mk *= f; }
+    const bw = 4 * sq, bh = 7 * sq;
+    const x0 = (W - bw * pxmm) / 2, y0 = (H - texto * 3.2 - bh * pxmm) / 2;
+    ctx.fillStyle = "#fff"; ctx.fillRect(x0 - 4 * pxmm, y0 - 4 * pxmm, (bw + 8) * pxmm, (bh + 8) * pxmm);
+    let id = 24;
+    for (let r = 0; r < 7; r++) for (let c = 0; c < 4; c++) {
+      const x = x0 + c * sq * pxmm, y = y0 + r * sq * pxmm;
+      if ((r + c) % 2 === 0) { ctx.fillStyle = "#000"; ctx.fillRect(x, y, sq * pxmm, sq * pxmm); }
+      else { const o = (sq - mk) / 2 * pxmm; marcador(id++, x + o, y + o, mk * pxmm); }
+    }
+    geo = { modo: "charuco", dict: "DICT_4X4_50", cols: 4, filas: 7, ids: [24, 37], cuadro_mm: +sq.toFixed(3),
+            marcador_mm: +mk.toFixed(3), tablero_mm: [bw, bh] };
+  }
+  // regla de 50 mm y rótulo
+  const yT = H - texto * 3.0;
+  ctx.fillStyle = negro ? "#fff" : "#000";
+  const xr = (W - 50 * pxmm) / 2;
+  ctx.fillRect(xr, yT, 50 * pxmm, Math.max(2, 0.6 * pxmm));
+  for (let k = 0; k <= 50; k += 10) ctx.fillRect(xr + k * pxmm - 1, yT - 2 * pxmm, Math.max(2, 0.4 * pxmm), 2 * pxmm);
+  ctx.font = `${Math.round(texto * 0.62)}px system-ui, sans-serif`; ctx.textAlign = "center";
+  const lado = geo.modo === "grilla" ? `marcador ${geo.marcador_mm} mm · sep ${geo.separacion_mm} mm · ids 40–47`
+                                     : `cuadro ${geo.cuadro_mm} mm · marcador ${geo.marcador_mm} mm · ids 24–37`;
+  ctx.fillText(lado, W / 2, yT + texto * 1.1);
+  ctx.fillText(`regla 50 mm · ${PPI} ppi · dpr ${dpr.toFixed(3)} · ${W}x${H} px`, W / 2, yT + texto * 1.9);
+  if (aviso) { ctx.fillStyle = "#c00"; ctx.fillText(aviso, W / 2, yT + texto * 2.7); }
+  Object.assign(geo, { ppi: PPI, px_por_mm: +pxmm.toFixed(4), dpr, canvas_px: [W, H], css_px: [innerWidth, innerHeight],
+                       pantalla_css: [screen.width, screen.height], aviso, ua: navigator.userAgent });
+  const firma = JSON.stringify([geo.marcador_mm, geo.cuadro_mm, W, H]);
+  if (firma !== enviado) {
+    enviado = firma;
+    fetch("/api/log", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ origen: "pixel-charuco", nivel: "info", msg: "geometría del tablero", datos: geo }) }).catch(() => {});
+  }
+}
+
+addEventListener("resize", () => setTimeout(dibujar, 150));
+addEventListener("click", async () => {
+  try { if (!document.fullscreenElement) await document.documentElement.requestFullscreen({ navigationUI: "hide" }); } catch (e) {}
+  try { await navigator.wakeLock?.request("screen"); } catch (e) {}
+  setTimeout(dibujar, 300);
+});
+dibujar();
+</script>
+</body>
+</html>

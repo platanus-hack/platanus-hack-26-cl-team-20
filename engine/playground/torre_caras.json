@@ -1,0 +1,11 @@
+{
+ "scan5": {
+  "fuente": "Osmo 16-oct 04:1x con luz blanca: caras del PC marcadas en la cámara y llevadas a px del proyector con proj_to_cam de scan5 (la cámara no se movió). workbench.json[torre] cortaba la cara de arriba sobre la pared y la de adelante seguía por la mesa.",
+  "patrones": {"arriba": "gradiente", "lado": "ondas", "frente": "scan"},
+  "caras": {
+   "arriba": [[333, 317], [327, 325], [71, 459], [0, 440], [0, 423], [15, 410], [230, 292], [256, 294]],
+   "lado": [[515, 746], [474, 781], [347, 859], [261, 894], [221, 894], [114, 666], [67, 457], [275, 340], [333, 317], [483, 560], [507, 624]],
+   "frente": [[0, 476], [68, 457], [152, 668], [228, 896], [162, 894], [0, 557]]
+  }
+ }
+}

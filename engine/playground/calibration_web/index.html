@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calibración del rig</title><link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:,">
+  <script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/controls/OrbitControls.js":"/vendor/OrbitControls.js"}}</script>
+</head>
+<body>
+<header class="masthead">
+  <div class="identity"><span class="mark" aria-hidden="true">⌗</span><div><h1>Calibración del rig</h1><p>Cámara + proyector <span class="separator">/</span> geometría en milímetros</p></div></div>
+  <div class="session"><span id="connection" class="connection">Conectando</span><strong id="evidence">Esperando sesión</strong><span id="accuracy">Precisión física sin verificar</span></div>
+</header>
+<main>
+  <section class="workspace" aria-label="Escena 3D de calibración">
+    <div class="viewport-bar"><div><strong id="scene-title">Escena en construcción</strong><span id="pose-label">Sin poses</span></div>
+      <nav aria-label="Punto de vista"><label><input id="show-cloud" type="checkbox" checked>Nube</label><label><input id="show-mesh" type="checkbox" checked>Malla</label><button id="orbit" class="active">Órbita libre</button><button id="camera-view">Desde cámara</button><button id="reset-view" title="Restablecer vista">Centrar</button></nav></div>
+    <div class="canvas-wrap"><canvas id="scene" aria-label="Planos de la hoja y frustums del rig"></canvas>
+      <div id="boot">Preparando vista 3D…</div>
+      <div class="scene-key"><span class="key camera">Cámara estimada</span><span class="key projector">Proyector estimado</span><span class="key paper">Hojas reconstruidas</span></div>
+      <div class="reference"><label><input id="reference" type="checkbox" checked> Mostrar referencia simulada</label><p id="view-note">Arrastra para orbitar. Rueda para acercar.</p></div>
+      <div id="estimate-note" class="estimate-note">La estimación aparece al reunir cuatro poses.</div>
+    </div>
+    <section class="sequence" aria-label="Avance de calibración">
+      <div class="progress-heading"><h2 id="stage">Preparar pose</h2><span id="count">0 / 11 poses</span></div>
+      <div class="progress-track"><div id="progress"></div></div><ol id="steps"></ol>
+      <p id="message" role="status">Esperando simulación o captura.</p>
+      <div class="pose-row"><span>Poses observadas</span><div id="poses"></div><button id="follow" hidden>Volver al paso actual</button></div>
+    </section>
+  </section>
+  <aside class="observations">
+    <section class="camera-panel"><div class="panel-heading"><h2>Lo que ve la cámara</h2><span id="camera-size"></span></div>
+      <div class="camera-image"><img id="camera-image" alt="Imagen de cámara con esquinas detectadas" hidden><div id="camera-empty">Aún no hay imagen</div></div>
+      <p class="image-key"><span class="cyan-dot"></span> ChArUco detectado <span class="gold-dot"></span> Borde de la hoja</p></section>
+    <section class="pattern-panel"><div class="panel-heading"><h2>Patrón enviado</h2><span id="pattern-count"></span></div><img id="pattern-image" alt="Patrón del proyector" hidden></section>
+    <section class="fit-panel"><div class="panel-heading"><h2>Ajuste por vista</h2><span id="fit-state">Pendiente</span></div>
+      <div id="fit-summary">Sin parámetros estimados.</div>
+      <div class="table-wrap"><table><thead><tr><th>Pose</th><th>Cámara px</th><th>Proyector px</th></tr></thead><tbody id="residuals"></tbody></table></div>
+      <p id="holdout-note">Los controles reservados quedan fuera del ajuste.</p></section>
+  </aside>
+</main>
+<footer>
+  <details id="simulation-settings" open><summary>Qué está simulando</summary><div class="model-content"><div id="model-description">Cargando parámetros…</div>
+    <div class="model-controls"><label>Ruido de lectura <input id="noise" type="range" min="0" max="8" step=".2" value="1.2"><output id="noise-out">1,2 DN</output></label>
+      <label>Desenfoque cámara <input id="blur" type="range" min="0" max="2" step=".1" value=".65"><output id="blur-out">0,65 px</output></label>
+      <label>Tiro proyector <input id="throw" type="range" min=".8" max="1.6" step=".05" value="1.1"><output id="throw-out">1,10</output></label>
+      <div class="actions"><button id="pause">Pausar simulación</button><button id="restart" disabled>Repetir con estos valores</button></div><p id="control-note">Los cambios se aplican al repetir la simulación.</p></div></div></details>
+  <p class="local-note">Procesamiento local. Una simulación no certifica 2 mm en la escena física.</p>
+</footer>
+<script type="module" src="/assets/app.js"></script>
+<script>window.addEventListener('error',e=>{const b=document.getElementById('boot');if(b&&!window.viewerReady){b.hidden=false;b.textContent='No se pudo iniciar el visor: '+e.message;}},true);</script>
+</body></html>

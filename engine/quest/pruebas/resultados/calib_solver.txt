@@ -1,0 +1,22 @@
+sintetico.json: 12 pares, cuadro 1920x1080
+
+— numpy —
+DLT numpy (con skew)         fx= 2351.94 fy= 2353.58 cx= 997.89 cy= 912.44  centro=(-0.0033, +0.0775, -0.0077) m  rms= 7.333px
+
+— OpenCV calibrateCamera (sin distorsión, skew 0) —
+OpenCV fx,fy libres          fx= 2356.57 fy= 2353.74 cx= 977.84 cy= 907.82  centro=(-0.0075, +0.0801, -0.0055) m  rms= 6.751px
+OpenCV fx=fy                 fx= 2355.66 fy= 2355.66 cx= 977.86 cy= 901.84  centro=(-0.0077, +0.0806, -0.0068) m  rms= 6.755px
+
+— DLT: JS vs numpy —
+DLT JS                       fx= 2351.94 fy= 2353.58 cx= 997.89 cy= 912.44  centro=(-0.0033, +0.0775, -0.0077) m  rms= 7.333px   Δf=5.46e-12 Δc=2.17e-11px ΔR=0.00e+00° Δcentro=6.79e-12mm
+
+— LM: JS vs OpenCV (mismo objetivo) —
+JS completo                  fx= 2356.57 fy= 2353.74 cx= 977.84 cy= 907.82  centro=(-0.0075, +0.0801, -0.0055) m  rms= 6.751px   Δf=1.13e-05 Δc=1.93e-04px ΔR=0.00e+00° Δcentro=7.24e-05mm
+JS fxfy                      fx= 2355.66 fy= 2355.66 cx= 977.86 cy= 901.84  centro=(-0.0077, +0.0806, -0.0068) m  rms= 6.755px   Δf=3.72e-05 Δc=3.59e-04px ΔR=0.00e+00° Δcentro=1.10e-04mm
+solvePnP con K del JS        fx= 2356.57 fy= 2353.74 cx= 977.84 cy= 907.82  centro=(-0.0075, +0.0801, -0.0055) m  rms= 6.751px   Δf=0.00e+00 Δc=0.00e+00px ΔR=0.00e+00° Δcentro=8.26e-05mm
+
+— contra la verdad sintética —
+verdad                       fx= 2304.00 fy= 2304.00 cx= 960.00 cy= 980.00  centro=(+0.0000, +0.0800, -0.0500) m  rms=11.037px
+OpenCV fx=fy vs verdad       fx= 2355.66 fy= 2355.66 cx= 977.86 cy= 901.84  centro=(-0.0077, +0.0806, -0.0068) m  rms= 6.755px   Δf=5.17e+01 Δc=9.60e+01px ΔR=2.12e+00° Δcentro=4.39e+01mm
+
+JS == OpenCV (tolerancia 0.05 px en f, 1e-3°, 0.05 mm): OK
