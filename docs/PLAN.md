@@ -96,6 +96,16 @@ Sede: Roger de Flor 2725, Torre 3, piso 15 (MUT, Buk). Equipo: Daniel, Max Mardo
 - Repo de entrega y dónde se despliega: sin verificar. Créditos según Daniel: Vercel, Render, Anthropic; Pablo compartió `hack.platan.us/26-cl/llm` (probable página de créditos de LLM).
 - Quiénes son el jurado.
 
+## Plataforma técnica de Manu: pcx (sáb 02:02)
+Manu quedó a cargo de la plataforma. Leyó el engine de Max completo: lo más sólido es la calibración 2D; el 3D y el toque casi no se probaron con hardware. Hay dos versiones separadas en el engine (runtime de octubre con API/MCP y mesa Quest de noviembre).
+- **pcx** («contexto físico para agentes»): nodo local (Mac + proyector + cámaras) con percepción, estado del mundo y renderer en Rust (~100 fps, ~5 ms); cerebro en Render con MCP remoto, agente y memoria. Cualquier agente se conecta por MCP con un comando.
+- Prototipo medido: Claude Code y Codex ven la mesa, proyectan sobre objetos y esperan un toque.
+- Rama `manu/plataforma`. Próximo: portar el seguidor v4, manos y calibración de la mesa de Daniel.
+- **La rama `mesa` es la demo de respaldo** mientras pcx madura.
+- Manu necesita: el caso de la demo (define los modos) y cuentas de Render y API key de Anthropic.
+
+**Riesgo (orquestador):** son dos stacks en paralelo a ~30 h del cierre. Hace falta una hora de corte para decidir con cuál se presenta. Propuesta: sábado 16:00. Si pcx no corre la demo completa en la mesa a esa hora, se presenta con `mesa` y pcx se muestra como arquitectura.
+
 ## Cámaras «enchufar y listo» (idea de Daniel, sáb 00:20)
 Agregar cámaras debería ser trivial: cada cámara nueva se ubica sola en el mundo 3D con el escaneo de luz estructurada, y el sistema sabe dónde está respecto del proyector. El celular de cualquiera debería poder sumarse como cámara, también como contexto para los agentes («mira, así está apuntando el proyector»).
 
