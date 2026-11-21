@@ -113,4 +113,32 @@ mod tests {
         let (r, g, b) = (out[0] as i32, out[1] as i32, out[2] as i32);
         assert!(r > 245 && g < 10 && b < 10, "{r} {g} {b}");
     }
+
+    /// Stride > ancho (caso real de CoreVideo, filas alineadas), ancho impar y valores exactos por canal.
+    #[test]
+    fn nv12_stride_ancho_impar_y_bt709() {
+        // 3×2, stride Y 8 y UV 8 (bytes de relleno = 99 que no deben leerse)
+        let y = [16, 126, 235, 99, 99, 99, 99, 99, 16, 126, 235, 99, 99, 99, 99, 99];
+        let uv = [128, 128, 128, 128, 99, 99, 99, 99];
+        let mut out = [0u8; 18];
+        super::nv12_to_rgb(&y, 8, &uv, 8, 3, 2, false, &mut out);
+        assert_eq!(&out[..9], &[0, 0, 0, 128, 128, 128, 255, 255, 255]);
+        assert_eq!(&out[9..], &out[..9]);
+        // BT.709 vs BT.601 con croma: Y=126, U=100, V=180 → valores de referencia en flotante redondeados
+        let (y, uv) = ([126u8, 126, 126, 126], [100u8, 180]);
+        let ref_px = |kr: f64, kb: f64| {
+            let (yy, u, v) = (1.164 * (126.0 - 16.0), 100.0 - 128.0, 180.0 - 128.0);
+            let kg = 1.0 - kr - kb;
+            let r = yy + 2.0 * (1.0 - kr) * 255.0 / 224.0 * v;
+            let b = yy + 2.0 * (1.0 - kb) * 255.0 / 224.0 * u;
+            let g = (yy - kr * r - kb * b) / kg;
+            [r, g, b].map(|c| c.round().clamp(0.0, 255.0) as i32)
+        };
+        for (bt709, kr, kb) in [(false, 0.299, 0.114), (true, 0.2126, 0.0722)] {
+            super::nv12_to_rgb(&y, 2, &uv, 2, 2, 2, bt709, &mut out[..12]);
+            let got = [out[0] as i32, out[1] as i32, out[2] as i32];
+            let want = ref_px(kr, kb);
+            assert!(got.iter().zip(want).all(|(a, b)| (a - b).abs() <= 1), "bt709={bt709} {got:?} vs {want:?}");
+        }
+    }
 }

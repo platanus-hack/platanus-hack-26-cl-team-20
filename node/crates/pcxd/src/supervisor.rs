@@ -78,6 +78,9 @@ pub struct ProcSpec {
     pub crash_window: Duration,
     /// Backoff inicial entre reinicios.
     pub backoff0: Duration,
+    /// Binario `pcx` para `cmd[0] = "pcx"` y para `pcx guard` (`PCX_BIN` o el ejecutable actual). Los tests pasan
+    /// el binario real (`CARGO_BIN_EXE_pcx`): `current_exe()` ahí es el binario de tests.
+    pub pcx_bin: Option<PathBuf>,
 }
 
 impl ProcSpec {
@@ -95,6 +98,7 @@ impl ProcSpec {
             max_crashes: 5,
             crash_window: Duration::from_secs(60),
             backoff0: Duration::from_secs(1),
+            pcx_bin: std::env::var_os("PCX_BIN").map(PathBuf::from).or_else(|| std::env::current_exe().ok()),
         }
     }
 }
@@ -113,6 +117,9 @@ pub fn load(path: &Path) -> anyhow::Result<Vec<ProcSpec>> {
     let base = path.parent().unwrap_or(Path::new(".")).to_path_buf();
     let genv: BTreeMap<String, String> = cfg.env.iter().map(|(k, v)| (k.clone(), tv(v))).collect();
     let sup = cfg.supervisor;
+    if let Some((n, p)) = cfg.process.iter().find(|(_, p)| !["always", "on-failure", "never"].contains(&p.restart.as_str())) {
+        anyhow::bail!("proceso {n}: restart = {:?} inválido (always | on-failure | never)", p.restart);
+    }
     Ok(cfg
         .process
         .into_iter()
@@ -158,7 +165,7 @@ fn log(name: &str, msg: &str) {
 pub const SUPERVISOR_PID_ENV: &str = "PCX_SUPERVISOR_PID";
 
 fn argv_of(spec: &ProcSpec) -> Vec<String> {
-    let me = std::env::current_exe().ok().map(|p| p.display().to_string());
+    let me = spec.pcx_bin.as_ref().map(|p| p.display().to_string());
     let mut argv = spec.cmd.clone();
     if let (Some("pcx"), Some(me)) = (argv.first().map(String::as_str), &me) {
         argv[0] = me.clone();
@@ -218,17 +225,39 @@ pub async fn terminate(child: &mut Child, timeout: Duration) {
         unsafe {
             libc::killpg(pid as i32, libc::SIGTERM);
         }
-        if tokio::time::timeout(timeout, child.wait()).await.is_ok() {
-            return;
+        // Esperar al hijo directo no basta: con `pcx guard` el guard sale al instante y su hijo puede ignorar SIGTERM.
+        // Se espera a que el grupo entero quede vacío y, si no, SIGKILL al grupo.
+        let deadline = tokio::time::Instant::now() + timeout;
+        let _ = tokio::time::timeout(timeout, child.wait()).await;
+        while group_alive(pid as i32) && tokio::time::Instant::now() < deadline {
+            tokio::time::sleep(Duration::from_millis(50)).await;
         }
-        unsafe {
-            libc::killpg(pid as i32, libc::SIGKILL);
+        if group_alive(pid as i32) {
+            unsafe {
+                libc::killpg(pid as i32, libc::SIGKILL);
+            }
+            for _ in 0..40 {
+                if !group_alive(pid as i32) {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(25)).await;
+            }
+        }
+        if child.try_wait().ok().flatten().is_some() {
+            return;
         }
     }
     #[cfg(not(unix))]
     let _ = timeout;
     let _ = child.kill().await;
     let _ = child.wait().await;
+}
+
+/// ¿Queda algún proceso en el grupo `pgid`? (los zombis sin cosechar también cuentan hasta que se recogen)
+#[cfg(unix)]
+pub fn group_alive(pgid: i32) -> bool {
+    // SAFETY: señal 0 = solo comprobación.
+    unsafe { libc::killpg(pgid, 0) == 0 }
 }
 
 async fn healthy(client: &reqwest::Client, url: &Option<String>) -> bool {
@@ -270,7 +299,7 @@ impl Supervised {
             let code = loop {
                 tokio::select! {
                     _ = stop.cancelled() => { terminate(&mut child, Duration::from_secs(5)).await; return; }
-                    st = child.wait() => break st.ok().map(|s| s.to_string()),
+                    st = child.wait() => break st.ok(),
                     _ = tokio::time::sleep(self.spec.health_every) => {
                         if healthy(&client, &self.spec.health).await {
                             fails = 0;
@@ -288,8 +317,10 @@ impl Supervised {
                 }
             };
             self.pid.store(0, Ordering::Relaxed);
-            log(&name, &format!("terminó ({})", code.unwrap_or_else(|| "?".into())));
-            if self.spec.restart == "never" || self.trip(&mut crashes) {
+            let ok = code.is_some_and(|c| c.success());
+            log(&name, &format!("terminó ({})", code.map(|c| c.to_string()).unwrap_or_else(|| "?".into())));
+            // una salida limpia no es una caída (no cuenta para el cortacircuito)
+            if self.spec.restart == "never" || (ok && self.spec.restart == "on-failure") || (!ok && self.trip(&mut crashes)) {
                 return;
             }
             self.restarts.fetch_add(1, Ordering::Relaxed);
@@ -334,10 +365,16 @@ pub fn lock_instance(dir: &Path) -> anyhow::Result<InstanceLock> {
     std::fs::create_dir_all(dir)?;
     let path = dir.join("pcx-up.lock");
     let mut f = std::fs::OpenOptions::new().read(true).write(true).create(true).truncate(false).open(&path)?;
-    if f.try_lock().is_err() {
-        let mut other = String::new();
-        let _ = f.read_to_string(&mut other);
-        anyhow::bail!("ya hay un `pcx up` corriendo (pid {}; lock {})", other.trim(), path.display());
+    match f.try_lock() {
+        Ok(()) => {}
+        Err(std::fs::TryLockError::WouldBlock) => {
+            let mut other = String::new();
+            // en Windows (LockFileEx) el archivo bloqueado no se puede leer: pid desconocido
+            let _ = f.read_to_string(&mut other);
+            let pid = if other.trim().is_empty() { "desconocido" } else { other.trim() };
+            anyhow::bail!("ya hay un `pcx up` corriendo (pid {pid}; lock {})", path.display());
+        }
+        Err(std::fs::TryLockError::Error(e)) => anyhow::bail!("no se pudo tomar el lock {}: {e}", path.display()),
     }
     f.set_len(0)?;
     f.rewind()?;
@@ -366,16 +403,29 @@ pub async fn up(config: &Path, stop: CancellationToken) -> anyhow::Result<()> {
     let sp = status_path.clone();
     tokio::spawn(async move {
         while !st.is_cancelled() {
-            let _ = std::fs::write(&sp, status_json(&ps).to_string());
+            write_status(&sp, &ps);
             tokio::select! { _ = st.cancelled() => {}, _ = tokio::time::sleep(Duration::from_millis(500)) => {} }
         }
     });
     for t in tasks {
         let _ = t.await;
     }
+    let failed: Vec<&str> = procs.iter().filter(|p| p.failed.load(Ordering::Relaxed)).map(|p| p.spec.name.as_str()).collect();
+    if !failed.is_empty() {
+        write_status(&status_path, &procs); // se conserva para diagnosticar
+        anyhow::bail!("[pcx up] procesos en estado failed: {}", failed.join(", "));
+    }
     let _ = std::fs::remove_file(&status_path);
     eprintln!("[pcx up] detenido");
     Ok(())
+}
+
+/// Escritura atómica (temporal + rename): un lector nunca ve el archivo a medias.
+fn write_status(path: &Path, procs: &[Arc<Supervised>]) {
+    let tmp = path.with_extension("json.tmp");
+    if std::fs::write(&tmp, status_json(procs).to_string()).is_ok() {
+        let _ = std::fs::rename(&tmp, path);
+    }
 }
 
 /// Estado para `<runtime>/pcx-up.json`: `{"pid", "procs": {nombre: {pid, restarts, failed}}}`.
@@ -416,18 +466,51 @@ pub fn guard(argv: &[String]) -> i32 {
         }
     };
     let pid = child.id() as i32;
+    let done = Arc::new(AtomicBool::new(false));
+    // SIGTERM/SIGINT al guard: se reenvían al hijo y se escala a SIGKILL a los 3 s (el hijo puede ignorarlas).
+    // Las señales se bloquean en este hilo (y en los que cree) y las atiende un hilo con sigwait.
+    // SAFETY: máscara de señales del hilo actual; sigwait en un hilo propio.
+    unsafe {
+        let mut set: libc::sigset_t = std::mem::zeroed();
+        libc::sigemptyset(&mut set);
+        libc::sigaddset(&mut set, libc::SIGTERM);
+        libc::sigaddset(&mut set, libc::SIGINT);
+        libc::pthread_sigmask(libc::SIG_BLOCK, &set, std::ptr::null_mut());
+        let d2 = done.clone();
+        std::thread::spawn(move || {
+            let mut sig: libc::c_int = 0;
+            if libc::sigwait(&set, &mut sig) == 0 {
+                libc::kill(pid, sig);
+                for _ in 0..60 {
+                    if d2.load(Ordering::Relaxed) {
+                        return;
+                    }
+                    std::thread::sleep(Duration::from_millis(50));
+                }
+                if !d2.load(Ordering::Relaxed) {
+                    libc::kill(pid, libc::SIGKILL);
+                }
+            }
+        });
+    }
+    let d3 = done.clone();
     std::thread::spawn(move || {
         wait_exit(watched);
+        if d3.load(Ordering::Relaxed) {
+            return;
+        }
         // SAFETY: señales a nuestro propio hijo.
         unsafe { libc::kill(pid, libc::SIGTERM) };
         std::thread::sleep(Duration::from_secs(3));
         unsafe { libc::kill(pid, libc::SIGKILL) };
         std::process::exit(0);
     });
-    match child.wait() {
+    let code = match child.wait() {
         Ok(st) => st.code().unwrap_or_else(|| 128 + st.signal().unwrap_or(0)),
         Err(_) => 1,
-    }
+    };
+    done.store(true, Ordering::Relaxed);
+    code
 }
 
 /// En un hijo `pcx …` lanzado por `pcx up` (macOS/BSD): si el supervisor muere, SIGTERM a sí mismo (apagado

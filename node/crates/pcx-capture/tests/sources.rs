@@ -207,3 +207,25 @@ async fn uvc_manual() {
     eprintln!("uvc:{idx} {} cuadros en {:.1} s", stats.frames, t0.elapsed().as_secs_f64());
     assert_eq!(frame_metas(&log).len(), 60);
 }
+
+/// Cámara que deja de entregar (desconexión): `run` devuelve error para que el supervisor reinicie la captura.
+#[tokio::test]
+async fn camara_que_se_corta_es_error() {
+    use pcx_capture::frame::{latest_box, Frame};
+    let (tx, rx) = latest_box();
+    let src = pcx_capture::RunningSource { name: "cam:prueba".into(), spec: SourceSpec::Cam("prueba".into()), rx, info: None, phone: None };
+    let id = format!("cut{}", std::process::id());
+    let cfg = RunConfig { size: (32, 24), verbose: false, ..RunConfig::new(&id) };
+    let feeder = tokio::spawn(async move {
+        for i in 0..3u64 {
+            tx.put(Frame { img: image::RgbImage::new(32, 24), t_capture_ns: i + 1 });
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+        drop(tx); // «desenchufada»
+    });
+    let (_log, mut sinks) = collector();
+    let r = tokio::time::timeout(Duration::from_secs(10), run(cfg, src, &mut sinks, std::future::pending())).await.unwrap();
+    feeder.await.unwrap();
+    let e = r.expect_err("debe ser error").to_string();
+    assert!(e.contains("cámara desconectada"), "{e}");
+}

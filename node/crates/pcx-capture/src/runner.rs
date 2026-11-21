@@ -3,10 +3,13 @@
 use crate::contracts::{wrap, CaptureEvent, Device, DeviceStatus, Envelope, Event, FrameMeta, Payload};
 use crate::frame::{fit, rgb_to_bgr, BoxError};
 use crate::sink::MetaSink;
-use crate::sources::RunningSource;
+use crate::sources::{RunningSource, SourceSpec};
 use pcx_shm::{PixelFormat, RingWriter, DEFAULT_SLOTS};
 use std::future::Future;
-use std::time::Instant;
+use std::time::{Duration, Instant};
+
+/// Fuente en vivo (cámara) sin cuadros durante este plazo → error (el supervisor reinicia la captura).
+pub const LIVE_STALL: Duration = Duration::from_secs(5);
 
 #[derive(Clone, Debug)]
 pub struct RunConfig {
@@ -107,7 +110,8 @@ fn device_event(cfg: &RunConfig, src: &RunningSource, ring: &str, status: Device
 }
 
 /// Corre hasta que la fuente se acabe, `max_frames` o `stop`. Emite `device_changed` (online/offline) al
-/// empezar y al terminar, y un `frame_meta` por cuadro.
+/// empezar y al terminar, y un `frame_meta` por cuadro. Con una cámara (`cam:`/`uvc:`), que la fuente termine o
+/// pase [`LIVE_STALL`] sin cuadros es un **error** (cámara desconectada): el proceso sale con código ≠ 0.
 pub async fn run(
     cfg: RunConfig,
     mut src: RunningSource,
@@ -130,10 +134,21 @@ pub async fn run(
     let mut stats = RunStats::default();
     let (mut t0, mut n0) = (Instant::now(), 0u64);
     tokio::pin!(stop);
+    let live = matches!(src.spec, SourceSpec::Cam(_) | SourceSpec::Uvc(_));
+    let mut failure: Option<String> = None;
     loop {
         tokio::select! {
             _ = &mut stop => break,
-            r = src.rx.changed() => if r.is_err() { break },
+            r = src.rx.changed() => if r.is_err() {
+                if live {
+                    failure = Some(format!("{}: la fuente terminó (cámara desconectada o detenida)", src.name));
+                }
+                break
+            },
+            _ = tokio::time::sleep(LIVE_STALL), if live => {
+                failure = Some(format!("{}: sin cuadros en {LIVE_STALL:?}", src.name));
+                break
+            }
         }
         let Some(frame) = src.rx.borrow_and_update().clone() else { continue };
         let img = fit(&frame.img, Some(cfg.size));
@@ -151,5 +166,8 @@ pub async fn run(
     }
     send(sinks, publ.envelope(device_event(&cfg, &src, &ring, DeviceStatus::Offline), None));
     writer.close();
-    Ok(stats)
+    match failure {
+        Some(f) => Err(f.into()),
+        None => Ok(stats),
+    }
 }

@@ -70,6 +70,9 @@ pub async fn hands(a: HandsArgs) -> anyhow::Result<()> {
     let mut push = zeromq::PushSocket::new();
     push.connect(&ingest).await?;
     eprintln!("[pcx worker hands] → {ingest}");
+    // una sola vez: si se recreara en cada vuelta, un SIGTERM que llega durante `send` se perdería
+    let shutdown = pcx_core::shutdown_signal();
+    tokio::pin!(shutdown);
     loop {
         tokio::select! {
             m = rx.recv() => match m {
@@ -79,11 +82,12 @@ pub async fn hands(a: HandsArgs) -> anyhow::Result<()> {
                 }
                 None => break,
             },
-            _ = pcx_core::shutdown_signal() => { stop.store(true, Ordering::Relaxed); break; }
+            _ = &mut shutdown => { stop.store(true, Ordering::Relaxed); break; }
         }
     }
     stop.store(true, Ordering::Relaxed);
-    match loop_thread.join() {
+    // join sin bloquear el runtime
+    match tokio::task::spawn_blocking(move || loop_thread.join()).await? {
         Ok(r) => r,
         Err(_) => anyhow::bail!("el hilo de manos terminó con panic"),
     }
