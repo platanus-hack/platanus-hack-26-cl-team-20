@@ -5,8 +5,8 @@ services:
   - type: web
     name: pcx-gateway
     runtime: docker
-    branch: manu/plataforma
-    autoDeployTrigger: checksPass # espera los checks de CI de la rama
+    branch: daniel/consola
+    autoDeployTrigger: commit # esta rama no tiene checks de CI; volver a checksPass al integrar en manu/plataforma
     region: virginia
     plan: starter            # alias válido de 0.5c-512mb: pago, no se duerme
     numInstances: 1          # sin autoscaling: el estado de conexiones es local al proceso
