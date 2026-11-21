@@ -30,12 +30,7 @@ pub struct DetectorConfig {
 
 impl Default for DetectorConfig {
     fn default() -> Self {
-        Self {
-            palm_score: 0.6,
-            palm_nms_iou: 0.3,
-            backend: Backend::Cpu,
-            intra_threads: 2,
-        }
+        Self { palm_score: 0.6, palm_nms_iou: 0.3, backend: Backend::Cpu, intra_threads: 2 }
     }
 }
 
@@ -88,34 +83,17 @@ fn ort_err<E: std::fmt::Display>(e: E) -> HandsError {
 
 /// `Environment` de ort del proceso (se crea una vez; ort no admite un segundo).
 pub fn shared_env() -> Result<ort::environment::Environment, HandsError> {
-    static ENV: std::sync::OnceLock<Result<ort::environment::Environment, String>> =
-        std::sync::OnceLock::new();
-    ENV.get_or_init(|| {
-        ort::init()
-            .with_name("pcx")
-            .build()
-            .map_err(|e| e.to_string())
-    })
-    .clone()
-    .map_err(HandsError::Ort)
+    static ENV: std::sync::OnceLock<Result<ort::environment::Environment, String>> = std::sync::OnceLock::new();
+    ENV.get_or_init(|| ort::init().with_name("pcx").build().map_err(|e| e.to_string())).clone().map_err(HandsError::Ort)
 }
 
-fn session(
-    env: &ort::environment::Environment,
-    path: &Path,
-    cfg: &DetectorConfig,
-) -> Result<Session, HandsError> {
-    let mut b = Session::builder(env)
-        .map_err(ort_err)?
-        .with_intra_threads(cfg.intra_threads)
-        .map_err(ort_err)?;
+fn session(env: &ort::environment::Environment, path: &Path, cfg: &DetectorConfig) -> Result<Session, HandsError> {
+    let mut b = Session::builder(env).map_err(ort_err)?.with_intra_threads(cfg.intra_threads).map_err(ort_err)?;
     if cfg.backend == Backend::CoreMl {
         #[cfg(feature = "coreml")]
         {
             use ort::ep::CoreML;
-            b = b
-                .with_execution_providers([CoreML::default().build()])
-                .map_err(ort_err)?;
+            b = b.with_execution_providers([CoreML::default().build()]).map_err(ort_err)?;
         }
     }
     b.commit_from_file(path).map_err(ort_err)
@@ -127,10 +105,7 @@ pub fn palm_anchors() -> Vec<[f32; 2]> {
     for (grid, per_cell) in [(24usize, 2usize), (12, 6)] {
         for y in 0..grid {
             for x in 0..grid {
-                let c = [
-                    (x as f32 + 0.5) / grid as f32,
-                    (y as f32 + 0.5) / grid as f32,
-                ];
+                let c = [(x as f32 + 0.5) / grid as f32, (y as f32 + 0.5) / grid as f32];
                 out.extend(std::iter::repeat_n(c, per_cell));
             }
         }
@@ -139,11 +114,7 @@ pub fn palm_anchors() -> Vec<[f32; 2]> {
 }
 
 impl HandDetector {
-    pub fn new(
-        palm_model: &Path,
-        landmark_model: &Path,
-        cfg: DetectorConfig,
-    ) -> Result<Self, HandsError> {
+    pub fn new(palm_model: &Path, landmark_model: &Path, cfg: DetectorConfig) -> Result<Self, HandsError> {
         Self::with_env(shared_env()?, palm_model, landmark_model, cfg)
     }
 
@@ -179,14 +150,7 @@ impl HandDetector {
         let (left, top) = ((PALM_N - rw) / 2, (PALM_N - rh) / 2);
         let pad_bias = [(left as f64 / ratio).trunc(), (top as f64 / ratio).trunc()];
         let (sx, sy) = (w / rw as f64, h / rh as f64);
-        let map = Affine([
-            sx,
-            0.0,
-            (0.5 - left as f64) * sx - 0.5,
-            0.0,
-            sy,
-            (0.5 - top as f64) * sy - 0.5,
-        ]);
+        let map = Affine([sx, 0.0, (0.5 - left as f64) * sx - 0.5, 0.0, sy, (0.5 - top as f64) * sy - 0.5]);
         self.palm_buf.fill(0.0);
         geom::warp_to_tensor(
             frame,
@@ -198,18 +162,10 @@ impl HandDetector {
             Some([left, top, left + rw, top + rh]),
             &mut self.palm_buf,
         );
-        let input = Tensor::from_array(([1usize, PALM_N, PALM_N, 3], self.palm_buf.clone()))
-            .map_err(ort_err)?;
-        let outs = self
-            .palm
-            .run(ort::inputs!["input_1" => input])
-            .map_err(ort_err)?;
-        let (_, reg) = outs["Identity"]
-            .try_extract_tensor::<f32>()
-            .map_err(ort_err)?;
-        let (_, raw) = outs["Identity_1"]
-            .try_extract_tensor::<f32>()
-            .map_err(ort_err)?;
+        let input = Tensor::from_array(([1usize, PALM_N, PALM_N, 3], self.palm_buf.clone())).map_err(ort_err)?;
+        let outs = self.palm.run(ort::inputs!["input_1" => input]).map_err(ort_err)?;
+        let (_, reg) = outs["Identity"].try_extract_tensor::<f32>().map_err(ort_err)?;
+        let (_, raw) = outs["Identity_1"].try_extract_tensor::<f32>().map_err(ort_err)?;
 
         let scale = w.max(h);
         let n = PALM_N as f64;
@@ -234,10 +190,7 @@ impl HandDetector {
         cands.sort_by(|a, b| b.0.total_cmp(&a.0));
         let mut keep: Vec<(f32, usize, [f64; 4])> = Vec::new();
         for c in cands {
-            if keep
-                .iter()
-                .all(|k| geom::iou(k.2, c.2) <= self.cfg.palm_nms_iou)
-            {
+            if keep.iter().all(|k| geom::iou(k.2, c.2) <= self.cfg.palm_nms_iou) {
                 keep.push(c);
             }
         }
@@ -252,11 +205,7 @@ impl HandDetector {
                         (d[1] as f64 / n + a[1] as f64) * scale - pad_bias[1],
                     ]
                 });
-                PalmDetection {
-                    bbox,
-                    keypoints: kp,
-                    score,
-                }
+                PalmDetection { bbox, keypoints: kp, score }
             })
             .collect())
     }
@@ -264,34 +213,13 @@ impl HandDetector {
     /// 21 landmarks dentro de `roi` (recorte rotado 224², negro fuera de la imagen).
     pub fn landmarks(&mut self, frame: &Frame, roi: &Roi) -> Result<LandmarkResult, HandsError> {
         let ss = (roi.size / LM_N as f64).ceil().clamp(1.0, 3.0) as usize;
-        geom::warp_to_tensor(
-            frame,
-            &Affine::from_roi(roi, LM_N),
-            LM_N,
-            LM_N,
-            ss,
-            false,
-            None,
-            &mut self.lm_buf,
-        );
-        let input =
-            Tensor::from_array(([1usize, LM_N, LM_N, 3], self.lm_buf.clone())).map_err(ort_err)?;
-        let outs = self
-            .lm
-            .run(ort::inputs!["input_1" => input])
-            .map_err(ort_err)?;
-        let (_, lm) = outs["Identity"]
-            .try_extract_tensor::<f32>()
-            .map_err(ort_err)?;
-        let (_, conf) = outs["Identity_1"]
-            .try_extract_tensor::<f32>()
-            .map_err(ort_err)?;
-        let (_, hand) = outs["Identity_2"]
-            .try_extract_tensor::<f32>()
-            .map_err(ort_err)?;
-        let (_, world) = outs["Identity_3"]
-            .try_extract_tensor::<f32>()
-            .map_err(ort_err)?;
+        geom::warp_to_tensor(frame, &Affine::from_roi(roi, LM_N), LM_N, LM_N, ss, false, None, &mut self.lm_buf);
+        let input = Tensor::from_array(([1usize, LM_N, LM_N, 3], self.lm_buf.clone())).map_err(ort_err)?;
+        let outs = self.lm.run(ort::inputs!["input_1" => input]).map_err(ort_err)?;
+        let (_, lm) = outs["Identity"].try_extract_tensor::<f32>().map_err(ort_err)?;
+        let (_, conf) = outs["Identity_1"].try_extract_tensor::<f32>().map_err(ort_err)?;
+        let (_, hand) = outs["Identity_2"].try_extract_tensor::<f32>().map_err(ort_err)?;
+        let (_, world) = outs["Identity_3"].try_extract_tensor::<f32>().map_err(ort_err)?;
         let k = roi.size / LM_N as f64;
         let landmarks = std::array::from_fn(|i| {
             let p = roi.to_image([lm[i * 3] as f64, lm[i * 3 + 1] as f64], LM_N as f64);
@@ -301,12 +229,7 @@ impl HandDetector {
             let p = geom::rotate([world[i * 3] as f64, world[i * 3 + 1] as f64], roi.angle);
             [p[0], p[1], world[i * 3 + 2] as f64]
         });
-        Ok(LandmarkResult {
-            landmarks,
-            world,
-            score: conf[0],
-            handedness: hand[0],
-        })
+        Ok(LandmarkResult { landmarks, world, score: conf[0], handedness: hand[0] })
     }
 }
 

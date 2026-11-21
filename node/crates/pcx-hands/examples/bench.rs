@@ -4,12 +4,7 @@ use pcx_hands::*;
 use std::time::Instant;
 
 fn frame_with_hands(w: u32, h: u32) -> Vec<u8> {
-    let src = image::open(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/testdata/right_hands.jpg"
-    ))
-    .unwrap()
-    .to_rgb8();
+    let src = image::open(concat!(env!("CARGO_MANIFEST_DIR"), "/testdata/right_hands.jpg")).unwrap().to_rgb8();
     let s = (w as f32 * 0.8 / src.width() as f32).min(h as f32 * 0.8 / src.height() as f32);
     let small = image::imageops::resize(
         &src,
@@ -18,21 +13,12 @@ fn frame_with_hands(w: u32, h: u32) -> Vec<u8> {
         image::imageops::FilterType::Triangle,
     );
     let mut canvas = image::RgbImage::from_pixel(w, h, image::Rgb([90, 80, 70]));
-    image::imageops::overlay(
-        &mut canvas,
-        &small,
-        ((w - small.width()) / 2) as i64,
-        ((h - small.height()) / 2) as i64,
-    );
+    image::imageops::overlay(&mut canvas, &small, ((w - small.width()) / 2) as i64, ((h - small.height()) / 2) as i64);
     canvas.into_raw()
 }
 
 fn main() -> Result<(), HandsError> {
-    let backend = if std::env::args().any(|a| a == "coreml") {
-        Backend::CoreMl
-    } else {
-        Backend::Cpu
-    };
+    let backend = if std::env::args().any(|a| a == "coreml") { Backend::CoreMl } else { Backend::Cpu };
     let threads = std::env::args()
         .find_map(|a| a.strip_prefix("threads=").and_then(|v| v.parse().ok()))
         .unwrap_or(DetectorConfig::default().intra_threads);
@@ -41,11 +27,7 @@ fn main() -> Result<(), HandsError> {
         let rgb = frame_with_hands(w, h);
         let frame = Frame::packed(&rgb, w as usize, h as usize, PixelFormat::Rgb8)?;
         let cfg = EngineConfig {
-            detector: DetectorConfig {
-                backend,
-                intra_threads: threads,
-                ..Default::default()
-            },
+            detector: DetectorConfig { backend, intra_threads: threads, ..Default::default() },
             homography: Some([0.5, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 1.0]),
             ..Default::default()
         };

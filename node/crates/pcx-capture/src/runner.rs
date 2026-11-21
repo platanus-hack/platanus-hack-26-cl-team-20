@@ -137,7 +137,8 @@ pub async fn run(
         }
         let Some(frame) = src.rx.borrow_and_update().clone() else { continue };
         let img = fit(&frame.img, Some(cfg.size));
-        let seq = writer.write_with(w, h, PixelFormat::Bgr8, Some(frame.t_capture_ns), |dst| rgb_to_bgr(img.as_raw(), dst))?;
+        let seq = writer
+            .write_with(w, h, PixelFormat::Bgr8, Some(frame.t_capture_ns), |dst| rgb_to_bgr(img.as_raw(), dst))?;
         send(sinks, publ.frame_meta(seq, frame.t_capture_ns, w, h));
         stats.frames += 1;
         if cfg.max_frames.is_some_and(|m| stats.frames >= m) {

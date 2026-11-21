@@ -200,13 +200,10 @@ pub fn centroid(m: &Mask) -> Option<(f64, f64)> {
 /// Contorno externo más grande simplificado con Douglas–Peucker (`approxPolyDP(c, 1.2, True)`), en px.
 pub fn contour_polygon(m: &Mask, eps: f64) -> Vec<(f64, f64)> {
     let cs = imageproc::contours::find_contours::<i32>(m);
-    let best = cs
-        .iter()
-        .filter(|c| c.border_type == imageproc::contours::BorderType::Outer)
-        .max_by(|a, b| {
-            let (aa, bb) = (poly_area(&a.points), poly_area(&b.points));
-            aa.partial_cmp(&bb).unwrap_or(std::cmp::Ordering::Equal)
-        });
+    let best = cs.iter().filter(|c| c.border_type == imageproc::contours::BorderType::Outer).max_by(|a, b| {
+        let (aa, bb) = (poly_area(&a.points), poly_area(&b.points));
+        aa.partial_cmp(&bb).unwrap_or(std::cmp::Ordering::Equal)
+    });
     let Some(c) = best else { return vec![] };
     let simp = imageproc::geometry::approximate_polygon_dp(&c.points, eps, true);
     simp.iter().map(|p| (p.x as f64 + 0.5, p.y as f64 + 0.5)).collect()
@@ -230,7 +227,12 @@ pub fn warp_affine_nearest(m: &Mask, a: &Affine, w: u32, h: u32) -> Mask {
         for x in 0..w {
             let (sx, sy) = geom::apply(&inv, (x as f64, y as f64));
             let (sx, sy) = (sx.round(), sy.round());
-            if sx >= 0.0 && sy >= 0.0 && (sx as u32) < m.width() && (sy as u32) < m.height() && m.get_pixel(sx as u32, sy as u32).0[0] > 0 {
+            if sx >= 0.0
+                && sy >= 0.0
+                && (sx as u32) < m.width()
+                && (sy as u32) < m.height()
+                && m.get_pixel(sx as u32, sy as u32).0[0] > 0
+            {
                 out.put_pixel(x, y, ON);
             }
         }

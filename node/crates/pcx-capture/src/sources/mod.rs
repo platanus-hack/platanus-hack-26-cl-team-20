@@ -27,9 +27,17 @@ impl std::str::FromStr for SourceSpec {
         let (kind, arg) = s.split_once(':').unwrap_or((s, ""));
         Ok(match kind {
             "replay" => Self::Replay(PathBuf::from(arg)),
-            "uvc" => Self::Uvc(if arg.is_empty() { 0 } else { arg.parse().map_err(|_| format!("índice inválido: {arg}"))? }),
+            "uvc" => Self::Uvc(if arg.is_empty() {
+                0
+            } else {
+                arg.parse().map_err(|_| format!("índice inválido: {arg}"))?
+            }),
             "mjpeg" => Self::Mjpeg(arg.to_string()),
-            "phone" => Self::Phone(if arg.is_empty() { phone::DEFAULT_PORT } else { arg.parse().map_err(|_| "puerto inválido")? }),
+            "phone" => Self::Phone(if arg.is_empty() {
+                phone::DEFAULT_PORT
+            } else {
+                arg.parse().map_err(|_| "puerto inválido")?
+            }),
             _ => return Err(format!("fuente desconocida: {s:?} (replay:|uvc:|mjpeg:|phone)")),
         })
     }
@@ -45,7 +53,11 @@ impl SourceSpec {
         }
     }
     pub fn device_kind(&self) -> DeviceKind {
-        if matches!(self, Self::Phone(_)) { DeviceKind::Phone } else { DeviceKind::Camera }
+        if matches!(self, Self::Phone(_)) {
+            DeviceKind::Phone
+        } else {
+            DeviceKind::Camera
+        }
     }
 }
 
@@ -96,7 +108,9 @@ pub async fn open_source(spec: &SourceSpec, opts: &SourceOpts) -> Result<Running
             format!("mjpeg:{url}")
         }
         SourceSpec::Phone(port) => {
-            let srv = phone::spawn(SocketAddr::new(opts.bind_ip, *port), opts.size, opts.fps.unwrap_or(30.0) as u32, tx).await?;
+            let srv =
+                phone::spawn(SocketAddr::new(opts.bind_ip, *port), opts.size, opts.fps.unwrap_or(30.0) as u32, tx)
+                    .await?;
             info = Some(format!("abre {} en el celular", srv.url()));
             phone_srv = Some(srv);
             format!("phone:{port}")

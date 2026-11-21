@@ -17,13 +17,27 @@ pub fn synthetic_scene(n: usize, rev: i64, t: f64) -> ToRenderer {
         let id = format!("w{i}");
         let wob = (t * 2.0 + i as f64).sin() * 3.0;
         let w = match i % 10 {
-            0 | 5 => json!({"type":"label","id":id,"anchor":{"point_mm":[x, y + wob]},"text":format!("Etiqueta {i} ✓ {:.1}", t),"size_mm":6,"color":"#FFFFFF","bg":"#00000099"}),
-            1 => json!({"type":"halo","id":id,"polygon_mm":[[x,y],[x+40.0,y],[x+40.0,y+25.0],[x,y+25.0]],"color":"#00E5FF","width_mm":2,"pulse_hz":1.5}),
-            2 | 7 => json!({"type":"arrow","id":id,"from_mm":[x,y],"to_mm":[x+40.0,y+20.0+wob],"color":"#FFD400","width_mm":2}),
-            3 => json!({"type":"panel","id":id,"rect_mm":[x,y,50,28],"title":"Paso","body":"Texto de un panel con ajuste de línea.","color":"#FFFFFF"}),
-            4 | 8 => json!({"type":"button","id":id,"rect_mm":[x,y,45,20],"label":"OK ✓","progress":(t * 0.3 + i as f64 * 0.1).fract(),"color":"#00E676"}),
-            6 => json!({"type":"effect","id":id,"shader":"marco_respira","rect_mm":[x,y,45,26],"params":{"color":"#FF4081"}}),
-            _ => json!({"type":"effect","id":id,"shader":"halo_glow","polygon_mm":[[x+20.0,y],[x+40.0,y+12.0],[x+20.0,y+25.0],[x,y+12.0]],"params":{"margin_mm":6}}),
+            0 | 5 => {
+                json!({"type":"label","id":id,"anchor":{"point_mm":[x, y + wob]},"text":format!("Etiqueta {i} ✓ {:.1}", t),"size_mm":6,"color":"#FFFFFF","bg":"#00000099"})
+            }
+            1 => {
+                json!({"type":"halo","id":id,"polygon_mm":[[x,y],[x+40.0,y],[x+40.0,y+25.0],[x,y+25.0]],"color":"#00E5FF","width_mm":2,"pulse_hz":1.5})
+            }
+            2 | 7 => {
+                json!({"type":"arrow","id":id,"from_mm":[x,y],"to_mm":[x+40.0,y+20.0+wob],"color":"#FFD400","width_mm":2})
+            }
+            3 => {
+                json!({"type":"panel","id":id,"rect_mm":[x,y,50,28],"title":"Paso","body":"Texto de un panel con ajuste de línea.","color":"#FFFFFF"})
+            }
+            4 | 8 => {
+                json!({"type":"button","id":id,"rect_mm":[x,y,45,20],"label":"OK ✓","progress":(t * 0.3 + i as f64 * 0.1).fract(),"color":"#00E676"})
+            }
+            6 => {
+                json!({"type":"effect","id":id,"shader":"marco_respira","rect_mm":[x,y,45,26],"params":{"color":"#FF4081"}})
+            }
+            _ => {
+                json!({"type":"effect","id":id,"shader":"halo_glow","polygon_mm":[[x+20.0,y],[x+40.0,y+12.0],[x+20.0,y+25.0],[x,y+12.0]],"params":{"margin_mm":6}})
+            }
         };
         widgets.push(w);
     }

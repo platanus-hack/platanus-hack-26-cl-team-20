@@ -33,12 +33,7 @@ pub struct Frame<'a> {
 
 impl<'a> Frame<'a> {
     /// Cuadro contiguo (`stride = width * 3`). Falla si el buffer es más chico.
-    pub fn packed(
-        data: &'a [u8],
-        width: usize,
-        height: usize,
-        format: PixelFormat,
-    ) -> Result<Self, crate::HandsError> {
+    pub fn packed(data: &'a [u8], width: usize, height: usize, format: PixelFormat) -> Result<Self, crate::HandsError> {
         Self::with_stride(data, width, height, width * 3, format)
     }
 
@@ -49,23 +44,13 @@ impl<'a> Frame<'a> {
         stride: usize,
         format: PixelFormat,
     ) -> Result<Self, crate::HandsError> {
-        if width == 0
-            || height == 0
-            || stride < width * 3
-            || data.len() < stride * (height - 1) + width * 3
-        {
+        if width == 0 || height == 0 || stride < width * 3 || data.len() < stride * (height - 1) + width * 3 {
             return Err(crate::HandsError::BadFrame(format!(
                 "{width}x{height} stride {stride} con {} bytes",
                 data.len()
             )));
         }
-        Ok(Self {
-            data,
-            width,
-            height,
-            stride,
-            format,
-        })
+        Ok(Self { data, width, height, stride, format })
     }
 }
 

@@ -61,7 +61,9 @@ fn n2_traslacion() {
     let c0 = center_mm(&t, "a");
     let a2 = Obj { cx: a.cx + 60.0, cy: a.cy + 25.0, ..a.clone() };
     let r = t.update(&frame(&[a2, b], 0, 4));
-    let Some(ObjectEvent::ObjectMoved { aff, level, .. }) = moved(&r.events, "a") else { panic!("{:?} {:?}", r.events, r.log) };
+    let Some(ObjectEvent::ObjectMoved { aff, level, .. }) = moved(&r.events, "a") else {
+        panic!("{:?} {:?}", r.events, r.log)
+    };
     assert!(level.as_deref().unwrap().starts_with("N2"), "{level:?}");
     assert!(moved(&r.events, "b").is_none());
     let c1 = center_mm(&t, "a");
@@ -76,7 +78,9 @@ fn n2_rotacion() {
     let mut t = tracker_with(&a, &b);
     let a2 = Obj { cx: a.cx + 30.0, cy: a.cy + 40.0, angle_deg: 30.0, ..a.clone() };
     let r = t.update(&frame(&[a2, b], 0, 5));
-    let Some(ObjectEvent::ObjectMoved { aff, .. }) = moved(&r.events, "a") else { panic!("{:?} {:?}", r.events, r.log) };
+    let Some(ObjectEvent::ObjectMoved { aff, .. }) = moved(&r.events, "a") else {
+        panic!("{:?} {:?}", r.events, r.log)
+    };
     let ang = geom::angle_deg(&aff.unwrap());
     assert!((ang - 30.0).abs() < 3.0, "ángulo {ang}");
 }
@@ -86,7 +90,11 @@ fn n2_desaparece_y_reaparece() {
     let (a, b) = two_objects();
     let mut t = tracker_with(&a, &b);
     let r = t.update(&frame(std::slice::from_ref(&b), 0, 6));
-    assert!(r.events.iter().any(|e| matches!(e, ObjectEvent::ObjectRemoved { object_id, .. } if object_id == "a")), "{:?}", r.log);
+    assert!(
+        r.events.iter().any(|e| matches!(e, ObjectEvent::ObjectRemoved { object_id, .. } if object_id == "a")),
+        "{:?}",
+        r.log
+    );
     assert!(t.objects().iter().all(|o| o.id != "a"));
     let a3 = Obj { cx: 300.0, cy: 290.0, angle_deg: -15.0, ..a.clone() };
     let r = t.update(&frame(&[a3, b], 0, 7));
@@ -134,9 +142,12 @@ fn n3_arrugado_dino_sam() {
     let a2 = Obj { tex: scrambled(&a.tex, 7), cx: 330.0, cy: 90.0, angle_deg: 10.0 };
     let m2 = mask_of(&a2);
     *sam.truth.lock().unwrap() = vec![m2.clone(), mask_of(&b)];
-    *dino.boxes.lock().unwrap() = vec![Detection { prompt: "a card".into(), label: "card".into(), bbox: bbox_f(&m2), score: 0.5 }];
+    *dino.boxes.lock().unwrap() =
+        vec![Detection { prompt: "a card".into(), label: "card".into(), bbox: bbox_f(&m2), score: 0.5 }];
     let r = t.update(&frame(&[a2, b], 0, 10));
-    let Some(ObjectEvent::ObjectMoved { level, .. }) = moved(&r.events, "a") else { panic!("{:?} {:?}", r.events, r.log) };
+    let Some(ObjectEvent::ObjectMoved { level, .. }) = moved(&r.events, "a") else {
+        panic!("{:?} {:?}", r.events, r.log)
+    };
     assert!(level.as_deref().unwrap().starts_with("N3"), "{level:?}");
 }
 
@@ -160,7 +171,9 @@ fn n4_llm_desempata() {
         Detection { prompt: "a card".into(), label: "card".into(), bbox: bbox_f(&m2), score: 0.5 },
     ];
     let r = t.update(&frame(&[x1, x2, b], 0, 11));
-    let Some(ObjectEvent::ObjectMoved { level, center_mm, .. }) = moved(&r.events, "a") else { panic!("{:?} {:?}", r.events, r.log) };
+    let Some(ObjectEvent::ObjectMoved { level, center_mm, .. }) = moved(&r.events, "a") else {
+        panic!("{:?} {:?}", r.events, r.log)
+    };
     assert_eq!(level.as_deref(), Some("N4 llm"));
     let llm_calls = t.llm().unwrap().usage().len();
     assert_eq!(llm_calls, 1);
@@ -186,7 +199,9 @@ fn n5_registro_global_mock() {
     let labels: Vec<String> = r
         .events
         .iter()
-        .filter_map(|e| if let ObjectEvent::ObjectAppeared { object, .. } = e { Some(object.label.clone()) } else { None })
+        .filter_map(
+            |e| if let ObjectEvent::ObjectAppeared { object, .. } = e { Some(object.label.clone()) } else { None },
+        )
         .collect();
     assert_eq!(labels, vec!["tarjeta cuadrada", "tarjeta"], "{:?}", r.log);
     let objs = t.objects();

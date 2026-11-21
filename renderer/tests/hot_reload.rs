@@ -5,7 +5,8 @@ use std::time::Duration;
 use pcx_renderer::engine::{Engine, EngineConfig};
 use pcx_renderer::scene::SceneState;
 
-const OK_RED: &str = "// params: k=1.0\nfn effect(p: vec2<f32>) -> vec4<f32> { return vec4<f32>(fx_param(0), 0.0, 0.0, 1.0); }\n";
+const OK_RED: &str =
+    "// params: k=1.0\nfn effect(p: vec2<f32>) -> vec4<f32> { return vec4<f32>(fx_param(0), 0.0, 0.0, 1.0); }\n";
 const OK_GREEN: &str = "fn effect(p: vec2<f32>) -> vec4<f32> { return vec4<f32>(0.0, 1.0, 0.0, 1.0); }\n";
 const BROKEN: &str = "fn effect(p: vec2<f32>) -> vec4<f32> { return vec3<f32>(1.0); }\n";
 

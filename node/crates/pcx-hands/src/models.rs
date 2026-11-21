@@ -60,20 +60,12 @@ pub fn ensure(spec: &ModelSpec, dir: &Path) -> Result<PathBuf, HandsError> {
 fn download(spec: &ModelSpec, dir: &Path) -> Result<PathBuf, HandsError> {
     use std::io::Read;
     std::fs::create_dir_all(dir)?;
-    let resp = ureq::get(spec.url)
-        .call()
-        .map_err(|e| HandsError::Model(format!("{}: {e}", spec.url)))?;
+    let resp = ureq::get(spec.url).call().map_err(|e| HandsError::Model(format!("{}: {e}", spec.url)))?;
     let mut bytes = Vec::new();
-    resp.into_body()
-        .into_reader()
-        .take(64 << 20)
-        .read_to_end(&mut bytes)?;
+    resp.into_body().into_reader().take(64 << 20).read_to_end(&mut bytes)?;
     let got = hex(&Sha256::digest(&bytes));
     if got != spec.sha256 {
-        return Err(HandsError::Model(format!(
-            "{}: sha256 {got} ≠ {}",
-            spec.file, spec.sha256
-        )));
+        return Err(HandsError::Model(format!("{}: sha256 {got} ≠ {}", spec.file, spec.sha256)));
     }
     let tmp = dir.join(format!("{}.part", spec.file));
     std::fs::write(&tmp, &bytes)?;

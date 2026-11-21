@@ -146,7 +146,13 @@ fn decode_image(bytes: &[u8]) -> Result<ImageData, String> {
     reader.limits(limits);
     let img = reader.decode().map_err(|e| e.to_string())?.to_rgba8();
     let (width, height) = img.dimensions();
-    Ok(ImageData { data: Blob::from(img.into_raw()), format: ImageFormat::Rgba8, alpha_type: ImageAlphaType::Alpha, width, height })
+    Ok(ImageData {
+        data: Blob::from(img.into_raw()),
+        format: ImageFormat::Rgba8,
+        alpha_type: ImageAlphaType::Alpha,
+        width,
+        height,
+    })
 }
 
 #[cfg(test)]
@@ -189,7 +195,12 @@ mod tests {
     #[test]
     fn remote_urls_rejected_even_on_loopback() {
         let cache = ImageCache::new(PathBuf::from("."));
-        for url in ["http://127.0.0.1:1/x.png", "http://localhost/x.png", "https://example.com/x.png", "http://example.com/x.png"] {
+        for url in [
+            "http://127.0.0.1:1/x.png",
+            "http://localhost/x.png",
+            "https://example.com/x.png",
+            "http://example.com/x.png",
+        ] {
             assert!(cache.load(url).unwrap_err().contains("--allow-remote-images"));
         }
     }

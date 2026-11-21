@@ -56,7 +56,9 @@ fn parse_args() -> Args {
         projector: "main".into(),
     };
     let mut it = std::env::args().skip(1);
-    let num = |v: Option<String>, k: &str| -> f64 { v.and_then(|v| v.parse().ok()).unwrap_or_else(|| panic!("{k} necesita un número")) };
+    let num = |v: Option<String>, k: &str| -> f64 {
+        v.and_then(|v| v.parse().ok()).unwrap_or_else(|| panic!("{k} necesita un número"))
+    };
     while let Some(k) = it.next() {
         match k.as_str() {
             "--ws" => a.ws = it.next(),

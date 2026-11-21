@@ -54,10 +54,7 @@ pub fn dlt(src: &[Pt], dst: &[Pt]) -> Option<Mat3> {
         let s = apply(&ts, src[i]);
         let d = apply(&td, dst[i]);
         let (x, y, u, v) = (s[0], s[1], d[0], d[1]);
-        let r = [
-            [-x, -y, -1.0, 0.0, 0.0, 0.0, u * x, u * y, u],
-            [0.0, 0.0, 0.0, -x, -y, -1.0, v * x, v * y, v],
-        ];
+        let r = [[-x, -y, -1.0, 0.0, 0.0, 0.0, u * x, u * y, u], [0.0, 0.0, 0.0, -x, -y, -1.0, v * x, v * y, v]];
         for (k, row) in r.iter().enumerate() {
             for (j, val) in row.iter().enumerate() {
                 a[(2 * i + k, j)] = *val;
@@ -135,7 +132,8 @@ pub fn ransac(src: &[Pt], dst: &[Pt], thr: f64, iters: usize, seed: u64) -> Opti
     let (_, mut h) = best?;
     for _ in 0..2 {
         let r = residuals(&h);
-        let (s, d): (Vec<Pt>, Vec<Pt>) = r.iter().enumerate().filter(|(_, r)| **r < thr).map(|(i, _)| (src[i], dst[i])).unzip();
+        let (s, d): (Vec<Pt>, Vec<Pt>) =
+            r.iter().enumerate().filter(|(_, r)| **r < thr).map(|(i, _)| (src[i], dst[i])).unzip();
         if s.len() < 4 {
             break;
         }

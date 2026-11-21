@@ -204,7 +204,14 @@ impl Runtime {
         self.draw_frame(eng, target, (w, h), t, now_epoch_ms());
     }
 
-    fn draw_frame<R: FrameRenderer>(&mut self, eng: &mut R, target: &R::Target, size: (u32, u32), t: Option<f64>, epoch_ms: f64) {
+    fn draw_frame<R: FrameRenderer>(
+        &mut self,
+        eng: &mut R,
+        target: &R::Target,
+        size: (u32, u32),
+        t: Option<f64>,
+        epoch_ms: f64,
+    ) {
         let now = self.now_s();
         self.last_frame_pattern = None;
         if self.pattern.as_ref().is_some_and(|p| p.message.until_ms.is_some_and(|u| epoch_ms >= u)) {
@@ -224,7 +231,8 @@ impl Runtime {
                 eng.black(target);
             }
             // Incluso un patrón rechazado tapa la escena; nunca confirma un patrón no dibujado.
-            self.last_frame_pattern = Some(PatternFrame { serial: p.serial, pattern_id: p.message.pattern_id.clone(), rendered });
+            self.last_frame_pattern =
+                Some(PatternFrame { serial: p.serial, pattern_id: p.message.pattern_id.clone(), rendered });
         } else {
             eng.scene(&self.state, t.unwrap_or(now), now, target, size);
         }
@@ -249,8 +257,11 @@ impl Runtime {
             let (started, pending): (Vec<_>, Vec<_>) = done.into_iter().partition(|b| b.t_start_ms.is_some());
             self.blanks = pending;
             for b in started {
-                let m =
-                    FromRenderer::Blanked(Blanked { request_id: b.request_id, t_start_ms: b.t_start_ms.unwrap(), t_end_ms: t_present_ms });
+                let m = FromRenderer::Blanked(Blanked {
+                    request_id: b.request_id,
+                    t_start_ms: b.t_start_ms.unwrap(),
+                    t_end_ms: t_present_ms,
+                });
                 self.send(serde_json::to_string(&m).unwrap());
             }
         }
@@ -260,7 +271,10 @@ impl Runtime {
             }
         } else if let Some(PatternFrame { serial, pattern_id, rendered }) = self.last_frame_pattern.take() {
             if rendered && self.pattern.as_ref().is_some_and(|p| p.serial == serial && !p.shown) {
-                self.send(serde_json::to_string(&FromRenderer::PatternShown(PatternShown { pattern_id, t_present_ms })).unwrap());
+                self.send(
+                    serde_json::to_string(&FromRenderer::PatternShown(PatternShown { pattern_id, t_present_ms }))
+                        .unwrap(),
+                );
                 self.pattern.as_mut().unwrap().shown = true;
             }
         } else {

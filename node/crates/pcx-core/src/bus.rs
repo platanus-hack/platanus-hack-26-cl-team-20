@@ -71,7 +71,12 @@ pub fn handle_raw(world: &WorldHandle, raw: &[u8], stats: &BusStats) {
 }
 
 /// Arranca PULL + PUB. Devuelve estadísticas; se detiene con `cancel`.
-pub async fn start(world: WorldHandle, ingest_url: &str, events_url: &str, cancel: CancellationToken) -> anyhow::Result<Arc<BusStats>> {
+pub async fn start(
+    world: WorldHandle,
+    ingest_url: &str,
+    events_url: &str,
+    cancel: CancellationToken,
+) -> anyhow::Result<Arc<BusStats>> {
     ensure_ipc(ingest_url);
     ensure_ipc(events_url);
     let mut pull = PullSocket::new();

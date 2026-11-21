@@ -10,10 +10,7 @@ fn testdata() -> PathBuf {
 
 fn detector() -> Option<HandDetector> {
     let dir = models::models_dir();
-    let (p, l) = (
-        models::cached(&models::PALM, &dir)?,
-        models::cached(&models::HANDPOSE, &dir)?,
-    );
+    let (p, l) = (models::cached(&models::PALM, &dir)?, models::cached(&models::HANDPOSE, &dir)?);
     Some(HandDetector::new(&p, &l, DetectorConfig::default()).expect("ort"))
 }
 
@@ -27,10 +24,8 @@ fn landmarks_match_zoo_reference() {
         eprintln!("SKIP: faltan los modelos (cargo run -p pcx-hands --example fetch_models)");
         return;
     };
-    let reference: serde_json::Value = serde_json::from_str(
-        &std::fs::read_to_string(testdata().join("reference_zoo.json")).unwrap(),
-    )
-    .unwrap();
+    let reference: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(testdata().join("reference_zoo.json")).unwrap()).unwrap();
     let mut all = Vec::new();
     for (name, r) in reference.as_object().unwrap() {
         let img = image::open(testdata().join(name)).unwrap().to_rgb8();
@@ -38,11 +33,7 @@ fn landmarks_match_zoo_reference() {
         let frame = Frame::packed(img.as_raw(), w as usize, h as usize, PixelFormat::Rgb8).unwrap();
         let palms = det.detect_palms(&frame).unwrap();
         let ref_hands = r["hands"].as_array().unwrap();
-        assert_eq!(
-            palms.len(),
-            r["n_palms"].as_u64().unwrap() as usize,
-            "{name}: n palmas"
-        );
+        assert_eq!(palms.len(), r["n_palms"].as_u64().unwrap() as usize, "{name}: n palmas");
         for rh in ref_hands {
             let rb: Vec<f64> = serde_json::from_value(rh["palm_box"].clone()).unwrap();
             let rc = [(rb[0] + rb[2]) / 2.0, (rb[1] + rb[3]) / 2.0];
@@ -57,17 +48,10 @@ fn landmarks_match_zoo_reference() {
             let palm_err = (0..4).map(|i| (p.bbox[i] - rb[i]).abs()).sum::<f64>() / 4.0;
             let lm = det.landmarks(&frame, &p.roi()).unwrap();
             let rl: Vec<[f64; 3]> = serde_json::from_value(rh["landmarks"].clone()).unwrap();
-            let err = (0..21)
-                .map(|i| {
-                    d(
-                        [lm.landmarks[i][0], lm.landmarks[i][1]],
-                        [rl[i][0], rl[i][1]],
-                    )
-                })
-                .sum::<f64>()
-                / 21.0;
-            let size = rl.iter().map(|p| p[1]).fold(f64::MIN, f64::max)
-                - rl.iter().map(|p| p[1]).fold(f64::MAX, f64::min);
+            let err =
+                (0..21).map(|i| d([lm.landmarks[i][0], lm.landmarks[i][1]], [rl[i][0], rl[i][1]])).sum::<f64>() / 21.0;
+            let size =
+                rl.iter().map(|p| p[1]).fold(f64::MIN, f64::max) - rl.iter().map(|p| p[1]).fold(f64::MAX, f64::min);
             let rconf = rh["conf"].as_f64().unwrap();
             let rhand = rh["handedness"].as_f64().unwrap();
             println!(
@@ -76,24 +60,15 @@ fn landmarks_match_zoo_reference() {
                 lm.score,
                 lm.handedness
             );
-            assert!(
-                (lm.handedness as f64 > 0.5) == (rhand > 0.5),
-                "{name}: lateralidad"
-            );
+            assert!((lm.handedness as f64 > 0.5) == (rhand > 0.5), "{name}: lateralidad");
             all.push(err);
         }
     }
     let mean = all.iter().sum::<f64>() / all.len() as f64;
     let max = all.iter().copied().fold(0.0, f64::max);
-    println!(
-        "manos {} · error medio {mean:.2} px · peor {max:.2} px",
-        all.len()
-    );
+    println!("manos {} · error medio {mean:.2} px · peor {max:.2} px", all.len());
     assert!(all.len() >= 10);
-    assert!(
-        mean < 3.0 && max < 6.0,
-        "paridad: medio {mean:.2} px, peor {max:.2} px"
-    );
+    assert!(mean < 3.0 && max < 6.0, "paridad: medio {mean:.2} px, peor {max:.2} px");
 }
 
 #[test]
@@ -103,15 +78,10 @@ fn engine_tracks_with_stable_ids_and_no_redetection() {
         return;
     };
     use pcx_hands::{EngineConfig, FrameMeta, HandsEngine};
-    let img = image::open(testdata().join("woman_hands.jpg"))
-        .unwrap()
-        .to_rgb8();
+    let img = image::open(testdata().join("woman_hands.jpg")).unwrap().to_rgb8();
     let (w, h) = img.dimensions();
     let frame = Frame::packed(img.as_raw(), w as usize, h as usize, PixelFormat::Rgb8).unwrap();
-    let cfg = EngineConfig {
-        homography: Some([0.5, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 1.0]),
-        ..Default::default()
-    };
+    let cfg = EngineConfig { homography: Some([0.5, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 1.0]), ..Default::default() };
     let mut eng = HandsEngine::new(det, cfg);
     let mut ids = None;
     for i in 0..6 {
@@ -133,10 +103,7 @@ fn engine_tracks_with_stable_ids_and_no_redetection() {
         if i == 0 {
             assert_eq!(out.timings.palm_runs, 1);
         } else {
-            assert_eq!(
-                out.timings.palm_runs, 0,
-                "con 2 manos seguidas no se redetecta"
-            );
+            assert_eq!(out.timings.palm_runs, 0, "con 2 manos seguidas no se redetecta");
             assert_eq!(ids.as_ref(), Some(&now), "IDs estables");
         }
         ids = Some(now);

@@ -20,14 +20,7 @@ pub struct OneEuro {
 
 impl OneEuro {
     pub fn new(min_cutoff: f64, beta: f64, d_cutoff: f64) -> Self {
-        Self {
-            min_cutoff,
-            beta,
-            d_cutoff,
-            x: vec![],
-            dx: vec![],
-            t: None,
-        }
+        Self { min_cutoff, beta, d_cutoff, x: vec![], dx: vec![], t: None }
     }
 
     fn alpha(cutoff: f64, dt: f64) -> f64 {
@@ -145,14 +138,7 @@ pub struct TrackerTimings {
 
 impl HandTracker {
     pub fn new(det: HandDetector, cfg: TrackerConfig) -> Self {
-        Self {
-            det,
-            cfg,
-            tracks: vec![],
-            ghosts: vec![],
-            next_id: 1,
-            frames_since_detect: u32::MAX,
-        }
+        Self { det, cfg, tracks: vec![], ghosts: vec![], next_id: 1, frames_since_detect: u32::MAX }
     }
 
     pub fn reset(&mut self) {
@@ -186,23 +172,11 @@ impl HandTracker {
             }
             None => r.landmarks,
         };
-        TrackedHand {
-            id,
-            landmarks,
-            handedness: self.handedness(&r),
-            score: r.score,
-            roi,
-            fresh,
-            raw: r,
-        }
+        TrackedHand { id, landmarks, handedness: self.handedness(&r), score: r.score, roi, fresh, raw: r }
     }
 
     /// Procesa un cuadro capturado en `t_s` (s). Devuelve las manos vivas.
-    pub fn process(
-        &mut self,
-        frame: &Frame,
-        t_s: f64,
-    ) -> Result<(Vec<TrackedHand>, TrackerTimings), HandsError> {
+    pub fn process(&mut self, frame: &Frame, t_s: f64) -> Result<(Vec<TrackedHand>, TrackerTimings), HandsError> {
         let mut tm = TrackerTimings::default();
         // 1. seguimiento: ROI del cuadro anterior
         let mut alive = Vec::with_capacity(self.tracks.len());
@@ -213,12 +187,7 @@ impl HandTracker {
             tm.landmark_runs += 1;
             if r.score < self.cfg.min_tracking_score {
                 let c = tr.roi.center;
-                self.ghosts.push(Ghost {
-                    id: tr.id,
-                    center: c,
-                    size: tr.roi.size,
-                    t: t_s,
-                });
+                self.ghosts.push(Ghost { id: tr.id, center: c, size: tr.roi.size, t: t_s });
                 continue;
             }
             let roi_used = tr.roi;
@@ -233,12 +202,9 @@ impl HandTracker {
         let mut dedup: Vec<Track> = Vec::with_capacity(alive.len());
         for tr in alive {
             let b = geom::bounds(tr.last.as_ref().map(|h| h.xy()).unwrap_or_default());
-            let dup = dedup.iter().any(|o| {
-                geom::iou(
-                    b,
-                    geom::bounds(o.last.as_ref().map(|h| h.xy()).unwrap_or_default()),
-                ) > 0.5
-            });
+            let dup = dedup
+                .iter()
+                .any(|o| geom::iou(b, geom::bounds(o.last.as_ref().map(|h| h.xy()).unwrap_or_default())) > 0.5);
             if !dup {
                 dedup.push(tr);
             }
@@ -248,9 +214,7 @@ impl HandTracker {
 
         // 2. detección de palma si faltan manos
         self.frames_since_detect = self.frames_since_detect.saturating_add(1);
-        if self.tracks.len() < self.cfg.max_hands
-            && self.frames_since_detect >= self.cfg.detect_interval
-        {
+        if self.tracks.len() < self.cfg.max_hands && self.frames_since_detect >= self.cfg.detect_interval {
             self.frames_since_detect = 0;
             let t0 = std::time::Instant::now();
             let palms = self.det.detect_palms(frame)?;
@@ -283,18 +247,10 @@ impl HandTracker {
                 let mut f = self.cfg.one_euro.map(|(a, b, c)| OneEuro::new(a, b, c));
                 let next_roi = geom::roi_from_landmarks(&r.xy());
                 let h = self.make(id, r, roi, true, &mut f, t_s);
-                self.tracks.push(Track {
-                    id,
-                    roi: next_roi,
-                    filter: f,
-                    last: Some(h),
-                });
+                self.tracks.push(Track { id, roi: next_roi, filter: f, last: Some(h) });
             }
         }
-        Ok((
-            self.tracks.iter().filter_map(|t| t.last.clone()).collect(),
-            tm,
-        ))
+        Ok((self.tracks.iter().filter_map(|t| t.last.clone()).collect(), tm))
     }
 
     fn reuse_id(&mut self, c: Point2, size: f64) -> Option<u64> {
@@ -302,13 +258,7 @@ impl HandTracker {
             .ghosts
             .iter()
             .enumerate()
-            .map(|(i, g)| {
-                (
-                    i,
-                    ((g.center[0] - c[0]).powi(2) + (g.center[1] - c[1]).powi(2)).sqrt()
-                        / g.size.max(size),
-                )
-            })
+            .map(|(i, g)| (i, ((g.center[0] - c[0]).powi(2) + (g.center[1] - c[1]).powi(2)).sqrt() / g.size.max(size)))
             .filter(|(_, d)| *d < 0.5)
             .min_by(|a, b| a.1.total_cmp(&b.1))?;
         Some(self.ghosts.remove(i).id)

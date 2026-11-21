@@ -47,8 +47,14 @@ pub struct HistoryGap {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ContentItem {
-    Text { text: String },
-    Image { data: String, #[serde(default = "png_mime")] mime_type: String },
+    Text {
+        text: String,
+    },
+    Image {
+        data: String,
+        #[serde(default = "png_mime")]
+        mime_type: String,
+    },
 }
 
 fn png_mime() -> String {
