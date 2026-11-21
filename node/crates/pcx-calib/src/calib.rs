@@ -149,6 +149,24 @@ pub struct CalibrationDrift {
     pub threshold_mm: f64,
 }
 
+impl CalibrationDrift {
+    /// Evento del contrato (`pcx_contracts::Event::CalibrationDrift`), listo para el `Envelope`.
+    pub fn to_event(&self) -> pcx_contracts::Event {
+        pcx_contracts::Event::CalibrationDrift {
+            from_frame: self.from_frame.clone(),
+            to_frame: self.to_frame.clone(),
+            residual_mm: self.residual_mm,
+            threshold_mm: self.threshold_mm,
+        }
+    }
+}
+
+impl From<&CalibrationDrift> for pcx_contracts::Event {
+    fn from(d: &CalibrationDrift) -> Self {
+        d.to_event()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Step {
