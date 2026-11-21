@@ -128,8 +128,8 @@ pub fn resolve(w: &Widget, objects: &Objects, surface: (f64, f64)) -> Result<Opt
                     Some(inflate(&o.polygon_mm, o.center_mm, 8.0).into_iter().map(|p| PointMM(p.0 + dx, p.1 + dy)).collect());
             }
         }
-        Widget::Arrow(ar) => {
-            if ar.to_mm.is_none() || ar.from_mm.is_none() {
+        Widget::Arrow(ar) if ar.to_mm.is_none() || ar.from_mm.is_none() => {
+            {
                 let tip = if let Some(o) = obj {
                     let bb = bbox_of(o);
                     if bb.1 > 90.0 {

@@ -230,7 +230,7 @@ impl World {
 
     fn persist(&mut self, force: bool) {
         let t = now_ns();
-        if !self.persist_dirty || (!force && t - self.last_persist_ns < 1_000_000_000) {
+        if !self.persist_dirty || (!force && t - self.last_persist_ns < 250_000_000) {
             return;
         }
         let v = json!({"rev": self.rev, "objects": self.objects, "widgets": self.widgets, "expires_ns": self.expires_ns,

@@ -1020,7 +1020,8 @@ mod tests {
 
     #[test]
     fn envelope_y_tool_call_iguales_a_python() {
-        for name in ["envelope_widget_pressed.json"] {
+        {
+            let name = "envelope_widget_pressed.json";
             let env: Envelope = serde_json::from_str(&fixture(name)).unwrap();
             let canon: Value = serde_json::from_str(&fixture(&format!("canonical/{name}"))).unwrap();
             assert_eq!(serde_json::to_value(&env).unwrap(), canon);

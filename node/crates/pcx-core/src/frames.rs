@@ -73,8 +73,8 @@ impl Canvas {
             return;
         }
         let i = ((y as u32 * self.w + x as u32) * 3) as usize;
-        for k in 0..3 {
-            self.px[i + k] = (self.px[i + k] as f64 * (1.0 - a) + c[k] as f64 * a) as u8;
+        for (dst, src) in self.px[i..i + 3].iter_mut().zip(c) {
+            *dst = (*dst as f64 * (1.0 - a) + src as f64 * a) as u8;
         }
     }
     fn rect(&mut self, x0: f64, y0: f64, x1: f64, y1: f64, c: [u8; 3], a: f64) {
