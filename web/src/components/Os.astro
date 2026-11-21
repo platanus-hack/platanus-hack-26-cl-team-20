@@ -1,0 +1,15 @@
+---
+// Detecta el sistema operativo y ajusta textos y pestañas. Sin JS, se ven todos los comandos.
+---
+
+<script>
+  type Os = "mac" | "windows" | "linux";
+  const ua = navigator.userAgent;
+  const plat = ((navigator as any).userAgentData?.platform as string | undefined) ?? navigator.platform ?? "";
+  const os: Os = /win/i.test(plat) || /Windows/.test(ua) ? "windows" : /mac|iphone|ipad/i.test(plat) || /Mac OS X/.test(ua) ? "mac" : "linux";
+  const nombre: Record<Os, string> = { mac: "macOS", windows: "Windows", linux: "Linux" };
+  document.documentElement.dataset.os = os;
+  document.querySelectorAll("[data-os-cta]").forEach((el) => (el.textContent = `Instalar en ${nombre[os]}`));
+  document.dispatchEvent(new CustomEvent("pcx:os", { detail: os }));
+  (window as any).__pcxOs = os;
+</script>

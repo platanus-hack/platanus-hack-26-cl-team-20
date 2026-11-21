@@ -1,0 +1,72 @@
+---
+import MesaViva from "./MesaViva.astro";
+import { CIFRAS } from "../data/site";
+interface Props { completa?: boolean }
+const { completa = true } = Astro.props;
+const base = completa ? "" : "/";
+---
+
+<section data-mesa-host class="hero-a relative isolate overflow-hidden" aria-labelledby="titulo-a">
+  <div class="escena absolute inset-x-0 top-16 h-[50svh] md:inset-0 md:h-auto">
+    <MesaViva />
+    <div class="velo pointer-events-none absolute inset-0"></div>
+  </div>
+
+  <div class="relative z-10 mx-auto flex min-h-[100svh] max-w-[1440px] flex-col justify-end px-5 pb-10 pt-[52svh] sm:px-8 md:pb-14 md:pt-32">
+    <h1 id="titulo-a" class="display max-w-[11ch] text-[clamp(2.75rem,7.4vw,7rem)]">
+      Tu agente ya puede ver la mesa.
+    </h1>
+    <p class="mt-6 max-w-[44ch] text-base text-luz-2 md:text-lg md:leading-snug">
+      Un proyector y una cámara entienden objetos, manos y toques. Claude Code, Codex u OpenCode se conectan por MCP, miran
+      el espacio y proyectan interfaces encima de las cosas reales.
+    </p>
+    <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+      <a href={`${base}#instalar`} class="btn-luz"><span class="marca" aria-hidden="true"></span><span data-os-cta>Instalar</span></a>
+      <a href={`${base}#como`} class="link-suave">Cómo funciona</a>
+    </div>
+
+    <div class="mt-10 grid grid-cols-2 gap-6 border-t border-linea pt-5 md:absolute md:bottom-14 md:right-8 md:mt-0 md:w-[380px] md:grid-cols-[auto_1fr] md:border-t-0 md:pt-0">
+      <dl class="contents">
+        <div>
+          <dt class="text-xs text-luz-3">Proyector</dt>
+          <dd class="num mt-1 text-lg"><span data-fps>{CIFRAS.fps},0</span> fps</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-luz-3">De la cámara a la luz</dt>
+          <dd class="num mt-1 text-lg"><span data-lat>{CIFRAS.latencia}</span> ms <s class="ml-2 text-xs text-luz-3">{CIFRAS.latenciaAntes} ms</s></dd>
+        </div>
+      </dl>
+      <div class="col-span-2 hidden md:block">
+        <p class="text-xs text-luz-3">Lo que recibe tu agente</p>
+        <ol data-registro class="registro num mt-2 space-y-1 text-xs text-luz-2" aria-hidden="true">
+          <li>scene → 5 objetos, 1 mano</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-a {
+    min-height: 100svh;
+  }
+  .velo {
+    background:
+      linear-gradient(to top, var(--color-mesa) 0%, transparent 38%),
+      linear-gradient(to right, rgb(11 12 10 / 0.92) 0%, rgb(11 12 10 / 0.35) 36%, transparent 55%);
+  }
+  @media (max-width: 767px) {
+    .velo {
+      background: linear-gradient(to top, var(--color-mesa) 0%, transparent 30%);
+    }
+  }
+  .registro :global(li:first-child) {
+    color: var(--color-luz);
+    animation: entra 500ms var(--ease-proyector);
+  }
+  .registro :global(li:nth-child(3)) { opacity: 0.6; }
+  .registro :global(li:nth-child(4)) { opacity: 0.3; }
+  @keyframes entra {
+    from { opacity: 0; transform: translateY(-6px); }
+  }
+</style>
