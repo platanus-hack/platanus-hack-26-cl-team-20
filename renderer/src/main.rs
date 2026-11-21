@@ -23,10 +23,12 @@ struct Args {
     latency: u32,
     bench: bool,
     bench_frames: usize,
+    projector: String,
 }
 
 const HELP: &str = "pcx-renderer [--ws URL | --no-ws] [--scene ARCHIVO.json ...] [--ppmm N] [--effects DIR]
-             [--assets DIR] [--fonts DIR] [--lut ARCHIVO.npy|.pcxlut]
+             [--assets DIR] [--fonts DIR] [--projector ID]
+             [--lut ARCHIVO.npy [--lut-step MM]]
   --headless [--frames N] [--out DIR] [--hz N] [--time T] [--size 1920x1080]
   --display <índice|nombre> [--latency N]
   --bench [--bench-frames N]";
@@ -46,6 +48,7 @@ fn parse_args() -> Args {
         latency: 1,
         bench: false,
         bench_frames: 200,
+        projector: "main".into(),
     };
     let mut it = std::env::args().skip(1);
     let num = |v: Option<String>, k: &str| -> f64 { v.and_then(|v| v.parse().ok()).unwrap_or_else(|| panic!("{k} necesita un número")) };
@@ -58,6 +61,8 @@ fn parse_args() -> Args {
             "--effects" => a.cfg.effects_dir = it.next().expect("--effects DIR").into(),
             "--assets" => a.cfg.assets_dir = it.next().expect("--assets DIR").into(),
             "--lut" => a.cfg.lut_path = it.next(),
+            "--lut-step" => a.cfg.lut_grid_step = num(it.next(), "--lut-step"),
+            "--projector" => a.projector = it.next().expect("--projector ID"),
             "--fonts" => a.cfg.fonts_dir = it.next().expect("--fonts DIR").into(),
             "--headless" => a.headless = true,
             "--frames" => a.frames = Some(num(it.next(), "--frames") as u64),
@@ -111,6 +116,7 @@ fn main() {
         Some(url) => Runtime::connect(url),
         None => Runtime::offline(),
     };
+    rt.state.projector_id = args.projector.clone();
     load_scenes(&mut rt, &args.scenes);
     if args.headless {
         run_headless(args, rt);
@@ -137,10 +143,7 @@ fn run_headless(args: Args, mut rt: Runtime) {
         if n % 30 == 0 {
             eng.poll_effects();
         }
-        rt.pump();
-        let now = rt.now_s();
-        let t = args.time.unwrap_or(now);
-        eng.render(&rt.state, t, now, &view, w, h);
+        rt.draw(&mut eng, &view, w, h, args.time);
         eng.wait_idle();
         rt.after_present(now_epoch_ms());
         if let Some(dir) = &args.out {
@@ -270,10 +273,8 @@ mod display {
                 }
             };
             // La escena se toma lo más tarde posible (después de obtener el drawable).
-            self.rt.pump();
-            let now = self.rt.now_s();
             let view = st.texture.create_view(&Default::default());
-            g.engine.render(&self.rt.state, now, now, &view, g.config.width, g.config.height);
+            self.rt.draw(&mut g.engine, &view, g.config.width, g.config.height, None);
             g.window.pre_present_notify();
             g.engine.queue.present(st);
             self.rt.after_present(now_epoch_ms());

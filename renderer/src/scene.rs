@@ -1,7 +1,10 @@
 //! Estado de la escena en el renderer: aplica `scene` y `scene_diff` (con `base_rev`),
 //! vence widgets por `ttl_s` y los entrega ordenados por `z`. Sin GPU: se prueba en unitarios.
 
-use pcx_contracts::{SceneDiff, SceneSnapshot, Surface, TABLE_MM, ToRenderer, Transform, TransformKind, Widget};
+use pcx_contracts::{
+    HomographyTransform, LutTransform, SceneDiff, SceneSnapshot, Surface, TABLE_MM, ToRenderer, Transform, Widget,
+    select_projector_transform,
+};
 
 #[derive(Debug, Clone)]
 pub struct Entry {
@@ -28,6 +31,18 @@ pub struct SceneState {
     /// Revs aplicadas que aún no salen en un cuadro presentado.
     pub unpresented: Vec<i64>,
     pub need_snapshot: bool,
+    /// Proyector que dibuja este renderer (`proj:<id>`).
+    pub projector_id: String,
+}
+
+/// Cómo llevar la superficie a la salida, según `select_projector_transform` (LUT > homografía).
+#[derive(Debug, Clone, PartialEq)]
+pub enum Projection {
+    /// LUT densa; `fallback` = `approx_matrix` o la mejor homografía, si la LUT no se puede usar.
+    Lut { lut: LutTransform, fallback: Option<[f64; 9]> },
+    Homography([f64; 9]),
+    /// Sin transform para este proyector: la superficie se centra en la salida.
+    Fit,
 }
 
 impl Default for SceneState {
@@ -39,6 +54,7 @@ impl Default for SceneState {
             entries: vec![],
             unpresented: vec![],
             need_snapshot: false,
+            projector_id: "main".into(),
         }
     }
 }
@@ -51,24 +67,24 @@ impl SceneState {
                 Outcome::Applied
             }
             ToRenderer::SceneDiff(d) => self.apply_diff(d, now_s),
+            // `blank` no toca la escena: lo maneja `Runtime`.
+            ToRenderer::Blank(_) => Outcome::Stale,
         }
     }
 
     fn apply_snapshot(&mut self, s: SceneSnapshot, now_s: f64) {
         let mut transforms = s.transforms;
-        // Legado v0: `homography` suelta sin transform equivalente.
-        if Transform::projector_matrix(&transforms).is_none()
-            && let Some(h) = s.homography.filter(|h| h.len() == 9)
+        // Legado v0: `homography` suelta sin transform equivalente para este proyector.
+        if select_projector_transform(&transforms, &self.projector_id).is_none()
+            && let Some(matrix) = s.homography
         {
-            transforms.push(Transform {
+            transforms.push(Transform::Homography(HomographyTransform {
                 from_frame: TABLE_MM.into(),
-                to_frame: "proj:main".into(),
-                kind: TransformKind::Homography,
-                matrix: Some(h),
-                lut_ref: None,
+                to_frame: format!("proj:{}", self.projector_id),
                 version: 0,
                 residual_mm: None,
-            });
+                matrix,
+            }));
         }
         // Un widget idéntico que ya estaba conserva su edad (el TTL no se reinicia al reenviar la escena).
         let entries = s
@@ -144,20 +160,16 @@ impl SceneState {
         v.into_iter().map(|e| &e.widget).collect()
     }
 
-    /// Homografía `table_mm → proj:*` vigente.
-    pub fn homography(&self) -> Option<[f64; 9]> {
-        Transform::projector_matrix(&self.transforms)
-    }
-
-    /// LUT por píxel vigente: `(ruta, version)` de un transform `kind: lut` hacia/desde `proj:*`.
-    pub fn lut_ref(&self) -> Option<(String, i64)> {
-        self.transforms
-            .iter()
-            .find(|t| {
-                t.kind == TransformKind::Lut
-                    && (t.to_frame.starts_with("proj:") || t.from_frame.starts_with("proj:"))
-            })
-            .and_then(|t| t.lut_ref.clone().map(|r| (r, t.version)))
+    /// Transformación vigente hacia `proj:<projector_id>`.
+    pub fn projection(&self) -> Projection {
+        match select_projector_transform(&self.transforms, &self.projector_id) {
+            Some((_, Transform::Lut(l))) => Projection::Lut {
+                lut: l.clone(),
+                fallback: Transform::projector_matrix(&self.transforms, &self.projector_id),
+            },
+            Some((_, Transform::Homography(h))) => Projection::Homography(h.matrix),
+            None => Projection::Fit,
+        }
     }
 }
 
@@ -178,7 +190,10 @@ mod tests {
         assert_eq!(s.apply(parse(FIX_SCENE), 0.0), Outcome::Applied);
         assert_eq!(s.rev, Some(12));
         assert_eq!(s.entries.len(), 7);
-        assert!(s.homography().is_some());
+        // El fixture trae una LUT v4 (gana) con la homografía v3 de respaldo.
+        let Projection::Lut { lut, fallback } = s.projection() else { panic!("{:?}", s.projection()) };
+        assert_eq!(lut.version, 4);
+        assert_eq!(fallback.unwrap()[0], 2.16);
         assert_eq!(s.apply(parse(FIX_DIFF), 0.1), Outcome::Applied);
         assert_eq!(s.rev, Some(13));
         assert_eq!(s.entries.len(), 6);

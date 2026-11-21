@@ -79,6 +79,12 @@ fn protocolo_con_core_falso() {
             let st = wait_for(&mut ws, "stats", |v| v["type"] == "stats");
             assert!(st["fps"].as_f64().unwrap() > 1.0, "{st}");
             assert!(st["frame_ms_p50"].as_f64().is_some() && st["frame_ms_p95"].as_f64().is_some());
+            // blank: salida negra 150 ms y `blanked` con el intervalo real.
+            send(&mut ws, json!({"type": "blank", "request_id": "req-foto-1", "ms": 150, "reason": "clean_photo"}));
+            let b = wait_for(&mut ws, "blanked", |v| v["type"] == "blanked");
+            assert_eq!(b["request_id"], "req-foto-1");
+            let dur = b["t_end_ms"].as_f64().unwrap() - b["t_start_ms"].as_f64().unwrap();
+            assert!((140.0..1000.0).contains(&dur), "duración del blank {dur} ms");
             // Corte: el renderer reconecta solo y conserva la escena.
             drop(ws);
             let mut ws = accept(&listener);
@@ -96,14 +102,12 @@ fn protocolo_con_core_falso() {
     let mut saw_disconnect_with_scene = false;
     let result = loop {
         assert!(t0.elapsed() < Duration::from_secs(20), "timeout global");
-        rt.pump();
+        rt.draw(&mut eng, &view, 640, 360, None);
         if !rt.connected && rt.state.rev == Some(5) {
             // Desconectado: mantiene la última escena.
             assert_eq!(rt.state.entries.len(), 2);
             saw_disconnect_with_scene = true;
         }
-        let now = rt.now_s();
-        eng.render(&rt.state, now, now, &view, 640, 360);
         eng.wait_idle();
         rt.after_present(now_epoch_ms());
         if let Ok(r) = done_rx.try_recv() {

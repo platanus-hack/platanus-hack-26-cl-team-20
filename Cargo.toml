@@ -4,6 +4,7 @@ resolver = "2"
 members = [
     "contracts/rust/pcx-contracts",
     "node/crates/*",
+    "renderer",
 ]
 
 [workspace.package]

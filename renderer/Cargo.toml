@@ -27,10 +27,3 @@ winit = "0.30"
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
 raw-window-handle = "0.6"
-
-[profile.release]
-debug = false
-
-# Los tests renderizan con la GPU: dependencias optimizadas para que no tarden.
-[profile.dev.package."*"]
-opt-level = 2

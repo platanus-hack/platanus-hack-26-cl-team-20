@@ -14,7 +14,7 @@ use crate::draw::Painter;
 use crate::effects::Effects;
 use crate::images::ImageCache;
 use crate::lut::Lut;
-use crate::scene::SceneState;
+use crate::scene::{Projection, SceneState};
 
 const CANVAS_FMT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 
@@ -24,14 +24,16 @@ pub struct EngineConfig {
     pub assets_dir: PathBuf,
     /// Fuentes propias (`.ttf/.otf/.ttc`), primero en la pila; las del sistema quedan de respaldo.
     pub fonts_dir: PathBuf,
-    /// LUT por defecto (`--lut`), si la escena no trae un transform `kind: lut`.
+    /// LUT local por defecto (`--lut RUTA.npy`, `--lut-step MM`) si la escena no trae una `kind: lut`
+    /// para este proyector. Sin verificación de sha256 (la eligió quien lanza el renderer).
     pub lut_path: Option<String>,
+    pub lut_grid_step: f64,
 }
 
 impl Default for EngineConfig {
     fn default() -> Self {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        Self { ppmm: 2.5, effects_dir: root.join("effects"), assets_dir: root.join("assets"), fonts_dir: root.join("fonts"), lut_path: None }
+        Self { ppmm: 2.5, effects_dir: root.join("effects"), assets_dir: root.join("assets"), fonts_dir: root.join("fonts"), lut_path: None, lut_grid_step: 1.0 }
     }
 }
 
@@ -44,10 +46,12 @@ struct Canvas {
     h: u32,
 }
 
+/// LUT cargada como malla en la GPU. `key` = (ruta, versión, sha256).
 struct LutState {
-    key: (String, i64),
-    lut: Lut,
-    view: wgpu::TextureView,
+    key: (String, i64, String),
+    verts: wgpu::Buffer,
+    index: wgpu::Buffer,
+    n_index: u32,
 }
 
 pub struct Engine {
@@ -64,10 +68,10 @@ pub struct Engine {
     blit_bgl: wgpu::BindGroupLayout,
     sampler: wgpu::Sampler,
     uniforms: wgpu::Buffer,
-    dummy_lut: wgpu::TextureView,
+    mesh: wgpu::RenderPipeline,
     canvas: Option<Canvas>,
     lut: Option<LutState>,
-    lut_failed: Option<(String, i64)>,
+    lut_failed: Option<(String, i64, String)>,
     pub cfg: EngineConfig,
     vscene: vello::Scene,
 }
@@ -152,26 +156,6 @@ fn fullscreen_pipeline(
     })
 }
 
-fn lut_texture(device: &wgpu::Device, queue: &wgpu::Queue, w: u32, h: u32, bytes: &[u8]) -> wgpu::TextureView {
-    let tex = device.create_texture(&wgpu::TextureDescriptor {
-        label: Some("lut"),
-        size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rg32Float,
-        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-        view_formats: &[],
-    });
-    queue.write_texture(
-        tex.as_image_copy(),
-        bytes,
-        wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(w * 8), rows_per_image: Some(h) },
-        tex.size(),
-    );
-    tex.create_view(&Default::default())
-}
-
 /// Homografía por defecto: la superficie centrada y escalada para caber en la salida.
 pub fn fit_homography(w_mm: f64, h_mm: f64, out_w: f64, out_h: f64) -> [f64; 9] {
     let s = (out_w / w_mm).min(out_h / h_mm);
@@ -187,6 +171,43 @@ pub fn invert3(m: &[f64; 9]) -> Option<[f64; 9]> {
     }
     let inv = [co[0], -(b * i - c * h), b * f - c * e, co[1], a * i - c * g, -(a * f - c * d), co[2], -(a * h - b * g), a * e - b * d];
     Some(inv.map(|v| v / det))
+}
+
+fn mesh_pipeline(device: &wgpu::Device, bgl: &wgpu::BindGroupLayout, format: wgpu::TextureFormat) -> wgpu::RenderPipeline {
+    let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("lut-mesh"),
+        source: wgpu::ShaderSource::Wgsl(include_str!("compose.wgsl").into()),
+    });
+    let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("lut-mesh"),
+        bind_group_layouts: &[Some(bgl)],
+        immediate_size: 0,
+    });
+    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("lut-mesh"),
+        layout: Some(&layout),
+        vertex: wgpu::VertexState {
+            module: &module,
+            entry_point: Some("vs_mesh"),
+            compilation_options: Default::default(),
+            buffers: &[Some(wgpu::VertexBufferLayout {
+                array_stride: 16,
+                step_mode: wgpu::VertexStepMode::Vertex,
+                attributes: &[wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x4, offset: 0, shader_location: 0 }],
+            })],
+        },
+        primitive: wgpu::PrimitiveState::default(),
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState::default(),
+        fragment: Some(wgpu::FragmentState {
+            module: &module,
+            entry_point: Some("fs_mesh"),
+            compilation_options: Default::default(),
+            targets: &[Some(wgpu::ColorTargetState { format, blend: None, write_mask: wgpu::ColorWrites::ALL })],
+        }),
+        multiview_mask: None,
+        cache: None,
+    })
 }
 
 enum Layer<'a> {
@@ -214,7 +235,7 @@ impl Engine {
         .expect("vello");
         let uniform_entry = wgpu::BindGroupLayoutEntry {
             binding: 2,
-            visibility: wgpu::ShaderStages::FRAGMENT,
+            visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
             ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
             count: None,
         };
@@ -229,7 +250,6 @@ impl Engine {
                     count: None,
                 },
                 uniform_entry,
-                tex_entry(3, false),
             ],
         });
         let compose = fullscreen_pipeline(&device, "compose", include_str!("compose.wgsl"), &compose_bgl, out_format, None);
@@ -257,7 +277,7 @@ impl Engine {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        let dummy_lut = lut_texture(&device, &queue, 1, 1, &[0u8; 8]);
+        let mesh = mesh_pipeline(&device, &compose_bgl, out_format);
         let effects = Effects::new(&device, cfg.effects_dir.clone(), CANVAS_FMT);
         Self {
             vello,
@@ -271,7 +291,7 @@ impl Engine {
             blit_bgl,
             sampler,
             uniforms,
-            dummy_lut,
+            mesh,
             canvas: None,
             lut: None,
             lut_failed: None,
@@ -335,26 +355,63 @@ impl Engine {
         self.canvas = Some(Canvas { tex, view, scratch_view, blit_bg, w: cw, h: ch });
     }
 
-    fn update_lut(&mut self, state: &SceneState) {
-        let want = state.lut_ref().or_else(|| self.cfg.lut_path.clone().map(|p| (p, 0)));
-        let Some(key) = want else {
-            self.lut = None;
-            return;
+    /// Deja lista la LUT que pide la escena (o `--lut`). Devuelve `false` si no hay LUT usable.
+    fn update_lut(&mut self, projection: &Projection) -> bool {
+        let want = match projection {
+            Projection::Lut { lut, .. } => Some((
+                lut.lut.path.clone(),
+                lut.version,
+                lut.lut.sha256.clone(),
+                lut.lut.grid_step,
+                Some((lut.lut.width, lut.lut.height)),
+            )),
+            _ => self.cfg.lut_path.clone().map(|p| (p, 0, String::new(), self.cfg.lut_grid_step, None)),
         };
-        if self.lut.as_ref().is_some_and(|l| l.key == key) || self.lut_failed.as_ref() == Some(&key) {
-            return;
+        let Some((path, version, sha, step, dims)) = want else {
+            self.lut = None;
+            return false;
+        };
+        let key = (path, version, sha);
+        if self.lut.as_ref().is_some_and(|l| l.key == key) {
+            return true;
         }
-        match Lut::load(&key.0) {
+        if self.lut_failed.as_ref() == Some(&key) {
+            return false;
+        }
+        let loaded = Lut::load(&key.0, (!key.2.is_empty()).then_some(key.2.as_str())).and_then(|l| match dims {
+            Some((w, h)) if (w, h) != (l.width, l.height) => {
+                Err(format!("el descriptor dice {w}x{h} y el archivo {}x{}", l.width, l.height))
+            }
+            _ => Ok(l),
+        });
+        match loaded {
             Ok(lut) => {
-                eprintln!("[lut] {} v{} ({}x{})", key.0, key.1, lut.width, lut.height);
-                let view = lut_texture(&self.device, &self.queue, lut.width, lut.height, &lut.texture_bytes());
-                self.lut = Some(LutState { key, lut, view });
+                use vello::wgpu::util::DeviceExt;
+                let (verts, idx) = lut.mesh(step);
+                eprintln!("[lut] {} v{} ({}x{}, {} triángulos)", key.0, key.1, lut.width, lut.height, idx.len() / 3);
+                let vb: Vec<u8> = verts.iter().flatten().flat_map(|f| f.to_le_bytes()).collect();
+                let ib: Vec<u8> = idx.iter().flat_map(|i| i.to_le_bytes()).collect();
+                let verts = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("lut-v"),
+                    contents: &vb,
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
+                let index = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("lut-i"),
+                    contents: if ib.is_empty() { &[0u8; 4] } else { &ib },
+                    usage: wgpu::BufferUsages::INDEX,
+                });
+                self.lut = Some(LutState { key, verts, index, n_index: idx.len() as u32 });
                 self.lut_failed = None;
+                true
             }
             Err(e) => {
-                // Sigue la LUT anterior (o la homografía) si la nueva no carga.
-                eprintln!("[lut] no pude cargar {}: {e}", key.0);
+                // Como `projector_matrix` del contrato: `approx_matrix` o la mejor homografía de la escena
+                // (no una LUT anterior que la escena ya no lista).
+                eprintln!("[lut] no pude usar {}: {e}; uso la homografía de respaldo", key.0);
                 self.lut_failed = Some(key);
+                self.lut = None;
+                false
             }
         }
     }
@@ -371,7 +428,8 @@ impl Engine {
         let cw = (surf.width_mm * ppmm).round().clamp(1.0, 8192.0) as u32;
         let ch = (surf.height_mm * ppmm).round().clamp(1.0, 8192.0) as u32;
         self.ensure_canvas(cw, ch);
-        self.update_lut(state);
+        let projection = state.projection();
+        let use_lut = self.update_lut(&projection);
         self.painter.begin_frame();
 
         // Capas por `z`: dentro de un mismo `z`, primero los vectores (una sola pasada de vello) y
@@ -450,22 +508,22 @@ impl Engine {
         }
 
         // Pasada final: homografía o LUT hacia la salida.
-        let hom = state.homography().unwrap_or_else(|| fit_homography(surf.width_mm, surf.height_mm, out_w as f64, out_h as f64));
-        let hinv = invert3(&hom).unwrap_or([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
-        let (mode, lw, lh) = match &self.lut {
-            Some(l) => (1.0, l.lut.width as f32, l.lut.height as f32),
-            None => (0.0, 1.0, 1.0),
+        let fit = || fit_homography(surf.width_mm, surf.height_mm, out_w as f64, out_h as f64);
+        let hom = match projection {
+            Projection::Homography(m) => m,
+            Projection::Lut { fallback, .. } => fallback.unwrap_or_else(fit),
+            Projection::Fit => fit(),
         };
+        let hinv = invert3(&hom).unwrap_or([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
         let u: [f32; 20] = [
             hinv[0] as f32, hinv[1] as f32, hinv[2] as f32, 0.0,
             hinv[3] as f32, hinv[4] as f32, hinv[5] as f32, 0.0,
             hinv[6] as f32, hinv[7] as f32, hinv[8] as f32, 0.0,
-            surf.width_mm as f32, surf.height_mm as f32, mode, 0.0,
-            lw, lh, out_w as f32, out_h as f32,
+            surf.width_mm as f32, surf.height_mm as f32, 0.0, 0.0,
+            out_w as f32, out_h as f32, 0.0, 0.0,
         ];
         let bytes: Vec<u8> = u.iter().flat_map(|f| f.to_le_bytes()).collect();
         self.queue.write_buffer(&self.uniforms, 0, &bytes);
-        let lut_view = self.lut.as_ref().map_or(&self.dummy_lut, |l| &l.view);
         let bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("compose"),
             layout: &self.compose_bgl,
@@ -473,7 +531,6 @@ impl Engine {
                 wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&canvas.view) },
                 wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&self.sampler) },
                 wgpu::BindGroupEntry { binding: 2, resource: self.uniforms.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(lut_view) },
             ],
         });
         let mut enc = self.device.create_command_encoder(&Default::default());
@@ -494,12 +551,29 @@ impl Engine {
                 occlusion_query_set: None,
                 multiview_mask: None,
             });
-            pass.set_pipeline(&self.compose);
             pass.set_bind_group(0, &bg, &[]);
-            pass.draw(0..3, 0..1);
+            match (&self.lut, use_lut) {
+                (Some(l), true) => {
+                    pass.set_pipeline(&self.mesh);
+                    pass.set_vertex_buffer(0, l.verts.slice(..));
+                    pass.set_index_buffer(l.index.slice(..), wgpu::IndexFormat::Uint32);
+                    pass.draw_indexed(0..l.n_index, 0, 0..1);
+                }
+                _ => {
+                    pass.set_pipeline(&self.compose);
+                    pass.draw(0..3, 0..1);
+                }
+            }
         }
         self.queue.submit([enc.finish()]);
         FrameInfo { build_ms, layers: layers.len() }
+    }
+
+    /// Cuadro negro (para `blank`): la escena no se dibuja.
+    pub fn render_black(&self, target: &wgpu::TextureView) {
+        let mut enc = self.device.create_command_encoder(&Default::default());
+        drop(canvas_pass(&mut enc, target, wgpu::LoadOp::Clear(wgpu::Color::BLACK)));
+        self.queue.submit([enc.finish()]);
     }
 
     /// Espera a que la GPU termine lo enviado (headless: "presentado").

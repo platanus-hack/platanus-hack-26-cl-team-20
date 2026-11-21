@@ -6,9 +6,9 @@
 use std::path::PathBuf;
 
 use pcx_contracts::ToRenderer;
-use pcx_renderer::engine::{Engine, EngineConfig, fit_homography, invert3};
-use pcx_renderer::lut::Lut;
-use pcx_renderer::scene::{Outcome, SceneState};
+use pcx_renderer::engine::{Engine, EngineConfig};
+use pcx_renderer::lut::{Lut, sha256_hex};
+use pcx_renderer::scene::{Outcome, Projection, SceneState};
 
 const W: u32 = 1920;
 const H: u32 = 1080;
@@ -111,39 +111,65 @@ fn efectos_de_ejemplo() {
     check_golden("efectos", &img);
 }
 
-/// La LUT por píxel construida desde la misma homografía da la misma imagen.
+/// LUT v2 (table_mm → px de salida, `integer_centers`) construida desde la misma homografía: misma imagen.
+/// Con sha256 equivocado no se usa y queda la homografía de respaldo.
 #[test]
 fn lut_equivale_a_homografia() {
     let mut eng = engine();
     let mut s = SceneState::default();
     s.apply(fixture("scene.json"), 0.0);
-    // Homografía de referencia: la de "encajar" en W×H (el fixture trae una para 1920×1080).
-    s.transforms.clear();
+    // Referencia: solo la homografía del fixture (sin la LUT, cuyo archivo no existe aquí).
+    s.transforms.retain(|t| matches!(t, pcx_contracts::Transform::Homography(_)));
     let a = render(&mut eng, &s, 0.25);
+    let Projection::Homography(hm) = s.projection() else { panic!() };
 
-    let hinv = invert3(&fit_homography(s.surface.width_mm, s.surface.height_mm, W as f64, H as f64)).unwrap();
-    let mut data = Vec::with_capacity((W * H * 2) as usize);
-    for v in 0..H {
-        for u in 0..W {
-            let (x, y) = (u as f64 + 0.5, v as f64 + 0.5);
-            let q = [hinv[0] * x + hinv[1] * y + hinv[2], hinv[3] * x + hinv[4] * y + hinv[5], hinv[6] * x + hinv[7] * y + hinv[8]];
-            data.push((q[0] / q[2]) as f32);
-            data.push((q[1] / q[2]) as f32);
+    let step = 2.0;
+    let (gw, gh) = ((s.surface.width_mm / step) as u32 + 1, (s.surface.height_mm / step) as u32 + 1);
+    let mut data = Vec::with_capacity((gw * gh * 2) as usize);
+    for v in 0..gh {
+        for u in 0..gw {
+            let (x, y) = (u as f64 * step, v as f64 * step);
+            let q = [hm[0] * x + hm[1] * y + hm[2], hm[3] * x + hm[4] * y + hm[5], hm[6] * x + hm[7] * y + hm[8]];
+            // Centro del px (0,0) en (0,0): la homografía del fixture usa bordes, de ahí el -0.5.
+            data.push((q[0] / q[2] - 0.5) as f32);
+            data.push((q[1] / q[2] - 0.5) as f32);
         }
     }
-    let lut_path = tmpdir("lut").join("lut.pcxlut");
-    std::fs::write(&lut_path, Lut { width: W, height: H, data }.to_raw()).unwrap();
-    // En vivo: se agrega como transform `kind: lut` (como lo mandaría el core en un scene_diff).
-    s.transforms.push(serde_json::from_value(serde_json::json!({
-        "from_frame": "table_mm", "to_frame": "proj:main", "kind": "lut",
-        "lut_ref": lut_path.to_str().unwrap(), "version": 1
-    })).unwrap());
+    // La malla de la LUT se usa de verdad: la misma LUT corrida 60 px a la derecha cambia la imagen.
+    let shifted: Vec<f32> = data.iter().enumerate().map(|(i, v)| if i % 2 == 0 { v + 60.0 } else { *v }).collect();
+    let sh_bytes = Lut { width: gw, height: gh, data: shifted }.to_npy();
+    let sh_path = tmpdir("lut").join("lut_corrida.npy");
+    std::fs::write(&sh_path, &sh_bytes).unwrap();
+    let bytes = Lut { width: gw, height: gh, data }.to_npy();
+    let path = tmpdir("lut").join("lut.npy");
+    std::fs::write(&path, &bytes).unwrap();
+    let lut_t = |version: i64, sha: &str| -> pcx_contracts::Transform {
+        serde_json::from_value(serde_json::json!({
+            "from_frame": "table_mm", "to_frame": "proj:main", "kind": "lut", "version": version,
+            "lut": {"format": "npy_f32_hw2", "width": gw, "height": gh, "units": "output_px",
+                    "sampling": "integer_centers", "grid_step": step, "path": path.to_str().unwrap(), "sha256": sha}
+        }))
+        .unwrap()
+    };
+    // En vivo, como lo mandaría el core en un scene_diff.
+    s.transforms.push(lut_t(5, &sha256_hex(&bytes)));
+    assert!(matches!(s.projection(), Projection::Lut { .. }));
     let b = render(&mut eng, &s, 0.25);
     let f = diff_frac(&a, &b, 40);
     assert!(f < 0.01, "LUT vs homografía: {:.2}% distinto", f * 100.0);
 
-    // Quitar la LUT vuelve a la homografía.
-    s.transforms.clear();
+    s.transforms.pop();
+    let mut corrida = lut_t(5, &sha256_hex(&sh_bytes));
+    if let pcx_contracts::Transform::Lut(l) = &mut corrida {
+        l.lut.path = sh_path.to_str().unwrap().into();
+    }
+    s.transforms.push(corrida);
+    let d = render(&mut eng, &s, 0.25);
+    assert!(diff_frac(&a, &d, 40) > 0.005, "la LUT corrida no cambió la imagen");
+
+    // sha256 equivocado: se rechaza y se usa la homografía de respaldo.
+    s.transforms.pop();
+    s.transforms.push(lut_t(6, &"0".repeat(64)));
     let c = render(&mut eng, &s, 0.25);
     assert!(diff_frac(&a, &c, 2) < 0.0001);
 }

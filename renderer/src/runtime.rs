@@ -1,12 +1,13 @@
 //! Lazo del protocolo, común a `--headless` y `--display`: aplica lo que llega del WS a la escena,
 //! pide snapshot si falta un rev, manda `presented` por cada rev en el primer cuadro presentado
-//! que la contiene y `stats` cada 1 s.
+//! que la contiene, `stats` cada 1 s y `blank` → cuadros negros + `blanked{t_start_ms, t_end_ms}`.
 
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::time::{Duration, Instant};
 
-use pcx_contracts::{FromRenderer, Presented, Stats, ToRenderer};
+use pcx_contracts::{Blanked, FromRenderer, Presented, Stats, ToRenderer};
 
+use crate::engine::Engine;
 use crate::scene::{Outcome, SceneState};
 use crate::ws::{self, WsEvent};
 
@@ -15,8 +16,20 @@ pub fn resync_msg(have_rev: Option<i64>) -> String {
     serde_json::json!({"type": "resync", "have_rev": have_rev}).to_string()
 }
 
+/// Pedido de `blank` en curso; `t_start_ms` = presentación de su primer cuadro negro.
+#[derive(Debug, Clone)]
+struct BlankReq {
+    request_id: String,
+    t_start_ms: Option<f64>,
+}
+
 pub struct Runtime {
     pub state: SceneState,
+    blanks: Vec<BlankReq>,
+    /// `ms` del último `blank` recibido, a armar en el próximo cuadro.
+    blank_arm: Option<u32>,
+    blank_until: Option<Instant>,
+    last_frame_black: bool,
     rx: Option<Receiver<WsEvent>>,
     tx: Option<Sender<String>>,
     t0: Instant,
@@ -48,6 +61,10 @@ impl Runtime {
     pub fn offline() -> Self {
         Self {
             state: SceneState::default(),
+            blanks: vec![],
+            blank_arm: None,
+            blank_until: None,
+            last_frame_black: false,
             rx: None,
             tx: None,
             t0: Instant::now(),
@@ -81,6 +98,12 @@ impl Runtime {
     }
 
     pub fn apply(&mut self, msg: ToRenderer) -> Outcome {
+        if let ToRenderer::Blank(b) = msg {
+            // Un blank nuevo reemplaza al activo desde el próximo cuadro.
+            self.blank_arm = Some(b.ms);
+            self.blanks.push(BlankReq { request_id: b.request_id, t_start_ms: None });
+            return Outcome::Applied;
+        }
         let now = self.now_s();
         let o = self.state.apply(msg, now);
         if o == Outcome::NeedSnapshot {
@@ -124,11 +147,52 @@ impl Runtime {
         self.state.expire(now);
     }
 
-    /// Tras presentar un cuadro: `presented` de las revs nuevas y `stats` cada 1 s.
+    /// Un cuadro: drena el WS, decide `blank` y dibuja en `target`. Después, presentar y llamar
+    /// a `after_present`. `t` fija el reloj de animación (por defecto, el del renderer).
+    pub fn draw(&mut self, eng: &mut Engine, target: &vello::wgpu::TextureView, w: u32, h: u32, t: Option<f64>) {
+        self.pump();
+        let now = self.now_s();
+        if self.blank_frame() {
+            eng.render_black(target);
+        } else {
+            eng.render(&self.state, t.unwrap_or(now), now, target, w, h);
+        }
+    }
+
+    /// ¿Este cuadro va negro (`blank`)? Llamar una vez por cuadro, justo antes de dibujar.
+    pub fn blank_frame(&mut self) -> bool {
+        let now = Instant::now();
+        if let Some(ms) = self.blank_arm.take() {
+            self.blank_until = Some(now + Duration::from_millis(ms as u64));
+        }
+        self.last_frame_black = self.blank_until.is_some_and(|u| now < u);
+        self.last_frame_black
+    }
+
+    /// Tras presentar un cuadro: `presented` de las revs nuevas (si el cuadro mostró la escena),
+    /// `blanked` al volver de un `blank` y `stats` cada 1 s.
     pub fn after_present(&mut self, t_present_ms: f64) {
-        for rev in std::mem::take(&mut self.state.unpresented) {
-            let m = FromRenderer::Presented(Presented { rev, t_present_ms });
-            self.send(serde_json::to_string(&m).unwrap());
+        if self.last_frame_black {
+            for b in self.blanks.iter_mut().filter(|b| b.t_start_ms.is_none()) {
+                b.t_start_ms = Some(t_present_ms);
+            }
+        } else {
+            self.blank_until = None;
+            let done: Vec<BlankReq> = std::mem::take(&mut self.blanks);
+            let (started, pending): (Vec<_>, Vec<_>) = done.into_iter().partition(|b| b.t_start_ms.is_some());
+            self.blanks = pending;
+            for b in started {
+                let m = FromRenderer::Blanked(Blanked {
+                    request_id: b.request_id,
+                    t_start_ms: b.t_start_ms.unwrap(),
+                    t_end_ms: t_present_ms,
+                });
+                self.send(serde_json::to_string(&m).unwrap());
+            }
+            for rev in std::mem::take(&mut self.state.unpresented) {
+                let m = FromRenderer::Presented(Presented { rev, t_present_ms });
+                self.send(serde_json::to_string(&m).unwrap());
+            }
         }
         let now = Instant::now();
         if let Some(lp) = self.last_present {
