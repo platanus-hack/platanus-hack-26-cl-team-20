@@ -53,7 +53,7 @@ const base = completa ? "" : "/";
   .velo {
     background:
       linear-gradient(to top, var(--color-mesa) 0%, transparent 38%),
-      linear-gradient(to right, rgb(11 12 10 / 0.92) 0%, rgb(11 12 10 / 0.35) 36%, transparent 55%);
+      linear-gradient(to right, color-mix(in srgb, var(--color-mesa) 92%, transparent) 0%, color-mix(in srgb, var(--color-mesa) 35%, transparent) 36%, transparent 55%);
   }
   @media (max-width: 767px) {
     .velo {

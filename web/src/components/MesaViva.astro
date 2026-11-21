@@ -19,19 +19,19 @@ const c = M / 6;
     <svg class="mesa-base absolute inset-0 h-full w-full" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
       <defs>
         <pattern id="mm" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M40 0H0V40" fill="none" stroke="#f1eee4" stroke-opacity="0.045" stroke-width="1" />
+          <path d="M40 0H0V40" fill="none" stroke-opacity="0.045" stroke-width="1" style="stroke:var(--k-f1eee4)" />
         </pattern>
         <pattern id="mm5" width="200" height="200" patternUnits="userSpaceOnUse">
-          <path d="M200 0H0V200" fill="none" stroke="#f1eee4" stroke-opacity="0.07" stroke-width="1" />
+          <path d="M200 0H0V200" fill="none" stroke-opacity="0.07" stroke-width="1" style="stroke:var(--k-f1eee4)" />
         </pattern>
         <radialGradient id="haz">
-          <stop offset="0" stop-color="#fff6e6" stop-opacity="0.2" />
-          <stop offset="0.45" stop-color="#fff6e6" stop-opacity="0.07" />
-          <stop offset="1" stop-color="#fff6e6" stop-opacity="0" />
+          <stop offset="0" stop-opacity="0.2" style="stop-color:var(--k-fff6e6)" />
+          <stop offset="0.45" stop-opacity="0.07" style="stop-color:var(--k-fff6e6)" />
+          <stop offset="1" stop-opacity="0" style="stop-color:var(--k-fff6e6)" />
         </radialGradient>
         <linearGradient id="cuerpo" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#262922" />
-          <stop offset="1" stop-color="#151712" />
+          <stop offset="0" style="stop-color:var(--k-262922)" />
+          <stop offset="1" style="stop-color:var(--k-151712)" />
         </linearGradient>
         <filter id="sombra" x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur in="SourceAlpha" stdDeviation="10" />
@@ -41,17 +41,17 @@ const c = M / 6;
         </filter>
       </defs>
 
-      <rect width="1600" height="1000" fill="#0d0e0b" />
+      <rect width="1600" height="1000" style="fill:var(--k-0d0e0b)" />
       <rect width="1600" height="1000" fill="url(#mm)" />
       <rect width="1600" height="1000" fill="url(#mm5)" />
 
       {
         aruco.map((m) => (
           <g transform={`translate(${m.x} ${m.y})`}>
-            <rect x="-10" y="-10" width={M + 20} height={M + 20} fill="#d9d6cc" />
-            <rect width={M} height={M} fill="#0b0c0a" />
+            <rect x="-10" y="-10" width={M + 20} height={M + 20} style="fill:var(--k-d9d6cc)" />
+            <rect width={M} height={M} style="fill:var(--k-0b0c0a)" />
             {m.bits.split("").map((b, i) =>
-              b === "1" ? <rect x={c + (i % 4) * c} y={c + Math.floor(i / 4) * c} width={c} height={c} fill="#d9d6cc" /> : null,
+              b === "1" ? <rect x={c + (i % 4) * c} y={c + Math.floor(i / 4) * c} width={c} height={c} style="fill:var(--k-d9d6cc)" /> : null,
             )}
           </g>
         ))
@@ -64,23 +64,23 @@ const c = M / 6;
         <g data-obj="libreta" data-x="1040" data-y="335">
           <g transform="translate(1040 335) rotate(-7)">
             <rect x="-150" y="-195" width="300" height="390" rx="6" fill="url(#cuerpo)" />
-            <rect x="-150" y="-195" width="300" height="390" rx="6" fill="none" stroke="#3a3d35" />
-            {Array.from({ length: 11 }, (_, i) => <circle cx="-132" cy={-170 + i * 34} r="5" fill="#0b0c0a" stroke="#4a4d44" />)}
-            {Array.from({ length: 9 }, (_, i) => <line x1="-100" x2="125" y1={-120 + i * 36} y2={-120 + i * 36} stroke="#2e312a" />)}
+            <rect x="-150" y="-195" width="300" height="390" rx="6" fill="none" style="stroke:var(--k-3a3d35)" />
+            {Array.from({ length: 11 }, (_, i) => <circle cx="-132" cy={-170 + i * 34} r="5" style="fill:var(--k-0b0c0a);stroke:var(--k-4a4d44)" />)}
+            {Array.from({ length: 9 }, (_, i) => <line x1="-100" x2="125" y1={-120 + i * 36} y2={-120 + i * 36} style="stroke:var(--k-2e312a)" />)}
           </g>
         </g>
         <!-- taza -->
         <g data-obj="taza" data-x="1405" data-y="245" data-deriva="1">
           <g class="cuerpo">
-            <rect x="1462" y="231" width="46" height="28" rx="12" fill="#22251f" stroke="#3a3d35" />
-            <circle cx="1405" cy="245" r="66" fill="url(#cuerpo)" stroke="#3a3d35" />
-            <circle cx="1405" cy="245" r="52" fill="#1a1308" />
-            <circle cx="1393" cy="233" r="16" fill="#f1eee4" fill-opacity="0.05" />
+            <rect x="1462" y="231" width="46" height="28" rx="12" style="fill:var(--k-22251f);stroke:var(--k-3a3d35)" />
+            <circle cx="1405" cy="245" r="66" fill="url(#cuerpo)" style="stroke:var(--k-3a3d35)" />
+            <circle cx="1405" cy="245" r="52" style="fill:var(--k-1a1308)" />
+            <circle cx="1393" cy="233" r="16" fill-opacity="0.05" style="fill:var(--k-f1eee4)" />
           </g>
         </g>
         <!-- maceta -->
         <g data-obj="maceta" data-x="760" data-y="255">
-          <circle cx="760" cy="255" r="84" fill="#1d1f19" stroke="#3a3d35" />
+          <circle cx="760" cy="255" r="84" style="fill:var(--k-1d1f19);stroke:var(--k-3a3d35)" />
           {
             [0, 52, 118, 170, 228, 290].map((a, i) => (
               <ellipse
@@ -89,30 +89,29 @@ const c = M / 6;
                 rx="20"
                 ry="48"
                 fill={i % 2 ? "#2b3325" : "#242b20"}
-                stroke="#3c4536"
-                transform={`rotate(${a} 760 255)`}
-              />
+               
+                transform={`rotate(${a} 760 255)`} style="stroke:var(--k-3c4536)" />
             ))
           }
-          <circle cx="760" cy="255" r="12" fill="#323a2b" />
+          <circle cx="760" cy="255" r="12" style="fill:var(--k-323a2b)" />
         </g>
         <!-- llaves -->
         <g data-obj="llaves" data-x="822" data-y="700">
-          <circle cx="822" cy="700" r="24" fill="none" stroke="#4b4e45" stroke-width="6" />
+          <circle cx="822" cy="700" r="24" fill="none" stroke-width="6" style="stroke:var(--k-4b4e45)" />
           <g transform="rotate(28 822 700)">
-            <rect x="842" y="692" width="78" height="16" rx="3" fill="#30332c" stroke="#4b4e45" />
-            <path d="M884 708v8h6v-8m8 0v6h6v-6" fill="none" stroke="#4b4e45" stroke-width="3" />
+            <rect x="842" y="692" width="78" height="16" rx="3" style="fill:var(--k-30332c);stroke:var(--k-4b4e45)" />
+            <path d="M884 708v8h6v-8m8 0v6h6v-6" fill="none" stroke-width="3" style="stroke:var(--k-4b4e45)" />
           </g>
           <g transform="rotate(118 822 700)">
-            <rect x="842" y="692" width="64" height="14" rx="3" fill="#2a2d26" stroke="#4b4e45" />
+            <rect x="842" y="692" width="64" height="14" rx="3" style="fill:var(--k-2a2d26);stroke:var(--k-4b4e45)" />
           </g>
         </g>
         <!-- celular -->
         <g data-obj="celular" data-x="1345" data-y="700">
           <g transform="translate(1345 700) rotate(14)">
-            <rect x="-80" y="-160" width="160" height="320" rx="24" fill="#10110e" stroke="#3a3d35" stroke-width="2" />
-            <rect x="-70" y="-148" width="140" height="296" rx="16" fill="#151a1c" />
-            <rect x="-22" y="-142" width="44" height="10" rx="5" fill="#0b0c0a" />
+            <rect x="-80" y="-160" width="160" height="320" rx="24" stroke-width="2" style="fill:var(--k-10110e);stroke:var(--k-3a3d35)" />
+            <rect x="-70" y="-148" width="140" height="296" rx="16" style="fill:var(--k-151a1c)" />
+            <rect x="-22" y="-142" width="44" height="10" rx="5" style="fill:var(--k-0b0c0a)" />
           </g>
         </g>
       </g>
@@ -128,7 +127,7 @@ const c = M / 6;
         </g>
         <defs>
           <pattern id="gc-patron" class="gc-patron" width="128" height="1000" patternUnits="userSpaceOnUse">
-            <rect width="64" height="1000" fill="#f1eee4" />
+            <rect width="64" height="1000" style="fill:var(--k-f1eee4)" />
           </pattern>
         </defs>
 
@@ -349,7 +348,7 @@ const c = M / 6;
 </style>
 
 <script>
-  import { bucleVisible, reducido } from "../scripts/suave";
+  import { bucleVisible, inactivo, reducido } from "../scripts/suave";
 
   const raiz = document.querySelector<HTMLElement>("[data-mesa]");
   if (raiz) iniciar(raiz);
@@ -454,7 +453,7 @@ const c = M / 6;
     let ev = 1;
     if (!quieto) {
       setInterval(() => {
-        if (!document.hidden) emitir(eventos[ev++ % eventos.length]);
+        if (!inactivo()) emitir(eventos[ev++ % eventos.length]);
       }, 2300);
     }
 
@@ -464,7 +463,7 @@ const c = M / 6;
     let latS = 215;
     if (!quieto) {
       setInterval(() => {
-        if (document.hidden) return;
+        if (inactivo()) return;
         const f = 60 - (Math.random() < 0.25 ? Math.random() * 0.3 : 0);
         latS += (215 + (Math.random() - 0.5) * 14 - latS) * 0.5;
         if (fps) fps.textContent = f.toFixed(1).replace(".", ",");
@@ -475,7 +474,7 @@ const c = M / 6;
     // Ciclo de recalibración: el proyector se desalinea, barre gray code y vuelve a calzar.
     const anchos = [512, 256, 128, 64, 32, 16, 8];
     function recalibrar() {
-      if (document.hidden) return;
+      if (inactivo()) return;
       raiz.classList.add("desalineado");
       setTimeout(() => {
         raiz.classList.add("calibrando");
@@ -509,6 +508,7 @@ const c = M / 6;
     let seg = 220;
     if (!quieto) {
       setInterval(() => {
+        if (inactivo()) return;
         seg = seg <= 0 ? 240 : seg - 1;
         if (cuenta) cuenta.textContent = `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, "0")}`;
         anillo?.style.setProperty("--resto", String(1 - seg / 240));

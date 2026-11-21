@@ -55,6 +55,7 @@
   --color-senal: #ff5b24;
   --color-franja-r: #ff3d2e;
   --color-franja-c: #2ec9ff;
+  --color-haz: #fff6e6;
 
   --font-sans: "Archivo", "Archivo Fallback", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Martian Mono", "Martian Fallback", ui-monospace, monospace;
@@ -147,7 +148,7 @@
     transition: background-color 200ms var(--ease-proyector), transform 200ms var(--ease-proyector);
   }
   .btn-luz:hover {
-    background: #fffdf6;
+    background: color-mix(in srgb, var(--color-luz) 70%, white);
     transform: translateY(-1px);
   }
   .btn-luz .marca {
@@ -214,6 +215,69 @@
   50% { opacity: 0; }
 }
 
+/* Pausa manual del movimiento (WCAG 2.2.2): congela animaciones CSS; los bucles JS escuchan `pcx:movimiento`. */
+:root[data-movimiento="pausa"] *,
+:root[data-movimiento="pausa"] *::before,
+:root[data-movimiento="pausa"] *::after {
+  animation-play-state: paused !important;
+}
+
+/*
+  Tema «cuarto oscuro» (?tema=frio): segundo tema para comparar, no reemplaza al cálido.
+  Fuentes: Host Grotesk (OFL 1.1) y Departure Mono 1.500 (OFL 1.1), licencias en /fonts/licencias/.
+*/
+@font-face {
+  font-family: "Host Grotesk";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 800;
+  src: url("/fonts/host-grotesk.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Departure Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("/fonts/departure-mono.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Host Fallback";
+  src: local("Arial");
+  size-adjust: 99%;
+  ascent-override: 92%;
+  descent-override: 24%;
+}
+
+:root[data-tema="frio"] {
+  --color-mesa: #161b20;
+  --color-mesa-2: #1c2227;
+  --color-mesa-3: #21272d;
+  --color-linea: #373e44;
+  --color-luz: #edf5f9;
+  --color-luz-2: #9eabb5;
+  --color-luz-3: #8a97a2;
+  --color-senal: #f8ac3d;
+  --color-haz: #eef6fb;
+  --font-sans: "Host Grotesk", "Host Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Departure Mono", "Martian Fallback", ui-monospace, monospace;
+}
+/* Departure Mono solo es nítida en múltiplos de 11 px. */
+:root[data-tema="frio"] .term,
+:root[data-tema="frio"] .num.text-xs,
+:root[data-tema="frio"] .num.text-sm,
+:root[data-tema="frio"] code.num {
+  font-size: 11px;
+  line-height: 22px;
+}
+:root[data-tema="frio"] .num.text-base,
+:root[data-tema="frio"] .num.text-lg {
+  font-size: 22px;
+}
+:root[data-tema="frio"] .display {
+  letter-spacing: -0.03em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -221,4 +285,65 @@
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+/* Colores de escena (generados): cálidos por defecto, recoloreados en el tema frío. */
+:root {
+  --k-0b0c0a: #0b0c0a;
+  --k-0d0e0b: #0d0e0b;
+  --k-10110e: #10110e;
+  --k-12130f: #12130f;
+  --k-151712: #151712;
+  --k-151a1c: #151a1c;
+  --k-1a1308: #1a1308;
+  --k-1a1c17: #1a1c17;
+  --k-1b1d18: #1b1d18;
+  --k-1d1f19: #1d1f19;
+  --k-1f221d: #1f221d;
+  --k-22251f: #22251f;
+  --k-262922: #262922;
+  --k-2a2d26: #2a2d26;
+  --k-2b2e27: #2b2e27;
+  --k-2b2e28: #2b2e28;
+  --k-2e312a: #2e312a;
+  --k-30332c: #30332c;
+  --k-323a2b: #323a2b;
+  --k-3a3d35: #3a3d35;
+  --k-3c4536: #3c4536;
+  --k-4a4d44: #4a4d44;
+  --k-4b4e45: #4b4e45;
+  --k-8d897d: #8d897d;
+  --k-d9d6cc: #d9d6cc;
+  --k-f1eee4: #f1eee4;
+  --k-fff6e6: #fff6e6;
+  --k-fffdf6: #fffdf6;
+}
+:root[data-tema="frio"] {
+  --k-0b0c0a: #181d21;
+  --k-0d0e0b: #191e22;
+  --k-10110e: #1b2126;
+  --k-12130f: #1c2327;
+  --k-151712: #1f262b;
+  --k-151a1c: #151a1c;
+  --k-1a1308: #1a1308;
+  --k-1a1c17: #232b31;
+  --k-1b1d18: #242c32;
+  --k-1d1f19: #252e33;
+  --k-1f221d: #283137;
+  --k-22251f: #2a333a;
+  --k-262922: #2d373e;
+  --k-2a2d26: #303b43;
+  --k-2b2e27: #313c44;
+  --k-2b2e28: #313c44;
+  --k-2e312a: #333f47;
+  --k-30332c: #354149;
+  --k-323a2b: #323a2b;
+  --k-3a3d35: #3d4a54;
+  --k-3c4536: #3c4536;
+  --k-4a4d44: #495965;
+  --k-4b4e45: #4a5a66;
+  --k-8d897d: #8094a3;
+  --k-d9d6cc: #ccdeec;
+  --k-f1eee4: #edf4f8;
+  --k-fff6e6: #f4f8fb;
+  --k-fffdf6: #f4f8fb;
 }

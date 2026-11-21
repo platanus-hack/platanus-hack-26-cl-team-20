@@ -24,31 +24,133 @@ const {
     <meta name="theme-color" content="#0b0c0a" />
     <meta name="color-scheme" content="dark" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="preload" href="/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/martian-mono.woff2" as="font" type="font/woff2" crossorigin />
+    <!--
+      Tema y movimiento antes del primer pintado (sin parpadeo ni CLS).
+      ?tema=frio | ?tema=calido manda; si no, lo último elegido en el selector.
+    -->
+    <script is:inline>
+      (function () {
+        var d = document.documentElement, ls = {};
+        try { ls = window.localStorage; } catch (e) {}
+        var q = new URLSearchParams(location.search).get("tema");
+        var tema = q === "frio" || q === "calido" ? q : (ls.getItem && ls.getItem("pcx-tema")) || "calido";
+        if (q && ls.setItem) ls.setItem("pcx-tema", q);
+        d.dataset.tema = tema;
+        if (ls.getItem && ls.getItem("pcx-movimiento") === "pausa") d.dataset.movimiento = "pausa";
+        var fuentes = tema === "frio" ? ["host-grotesk", "departure-mono"] : ["archivo", "martian-mono"];
+        fuentes.forEach(function (f) {
+          var l = document.createElement("link");
+          l.rel = "preload"; l.as = "font"; l.type = "font/woff2"; l.crossOrigin = "anonymous";
+          l.href = "/fonts/" + f + ".woff2";
+          document.head.appendChild(l);
+        });
+        if (tema === "frio") document.querySelector('meta[name="theme-color"]').setAttribute("content", "#161b20");
+      })();
+    </script>
   </head>
   <body class="bg-mesa text-luz">
     <a href="#contenido" class="sr-only-focusable fixed left-4 top-4 z-50 bg-luz px-4 py-2 text-mesa">Saltar al contenido</a>
     <slot />
-    {
-      propuesta && (
-        <nav aria-label="Propuestas de hero" class="fixed bottom-4 left-4 z-40 flex items-center gap-1 bg-mesa/85 p-1 text-sm backdrop-blur-sm">
-          {(["a", "b", "c"] as const).map((p) => (
-            <a
-              href={`/${p}`}
-              aria-current={p === propuesta ? "page" : undefined}
-              class:list={["num px-3 py-1.5 text-xs", p === propuesta ? "bg-luz text-mesa" : "text-luz-2 hover:text-luz"]}
-            >
-              {p.toUpperCase()}
-            </a>
-          ))}
-          <a href="/" class="px-3 py-1.5 text-luz-2 hover:text-luz">Página completa</a>
-        </nav>
-      )
-    }
+
+    <div class="controles fixed bottom-4 z-40 flex max-w-[calc(100vw-2rem)] flex-wrap items-center gap-1 bg-mesa/85 p-1 text-sm backdrop-blur-sm" class:list={[propuesta ? "left-4" : "right-4"]}>
+      {
+        propuesta && (
+          <nav aria-label="Propuestas de hero" class="flex items-center gap-1">
+            {(["a", "b", "c"] as const).map((p) => (
+              <a
+                href={`/${p}`}
+                data-con-tema
+                aria-current={p === propuesta ? "page" : undefined}
+                class:list={["num px-3 py-1.5 text-xs", p === propuesta ? "bg-luz text-mesa" : "text-luz-2 hover:text-luz"]}
+              >
+                {p.toUpperCase()}
+              </a>
+            ))}
+            <a href="/" data-con-tema class="px-3 py-1.5 text-luz-2 hover:text-luz">Página completa</a>
+          </nav>
+        )
+      }
+      <button type="button" data-tema-toggle class="px-3 py-1.5 text-luz-2 hover:text-luz" aria-pressed="false">
+        Tema frío
+      </button>
+      <button type="button" data-pausa class="pausa-btn flex items-center gap-2 px-3 py-1.5 text-luz-2 hover:text-luz" aria-pressed="false">
+        <span class="icono" aria-hidden="true"></span><span data-pausa-txt>Pausar movimiento</span>
+      </button>
+    </div>
+
     <script>
-      import { iniciarScrollSuave } from "../scripts/suave";
+      import { iniciarScrollSuave, reducido } from "../scripts/suave";
       iniciarScrollSuave();
+
+      const d = document.documentElement;
+      const guardar = (k: string, v: string | null) => {
+        try {
+          v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v);
+        } catch {}
+      };
+
+      // Selector de tema: cálido (actual) o frío («cuarto oscuro»). Se conserva al navegar entre propuestas.
+      const tBtn = document.querySelector<HTMLButtonElement>("[data-tema-toggle]")!;
+      const pintarTema = () => {
+        const frio = d.dataset.tema === "frio";
+        tBtn.setAttribute("aria-pressed", String(frio));
+        tBtn.textContent = frio ? "Tema cálido" : "Tema frío";
+        tBtn.setAttribute("aria-label", frio ? "Cambiar al tema cálido" : "Cambiar al tema frío");
+        document.querySelectorAll<HTMLAnchorElement>("a[data-con-tema]").forEach((a) => {
+          const u = new URL(a.href);
+          frio ? u.searchParams.set("tema", "frio") : u.searchParams.delete("tema");
+          a.href = u.pathname + u.search;
+        });
+      };
+      tBtn.addEventListener("click", async () => {
+        const nuevo = d.dataset.tema === "frio" ? "calido" : "frio";
+        d.dataset.tema = nuevo;
+        guardar("pcx-tema", nuevo);
+        const u = new URL(location.href);
+        nuevo === "frio" ? u.searchParams.set("tema", "frio") : u.searchParams.delete("tema");
+        history.replaceState(null, "", u.pathname + u.search + u.hash);
+        await document.fonts.load(nuevo === "frio" ? '1em "Host Grotesk"' : '1em "Archivo"').catch(() => {});
+        pintarTema();
+        document.dispatchEvent(new CustomEvent("pcx:tema"));
+      });
+      pintarTema();
+
+      // Pausa del movimiento (WCAG 2.2.2). Con prefers-reduced-motion no hay nada que pausar.
+      const pBtn = document.querySelector<HTMLButtonElement>("[data-pausa]")!;
+      const pTxt = pBtn.querySelector("[data-pausa-txt]")!;
+      if (reducido()) pBtn.hidden = true;
+      const pintarPausa = () => {
+        const p = d.dataset.movimiento === "pausa";
+        pBtn.setAttribute("aria-pressed", String(p));
+        pTxt.textContent = p ? "Reanudar movimiento" : "Pausar movimiento";
+      };
+      pBtn.addEventListener("click", () => {
+        const p = d.dataset.movimiento !== "pausa";
+        if (p) d.dataset.movimiento = "pausa";
+        else delete d.dataset.movimiento;
+        guardar("pcx-movimiento", p ? "pausa" : null);
+        pintarPausa();
+        document.dispatchEvent(new CustomEvent("pcx:movimiento"));
+      });
+      pintarPausa();
     </script>
   </body>
 </html>
+
+<style>
+  .pausa-btn .icono {
+    width: 9px;
+    height: 10px;
+    border-inline: 3px solid currentColor;
+  }
+  .pausa-btn[aria-pressed="true"] .icono {
+    border: 0;
+    border-left: 9px solid currentColor;
+    border-block: 5px solid transparent;
+    width: 0;
+    height: 0;
+  }
+  .controles [aria-pressed="true"][data-tema-toggle] {
+    color: var(--color-luz);
+  }
+</style>

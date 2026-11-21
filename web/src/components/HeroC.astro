@@ -4,6 +4,7 @@
 
 <section data-c class="hero-c relative isolate min-h-[100svh] overflow-hidden" aria-labelledby="titulo-c">
   <div class="cono pointer-events-none absolute inset-0" aria-hidden="true"></div>
+  <div class="haz-c pointer-events-none absolute inset-0" aria-hidden="true"></div>
   <div class="relative z-10 mx-auto flex min-h-[100svh] max-w-[1440px] flex-col justify-center px-5 pt-24 sm:px-8">
     <h1 id="titulo-c" data-lit class="lit display text-[clamp(3rem,10.4vw,10.5rem)]">
       La interfaz sale de la pantalla.
@@ -46,8 +47,8 @@
 <style>
   .cono {
     background:
-      conic-gradient(from 198deg at 78% -12%, transparent 0deg, rgb(255 246 230 / 0.06) 9deg, rgb(255 246 230 / 0.1) 14deg, transparent 26deg),
-      radial-gradient(60% 50% at 70% 10%, rgb(255 246 230 / 0.05), transparent 70%);
+      conic-gradient(from 198deg at 78% -12%, transparent 0deg, color-mix(in srgb, var(--color-haz) 6%, transparent) 9deg, color-mix(in srgb, var(--color-haz) 10%, transparent) 14deg, transparent 26deg),
+      radial-gradient(60% 50% at 70% 10%, color-mix(in srgb, var(--color-haz) 5%, transparent), transparent 70%);
     animation: respira 9s ease-in-out infinite alternate;
     transform-origin: 78% -12%;
   }
@@ -55,14 +56,22 @@
     from { transform: rotate(-3deg); opacity: 0.85; }
     to { transform: rotate(4deg); opacity: 1; }
   }
+  /* Titular en color sólido; el haz pasa por detrás, como luz sobre la mesa. */
   .lit {
-    --bx: 30%;
-    --by: 40%;
-    background: radial-gradient(34vw 26vw at var(--bx) var(--by), #fffdf6 0%, #f1eee4 28%, #8d897d 62%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--color-luz);
     font-weight: 280;
+  }
+  .hero-c {
+    --bx: 30%;
+    --by: 45%;
+  }
+  .haz-c {
+    background: radial-gradient(
+      30vw 22vw at var(--bx) var(--by),
+      color-mix(in srgb, var(--color-haz) 20%, transparent) 0%,
+      color-mix(in srgb, var(--color-haz) 7%, transparent) 45%,
+      transparent 75%
+    );
   }
   .superficie {
     perspective: 1100px;
@@ -73,10 +82,10 @@
   }
   .tablero {
     background:
-      linear-gradient(#f1eee40b 1px, transparent 1px) 0 0 / 32px 32px,
-      linear-gradient(90deg, #f1eee40b 1px, transparent 1px) 0 0 / 32px 32px,
-      radial-gradient(70% 60% at 50% 45%, #1a1c17, #0d0e0b);
-    outline: 1px solid #2b2e28;
+      linear-gradient(color-mix(in srgb, var(--color-luz) 4.3%, transparent) 1px, transparent 1px) 0 0 / 32px 32px,
+      linear-gradient(90deg, color-mix(in srgb, var(--color-luz) 4.3%, transparent) 1px, transparent 1px) 0 0 / 32px 32px,
+      radial-gradient(70% 60% at 50% 45%, var(--k-1a1c17), var(--k-0d0e0b));
+    outline: 1px solid var(--k-2b2e28);
   }
   .bol {
     left: 14%;
@@ -84,9 +93,9 @@
     width: 38%;
     aspect-ratio: 1;
     border-radius: 50%;
-    background: radial-gradient(circle at 45% 40%, #2b2e27, #12130f 70%);
+    background: radial-gradient(circle at 45% 40%, var(--k-2b2e27), var(--k-12130f) 70%);
     box-shadow: 18px 26px 40px #000a;
-    outline: 1px solid #3a3d35;
+    outline: 1px solid var(--k-3a3d35);
   }
   .proy {
     transform-origin: 50% 50%;
@@ -105,12 +114,12 @@
     top: 26%;
     width: 36%;
     padding: 14px 14px 12px;
-    border: 1px solid rgb(241 238 228 / 0.7);
-    background: rgb(241 238 228 / 0.06);
+    border: 1px solid color-mix(in srgb, var(--color-luz) 70%, transparent);
+    background: color-mix(in srgb, var(--color-luz) 6%, transparent);
   }
   .barra {
     height: 4px;
-    background: rgb(241 238 228 / 0.15);
+    background: color-mix(in srgb, var(--color-luz) 15%, transparent);
   }
   .barra i {
     display: block;
@@ -134,11 +143,11 @@
   const lit = document.querySelector<HTMLElement>("[data-lit]");
   const hero = document.querySelector<HTMLElement>("[data-c]");
 
-  // Haz que se mueve solo y sigue al puntero.
+  // Haz detrás del titular: se mueve solo y sigue al puntero.
   if (lit && hero && !quieto) {
     let bx = 30, by = 40, tx = 30, ty = 40, ultimo = -1e9;
     hero.addEventListener("pointermove", (e) => {
-      const r = lit.getBoundingClientRect();
+      const r = hero.getBoundingClientRect();
       tx = ((e.clientX - r.left) / r.width) * 100;
       ty = ((e.clientY - r.top) / r.height) * 100;
       ultimo = performance.now();
@@ -151,8 +160,8 @@
       const k = 1 - Math.pow(0.94, dt / 16);
       bx += (tx - bx) * k;
       by += (ty - by) * k;
-      lit.style.setProperty("--bx", `${bx.toFixed(2)}%`);
-      lit.style.setProperty("--by", `${by.toFixed(2)}%`);
+      hero.style.setProperty("--bx", `${bx.toFixed(2)}%`);
+      hero.style.setProperty("--by", `${by.toFixed(2)}%`);
     });
   }
 

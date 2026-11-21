@@ -17,6 +17,15 @@ const tomas = [
   { nombre: "home-scroll-1440", ruta: "/", w: 1440, h: 900, scroll: true },
   { nombre: "home-completa-1440", ruta: "/", w: 1440, h: 900, completa: true },
   { nombre: "home-completa-390", ruta: "/", w: 390, h: 844, completa: true, movil: true },
+  { nombre: "home-768", ruta: "/", w: 768, h: 1024, movil: true },
+  { nombre: "a-768", ruta: "/a", w: 768, h: 1024, movil: true },
+  { nombre: "b-768", ruta: "/b", w: 768, h: 1024, movil: true },
+  { nombre: "c-768", ruta: "/c", w: 768, h: 1024, movil: true },
+  { nombre: "a-frio-1440", ruta: "/a?tema=frio", w: 1440, h: 900 },
+  { nombre: "b-frio-1440", ruta: "/b?tema=frio", w: 1440, h: 900 },
+  { nombre: "c-frio-1440", ruta: "/c?tema=frio", w: 1440, h: 900 },
+  { nombre: "home-frio-completa-1440", ruta: "/?tema=frio", w: 1440, h: 900, completa: true },
+  { nombre: "a-frio-390", ruta: "/a?tema=frio", w: 390, h: 844, movil: true },
 ].filter((t) => !solo || solo.includes(t.nombre));
 
 const browser = await chromium.launch({ channel: "chrome", headless: true });

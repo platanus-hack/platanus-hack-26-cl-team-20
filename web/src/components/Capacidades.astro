@@ -35,16 +35,16 @@ const items = [
       <svg viewBox="0 0 500 400" class="absolute inset-0 h-full w-full" aria-hidden="true">
         <defs>
           <pattern id="cap-grid" width="25" height="25" patternUnits="userSpaceOnUse">
-            <path d="M25 0H0V25" fill="none" stroke="#f1eee4" stroke-opacity="0.05" />
+            <path d="M25 0H0V25" fill="none" stroke-opacity="0.05" style="stroke:var(--k-f1eee4)" />
           </pattern>
         </defs>
         <rect width="500" height="400" fill="url(#cap-grid)" />
 
         <g class="esc" data-esc="guias">
           <g transform="translate(250 200) rotate(-10)">
-            <rect x="-120" y="-80" width="240" height="160" fill="#1b1d18" stroke="#3a3d35" />
-            <circle cx="-60" cy="-20" r="10" fill="#0b0c0a" stroke="#4a4d44" />
-            <circle cx="40" cy="30" r="10" fill="#0b0c0a" stroke="#4a4d44" />
+            <rect x="-120" y="-80" width="240" height="160" style="fill:var(--k-1b1d18);stroke:var(--k-3a3d35)" />
+            <circle cx="-60" cy="-20" r="10" style="fill:var(--k-0b0c0a);stroke:var(--k-4a4d44)" />
+            <circle cx="40" cy="30" r="10" style="fill:var(--k-0b0c0a);stroke:var(--k-4a4d44)" />
             <rect class="c-trazo" x="-134" y="-94" width="268" height="188" pathLength="1" />
             <line x1="-60" y1="-20" x2="40" y2="30" class="c-guia" />
             <circle cx="40" cy="30" r="20" class="c-pulso" />
@@ -66,7 +66,7 @@ const items = [
         </g>
 
         <g class="esc" data-esc="camaras">
-          <rect x="150" y="130" width="200" height="140" fill="#1b1d18" stroke="#3a3d35" />
+          <rect x="150" y="130" width="200" height="140" style="fill:var(--k-1b1d18);stroke:var(--k-3a3d35)" />
           <path d="M60 60 L150 130 M60 60 L350 130 M60 60 L150 270" class="c-cono" />
           <path d="M440 340 L350 270 M440 340 L150 270 M440 340 L350 130" class="c-cono c-cono2" />
           <rect x="44" y="44" width="32" height="24" class="c-cam" />
@@ -76,10 +76,10 @@ const items = [
         </g>
 
         <g class="esc" data-esc="domotica">
-          <circle cx="160" cy="170" r="46" fill="#1b1d18" stroke="#3a3d35" />
+          <circle cx="160" cy="170" r="46" style="fill:var(--k-1b1d18);stroke:var(--k-3a3d35)" />
           <circle cx="160" cy="170" r="70" class="c-halo" />
           <text x="240" y="150" class="c-lbl">Luz del escritorio</text>
-          <rect x="240" y="166" width="200" height="6" fill="#f1eee4" fill-opacity="0.15" />
+          <rect x="240" y="166" width="200" height="6" fill-opacity="0.15" style="fill:var(--k-f1eee4)" />
           <rect x="240" y="166" width="80" height="6" class="c-slider" />
           <text x="240" y="200" class="c-txt">home → 40 %, pendiente</text>
           <rect x="240" y="230" width="150" height="50" class="c-confirma" />
@@ -162,14 +162,14 @@ const items = [
     font-stretch: 120%;
   }
   .vineta :global(.c-tecla) {
-    fill: rgb(241 238 228 / 0.05);
-    stroke: rgb(241 238 228 / 0.6);
+    fill: color-mix(in srgb, var(--color-luz) 5%, transparent);
+    stroke: color-mix(in srgb, var(--color-luz) 60%, transparent);
   }
   .vineta :global(.c-tecla.t4) {
     animation: tecla 2.4s steps(1) infinite;
   }
   .vineta :global(.c-dedo) {
-    fill: rgb(241 238 228 / 0.12);
+    fill: color-mix(in srgb, var(--color-luz) 12%, transparent);
     stroke: var(--color-luz-2);
     animation: dedo 2.4s var(--ease-proyector) infinite;
   }
@@ -184,7 +184,7 @@ const items = [
     animation-direction: reverse;
   }
   .vineta :global(.c-cam) {
-    fill: #1b1d18;
+    fill: var(--k-1b1d18);
     stroke: var(--color-luz);
   }
   .vineta :global(.c-slider) {
@@ -203,7 +203,7 @@ const items = [
     to { transform: scale(1.5); opacity: 0; }
   }
   @keyframes tecla {
-    0%, 40% { fill: rgb(241 238 228 / 0.05); }
+    0%, 40% { fill: color-mix(in srgb, var(--color-luz) 5%, transparent); }
     50%, 80% { fill: var(--color-senal); }
   }
   @keyframes dedo {
@@ -215,7 +215,7 @@ const items = [
 </style>
 
 <script>
-  import { reducido } from "../scripts/suave";
+  import { inactivo, reducido } from "../scripts/suave";
   const raiz = document.querySelector<HTMLElement>("[data-cap]");
   if (raiz) {
     const tabs = [...raiz.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
@@ -237,7 +237,7 @@ const items = [
     const auto = () => {
       clearInterval(timer);
       if (reducido() || raiz.classList.contains("pausa")) return;
-      timer = window.setInterval(() => elegir(i + 1), DUR);
+      timer = window.setInterval(() => !inactivo() && elegir(i + 1), DUR);
     };
     tabs.forEach((t, k) => {
       t.addEventListener("click", () => {

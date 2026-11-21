@@ -81,7 +81,7 @@ const so = [
           <div>
             <h2 id="titulo-agentes" class="display text-[clamp(2.2rem,4.6vw,4.2rem)]">Funciona con el agente que ya usas</h2>
             <p class="mt-6 max-w-[42ch] text-luz-2">
-              Una línea y tu agente suma {HERRAMIENTAS.length} herramientas:
+              Una línea y tu agente suma {HERRAMIENTAS.length} herramientas:{" "}
               <span class="num text-sm text-luz">{HERRAMIENTAS.join(", ")}</span>.
             </p>
           </div>
@@ -270,7 +270,7 @@ const so = [
     content: "";
     position: absolute;
     inset: 0;
-    background: repeating-linear-gradient(180deg, transparent 0 6px, rgb(241 238 228 / 0.06) 6px 7px);
+    background: repeating-linear-gradient(180deg, transparent 0 6px, color-mix(in srgb, var(--color-luz) 6%, transparent) 6px 7px);
   }
   @keyframes paquete {
     from { top: 8%; opacity: 0; }
@@ -286,7 +286,7 @@ const so = [
     width: 38px;
     aspect-ratio: 4 / 3;
     border: 1px solid var(--color-linea);
-    background: repeating-linear-gradient(90deg, rgb(241 238 228 / 0.1) 0 3px, transparent 3px 6px);
+    background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-luz) 10%, transparent) 0 3px, transparent 3px 6px);
     animation: cuadro 1.2s steps(3) infinite;
   }
   .cuadros i:nth-child(2) { animation-delay: -0.4s; }
@@ -297,7 +297,7 @@ const so = [
 </style>
 
 <script>
-  import { reducido } from "../scripts/suave";
+  import { inactivo, reducido } from "../scripts/suave";
 
   // Pestañas accesibles (agentes y sistema operativo).
   document.querySelectorAll<HTMLElement>("[data-tabs]").forEach((raiz) => {
@@ -347,12 +347,12 @@ const so = [
     ];
     let k = 0;
     setInterval(() => {
-      if (document.hidden) return;
+      if (inactivo()) return;
       n += 15;
       if (cuadros) cuadros.textContent = n.toLocaleString("es-CL").replace(/\./g, " ");
     }, 250);
     setInterval(() => {
-      if (!document.hidden && json) json.textContent = evs[++k % evs.length];
+      if (!inactivo() && json) json.textContent = evs[++k % evs.length];
     }, 2400);
   }
 </script>

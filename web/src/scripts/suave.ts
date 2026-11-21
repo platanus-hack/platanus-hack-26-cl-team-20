@@ -1,5 +1,11 @@
 // Lenis solo si el usuario no pidió menos movimiento, y cargado después del primer pintado.
 export const reducido = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// Pausa manual (botón «Pausar movimiento», WCAG 2.2.2).
+export const pausado = () => document.documentElement.dataset.movimiento === "pausa";
+// Los temporizadores no avanzan con la pestaña oculta ni con el movimiento en pausa.
+export const inactivo = () => document.hidden || pausado();
+// Lee un token de color del tema activo (para canvas y WebGL).
+export const token = (nombre: string) => getComputedStyle(document.documentElement).getPropertyValue(`--color-${nombre}`).trim();
 
 export function cuandoOcioso(fn: () => void, timeout = 1200) {
   const ric = (window as any).requestIdleCallback as undefined | ((cb: () => void, o?: { timeout: number }) => number);
@@ -45,7 +51,7 @@ export function bucleVisible(el: Element, paso: (t: number, dt: number) => void)
     id = requestAnimationFrame(tick);
   };
   const arrancar = () => {
-    if (!id && visible && !document.hidden) {
+    if (!id && visible && !inactivo()) {
       prev = 0;
       id = requestAnimationFrame(tick);
     }
@@ -58,5 +64,7 @@ export function bucleVisible(el: Element, paso: (t: number, dt: number) => void)
     visible = e.isIntersecting;
     visible ? arrancar() : parar();
   }).observe(el);
-  document.addEventListener("visibilitychange", () => (document.hidden ? parar() : arrancar()));
+  const revisar = () => (inactivo() ? parar() : arrancar());
+  document.addEventListener("visibilitychange", revisar);
+  document.addEventListener("pcx:movimiento", revisar);
 }
