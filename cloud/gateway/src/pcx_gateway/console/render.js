@@ -100,8 +100,9 @@ const draw = {
       box = [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
     } else {
       const p = anchorPoint(w, world) || [world.surface.width_mm / 2, world.surface.height_mm / 2];
-      ctx.arc(p[0] * s, p[1] * s, 60 * s, 0, Math.PI * 2);
-      box = [p[0] - 60, p[1] - 60, 120, 120];
+      const r = w.radius_mm ?? 60; // sin polígono, el halo es un círculo de este radio en el ancla
+      ctx.arc(p[0] * s, p[1] * s, r * s, 0, Math.PI * 2);
+      box = [p[0] - r, p[1] - r, r * 2, r * 2];
     }
     ctx.stroke();
     return box;
