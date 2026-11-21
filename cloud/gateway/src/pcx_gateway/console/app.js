@@ -38,7 +38,12 @@ const projectorOpen = () => Date.now() - proj.alive < 4000;
 // ------------------------------------------------------------------ cámaras
 const cams = new Map(); // deviceId → {id, deviceId, label, stream, video, el}
 const camIds = store.get("camIds") || {};
-let mainCam = store.get("mainCam");
+let mainCam = store.get("mainCam"); // solo se guarda cuando la persona elige la cenital
+let camChosen = !!mainCam;
+
+/** Menor es mejor para cenital: webcam externa, después un teléfono o cámara virtual, al final la del notebook. */
+const camRank = (label) =>
+  /facetime|built-?in|integrad|isight|macbook|notebook|internal/i.test(label) ? 2 : /iphone|ipad|continuity|virtual|obs|desk view/i.test(label) ? 1 : 0;
 
 function camId(deviceId) {
   if (!camIds[deviceId]) {
@@ -57,6 +62,7 @@ function addCam(deviceId, label, stream) {
   el.querySelector("strong").textContent = label || "Cámara";
   el.querySelector("button").onclick = () => {
     mainCam = deviceId;
+    camChosen = true;
     store.set("mainCam", mainCam);
     paintCams();
   };
@@ -67,16 +73,17 @@ function addCam(deviceId, label, stream) {
 }
 
 function paintCams() {
-  if (!cams.has(mainCam)) mainCam = cams.keys().next().value;
+  if (!cams.has(mainCam)) camChosen = false;
+  if (!camChosen) mainCam = [...cams.values()].sort((a, b) => camRank(a.label) - camRank(b.label))[0]?.deviceId;
   for (const c of cams.values()) {
     const main = c.deviceId === mainCam;
     c.el.classList.toggle("principal", main);
     c.el.querySelector("small").textContent = `${c.id} · ${c.video.videoWidth || "–"}×${c.video.videoHeight || "–"}`;
-    c.el.querySelector("button").textContent = main ? "Principal" : "Usar como principal";
+    c.el.querySelector("button").textContent = main ? "Cenital" : "Usar como cenital";
   }
   const n = cams.size;
   $("camaras-nota").textContent = n
-    ? `${n} ${n === 1 ? "cámara conectada" : "cámaras conectadas"}. El agente mira por la principal si no pide otra.`
+    ? `${n} ${n === 1 ? "cámara conectada" : "cámaras conectadas"}. La cenital es la que mira la mesa: por ella mira el agente y se siguen las manos.`
     : "No hay cámaras conectadas. Enchufa una y aparece sola.";
   ensureCalib();
   syncDevices();
@@ -173,7 +180,7 @@ const device = (c) => ({
   adapter: "browser",
   caps: ["frames"],
   status: "online",
-  meta: { label: c.label, width: c.video.videoWidth, height: c.video.videoHeight, main: c.deviceId === mainCam },
+  meta: { label: c.label, width: c.video.videoWidth, height: c.video.videoHeight, main: c.deviceId === mainCam, role: c.deviceId === mainCam ? "cenital" : "otra" },
 });
 
 // ------------------------------------------------------------------ nodo
