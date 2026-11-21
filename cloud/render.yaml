@@ -1,0 +1,47 @@
+# Render Blueprint: keep one worker and one instance (node sockets are process-local).
+# Reference: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: pcx-gateway
+    runtime: python
+    region: virginia
+    plan: starter
+    numInstances: 1
+    buildCommand: pip install uv && uv sync --directory cloud/gateway --frozen --no-dev
+    startCommand: uv run --directory cloud/gateway --no-dev uvicorn pcx_gateway.app:create_app --factory --host 0.0.0.0 --port ${PORT:-9210} --workers 1
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.13
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pcx-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: pcx-events
+          property: connectionString
+      - key: PCX_USER_TOKEN
+        sync: false
+      - key: PCX_NODE_TOKEN
+        sync: false
+      - key: PCX_NODE_ID
+        value: demo-node
+      - key: PCX_SPACE_ID
+        value: demo-space
+      - key: PCX_USER_ID
+        value: demo-user
+  - type: keyvalue
+    name: pcx-events
+    region: virginia
+    plan: starter
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
+databases:
+  - name: pcx-db
+    region: virginia
+    plan: basic-256mb
+    databaseName: pcx
+    user: pcx
+    ipAllowList: []
