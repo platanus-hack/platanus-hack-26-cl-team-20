@@ -208,6 +208,14 @@ async fn render_session(mut sock: WebSocket, w: WorldHandle) {
                     Ok(FromRenderer::Presented(p)) => w.post(move |w| w.on_presented(p.rev, p.t_present_ms)),
                     Ok(FromRenderer::Stats(s)) => w.post(move |w| { w.render_stats.insert("stats".into(), serde_json::to_value(s).unwrap_or_default()); }),
                     Ok(FromRenderer::Blanked(b)) => w.post(move |w| w.on_blanked(b)),
+                    // v2.1: el renderer pide la escena completa
+                    Ok(FromRenderer::Resync(_)) => {
+                        let (snap, nrx) = w.subscribe_render().await;
+                        rx = nrx;
+                        base = snap.rev;
+                        if send(&mut sock, &ToRenderer::Scene(snap)).await.is_err() { break; }
+                    }
+                    Ok(FromRenderer::PatternShown(p)) => w.post(move |w| { w.render_stats.insert("pattern_shown".into(), serde_json::to_value(p).unwrap_or_default()); }),
                     Err(e) => tracing::debug!("render: mensaje desconocido ({e})"),
                 },
                 Some(Ok(Message::Close(_))) | None | Some(Err(_)) => break,

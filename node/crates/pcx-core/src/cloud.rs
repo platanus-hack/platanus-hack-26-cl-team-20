@@ -167,6 +167,12 @@ impl CloudLink {
                                     let _ = out.send(msg).await;
                                 });
                             }
+                            // v2.1: consola de la nube → confirmación (el nodo verifica digest y política)
+                            Ok(CloudMessage::ConfirmAction(c)) => {
+                                if let Err(e) = world.confirm(c).await {
+                                    tracing::warn!("nube: confirm_action rechazado ({e})");
+                                }
+                            }
                             Ok(_) => {}
                             Err(e) => tracing::debug!("nube: mensaje desconocido ({e})"),
                         },
