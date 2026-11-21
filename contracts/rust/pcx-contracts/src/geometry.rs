@@ -181,10 +181,12 @@ fn best_of<'a>(
     let target = format!("proj:{projector_id}");
     let mut best: Option<(usize, &Transform)> = None;
     for (i, t) in transforms.iter().enumerate() {
-        if t.from_frame() == TABLE_MM && t.to_frame() == target && pred(t) {
-            if best.map_or(true, |(_, b)| t.version() > b.version()) {
-                best = Some((i, t));
-            }
+        if t.from_frame() == TABLE_MM
+            && t.to_frame() == target
+            && pred(t)
+            && best.is_none_or(|(_, b)| t.version() > b.version())
+        {
+            best = Some((i, t));
         }
     }
     best

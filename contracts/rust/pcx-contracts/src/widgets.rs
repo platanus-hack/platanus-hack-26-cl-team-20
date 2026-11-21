@@ -15,6 +15,8 @@ pub enum Trigger {
     Pinch,
     Shadow,
     Api,
+    /// v2.1: apoyo (palma o dedos apoyados en la mesa, contacto inferido por visión).
+    Rest,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
