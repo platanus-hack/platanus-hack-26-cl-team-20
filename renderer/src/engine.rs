@@ -4,7 +4,7 @@
 
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use pcx_contracts::Widget;
 use vello::peniko::Color;
@@ -22,6 +22,7 @@ pub struct EngineConfig {
     pub ppmm: f64,
     pub effects_dir: PathBuf,
     pub assets_dir: PathBuf,
+    pub allow_remote_images: bool,
     /// Fuentes propias (`.ttf/.otf/.ttc`), primero en la pila; las del sistema quedan de respaldo.
     pub fonts_dir: PathBuf,
     /// LUT local por defecto (`--lut RUTA.npy`, `--lut-step MM`) si la escena no trae una `kind: lut`
@@ -33,7 +34,15 @@ pub struct EngineConfig {
 impl Default for EngineConfig {
     fn default() -> Self {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        Self { ppmm: 2.5, effects_dir: root.join("effects"), assets_dir: root.join("assets"), fonts_dir: root.join("fonts"), lut_path: None, lut_grid_step: 1.0 }
+        Self {
+            allow_remote_images: false,
+            ppmm: 2.5,
+            effects_dir: root.join("effects"),
+            assets_dir: root.join("assets"),
+            fonts_dir: root.join("fonts"),
+            lut_path: None,
+            lut_grid_step: 1.0,
+        }
     }
 }
 
@@ -65,6 +74,9 @@ pub struct Engine {
     compose: wgpu::RenderPipeline,
     compose_bgl: wgpu::BindGroupLayout,
     blit: wgpu::RenderPipeline,
+    pattern_pipeline: wgpu::RenderPipeline,
+    pattern: Option<(u64, String, wgpu::Texture, wgpu::BindGroup)>,
+    pattern_failed: Option<(u64, Instant)>,
     blit_bgl: wgpu::BindGroupLayout,
     sampler: wgpu::Sampler,
     uniforms: wgpu::Buffer,
@@ -266,6 +278,7 @@ impl Engine {
             alpha: wgpu::BlendComponent::OVER,
         };
         let blit = fullscreen_pipeline(&device, "blit", include_str!("blit.wgsl"), &blit_bgl, CANVAS_FMT, Some(blend));
+        let pattern_pipeline = fullscreen_pipeline(&device, "pattern", include_str!("pattern.wgsl"), &blit_bgl, out_format, None);
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
@@ -282,12 +295,15 @@ impl Engine {
         Self {
             vello,
             painter: Painter::new(Some(&cfg.fonts_dir)),
-            images: ImageCache::new(cfg.assets_dir.clone()),
+            images: ImageCache::with_policy(cfg.assets_dir.clone(), cfg.allow_remote_images),
             effects,
             out_format,
             compose,
             compose_bgl,
             blit,
+            pattern_pipeline,
+            pattern: None,
+            pattern_failed: None,
             blit_bgl,
             sampler,
             uniforms,
@@ -569,6 +585,59 @@ impl Engine {
         FrameInfo { build_ms, layers: layers.len() }
     }
 
+    /// Patrón en coordenadas nativas: origen (0,0), 1 texel = 1 px, negro fuera de la imagen.
+    /// Se salta por completo el lienzo, widgets, homografía y LUT.
+    pub fn render_pattern(&mut self, generation: u64, src: &str, target: &wgpu::TextureView) -> bool {
+        if !self.pattern.as_ref().is_some_and(|(serial, key, _, _)| *serial == generation && key == src) {
+            if self.pattern_failed.as_ref().is_some_and(|(serial, time)| *serial == generation && time.elapsed() < Duration::from_secs(2)) {
+                return false;
+            }
+            let image = match crate::images::load_pattern(src) {
+                Ok(image) => image,
+                Err(error) => {
+                    eprintln!("[pattern] imagen rechazada: {error}");
+                    self.pattern_failed = Some((generation, Instant::now()));
+                    return false;
+                }
+            };
+            self.pattern_failed = None;
+            let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+                label: Some("pattern"),
+                size: wgpu::Extent3d { width: image.width, height: image.height, depth_or_array_layers: 1 },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8Unorm,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                view_formats: &[],
+            });
+            self.queue.write_texture(
+                texture.as_image_copy(),
+                image.data.data(),
+                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(image.width * 4), rows_per_image: Some(image.height) },
+                texture.size(),
+            );
+            let bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("pattern"),
+                layout: &self.blit_bgl,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&texture.create_view(&Default::default())),
+                }],
+            });
+            self.pattern = Some((generation, src.to_owned(), texture, bg));
+        }
+        let mut enc = self.device.create_command_encoder(&Default::default());
+        {
+            let mut pass = canvas_pass(&mut enc, target, wgpu::LoadOp::Clear(wgpu::Color::BLACK));
+            pass.set_pipeline(&self.pattern_pipeline);
+            pass.set_bind_group(0, &self.pattern.as_ref().unwrap().3, &[]);
+            pass.draw(0..3, 0..1);
+        }
+        self.queue.submit([enc.finish()]);
+        true
+    }
+
     /// Cuadro negro (para `blank`): la escena no se dibuja.
     pub fn render_black(&self, target: &wgpu::TextureView) {
         let mut enc = self.device.create_command_encoder(&Default::default());
@@ -607,7 +676,7 @@ impl Engine {
         let data = buf.slice(..).get_mapped_range().expect("map");
         let mut px = Vec::with_capacity((w * h * 4) as usize);
         for row in 0..h {
-            for c in data[(row * bpr) as usize..(row * bpr + w * 4) as usize].chunks_exact(4) {
+            for c in data[(row * bpr) as usize..(row * bpr + w * 4) as usize].as_chunks::<4>().0 {
                 if bgra {
                     px.extend_from_slice(&[c[2], c[1], c[0], 255]);
                 } else {
@@ -640,4 +709,18 @@ fn canvas_pass<'e>(enc: &'e mut wgpu::CommandEncoder, view: &'e wgpu::TextureVie
         occlusion_query_set: None,
         multiview_mask: None,
     })
+}
+
+#[cfg(test)]
+mod pattern_tests {
+    #[test]
+    fn pattern_shader_validates_without_gpu() {
+        let module = vello::wgpu::naga::front::wgsl::parse_str(include_str!("pattern.wgsl")).unwrap();
+        vello::wgpu::naga::valid::Validator::new(
+            vello::wgpu::naga::valid::ValidationFlags::all(),
+            vello::wgpu::naga::valid::Capabilities::all(),
+        )
+        .validate(&module)
+        .unwrap();
+    }
 }

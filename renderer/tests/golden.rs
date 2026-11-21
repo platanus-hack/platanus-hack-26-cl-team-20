@@ -173,3 +173,77 @@ fn lut_equivale_a_homografia() {
     let c = render(&mut eng, &s, 0.25);
     assert!(diff_frac(&a, &c, 2) < 0.0001);
 }
+
+#[test]
+fn pattern_native_pixels_without_warp_or_widgets() {
+    use base64::Engine as _;
+    use pcx_renderer::runtime::{Runtime, now_epoch_ms};
+    use serde_json::json;
+    let assets = tmpdir("pattern");
+    let checker = image::RgbaImage::from_fn(160, 90, |x, y| {
+        if (x + y) % 2 == 0 { image::Rgba([255, 32, 16, 255]) } else { image::Rgba([0, 160, 255, 255]) }
+    });
+    checker.save(assets.join("calib.png")).unwrap();
+    let mut eng = Engine::headless(EngineConfig { assets_dir: assets.clone(), ..EngineConfig::default() });
+    let target = eng.create_target(320, 180);
+    let view = target.create_view(&Default::default());
+    let mut rt = Runtime::offline();
+    rt.apply(fixture("scene.json")); // Incluye LUT, homografía y widgets: ninguno puede afectar al patrón.
+    let pattern = |id: &str, image: serde_json::Value, until: Option<f64>| {
+        serde_json::from_value(json!({"type":"pattern", "pattern_id":id, "image":image, "until_ms":until})).unwrap()
+    };
+    rt.apply(pattern("path", json!({"path":assets.join("calib.png")}), None));
+    rt.draw(&mut eng, &view, 320, 180, Some(0.25));
+    eng.wait_idle();
+    rt.after_present(now_epoch_ms());
+    let actual = eng.readback(&target);
+    let expected =
+        image::RgbaImage::from_fn(320, 180, |x, y| if x < 160 && y < 90 { *checker.get_pixel(x, y) } else { image::Rgba([0, 0, 0, 255]) });
+    assert_eq!(actual, expected, "no debe escalar, filtrar ni aplicar warp");
+    check_golden("pattern", &actual);
+    assert_eq!(rt.state.unpresented, vec![12], "el patrón no presenta la escena");
+
+    // El core puede reescribir la misma ruta para el siguiente patrón: no reutilizar texels viejos.
+    image::RgbaImage::from_pixel(160, 90, image::Rgba([0, 255, 0, 255])).save(assets.join("calib.png")).unwrap();
+    rt.apply(pattern("rewritten", json!({"path":assets.join("calib.png")}), None));
+    rt.draw(&mut eng, &view, 320, 180, None);
+    assert_eq!(eng.readback(&target).get_pixel(40, 40).0, [0, 255, 0, 255]);
+    checker.save(assets.join("calib.png")).unwrap();
+
+    let uri = format!(
+        "data:image/png;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(std::fs::read(assets.join("calib.png")).unwrap())
+    );
+    rt.apply(pattern("data", json!({"data_uri":uri}), None));
+    rt.draw(&mut eng, &view, 320, 180, None);
+    assert_eq!(eng.readback(&target), expected);
+    // Salida más pequeña: recorta, jamás reescala.
+    let small = eng.create_target(80, 45);
+    rt.draw(&mut eng, &small.create_view(&Default::default()), 80, 45, None);
+    assert_eq!(eng.readback(&small), image::imageops::crop_imm(&checker, 0, 0, 80, 45).to_image());
+
+    // blank tiene prioridad y no destruye el patrón.
+    rt.apply(serde_json::from_value(json!({"type":"blank", "request_id":"b", "ms":20, "reason":"test"})).unwrap());
+    rt.draw(&mut eng, &view, 320, 180, None);
+    assert_eq!(non_black(&eng.readback(&target)), 0);
+    rt.after_present(now_epoch_ms());
+    std::thread::sleep(std::time::Duration::from_millis(25));
+    rt.draw(&mut eng, &view, 320, 180, None);
+    assert_eq!(eng.readback(&target), expected);
+    rt.after_present(now_epoch_ms());
+
+    rt.apply(serde_json::from_value(json!({"type":"pattern_clear"})).unwrap());
+    rt.draw(&mut eng, &view, 320, 180, Some(0.25));
+    rt.after_present(now_epoch_ms());
+    let scene = eng.readback(&target);
+    assert_ne!(scene, expected);
+    assert!(rt.state.unpresented.is_empty());
+    // Vencido antes del primer cuadro: nunca muestra ni confirma el patrón.
+    rt.apply(pattern("expired", json!({"path":assets.join("calib.png")}), Some(now_epoch_ms() - 1.0)));
+    rt.draw(&mut eng, &view, 320, 180, Some(0.25));
+    assert_eq!(eng.readback(&target), scene);
+    // Una ruta remota inválida produce negro, aunque exista escena por debajo.
+    rt.apply(pattern("rejected", json!({"path":"https://example.com/calib.png"}), None));
+    rt.draw(&mut eng, &view, 320, 180, None);
+    assert_eq!(non_black(&eng.readback(&target)), 0);
+}

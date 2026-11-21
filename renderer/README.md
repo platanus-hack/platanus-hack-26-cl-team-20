@@ -1,6 +1,6 @@
 # pcx-renderer · compositor del proyector
 
-Recibe la escena del core por WebSocket (contratos v2, `contracts/rust/pcx-contracts`: `scene`, `scene_diff`, `blank`)
+Recibe la escena del core por WebSocket (contratos v2.1, `contracts/rust/pcx-contracts`: `scene`, `scene_diff`, `blank`, `pattern`, `pattern_clear`)
 y la dibuja en la GPU
 (wgpu 30 + vello 0.12 + parley 0.13; Metal, Vulkan o DX12). Se basa en el spike `spikes/render-rust`.
 
@@ -16,23 +16,33 @@ WS (hilo propio) ─► SceneState (rev, base_rev, ttl, z) ─► lienzo en mm �
 Es miembro del workspace Rust de la raíz (un solo `Cargo.lock` y `target/` en la raíz del repo).
 
 ```bash
-cargo test -p pcx-renderer       # unitarios, golden images, protocolo (core falso en :9231), recarga de shader, humo del bench
+export CARGO_TARGET_DIR=/Users/manuelblanco/Projects/platanus_hack_26/platanus-hack-26/target
+cargo test -p pcx-renderer       # unitarios, golden images, protocolo (core falso en puerto efímero), recarga de shader, humo del bench
 cargo build --release -p pcx-renderer
 ./target/release/pcx-renderer --bench                        # benchmark headless (5, 50 y 200 widgets)
 ./target/release/pcx-renderer --headless --frames 60 --out /tmp/pcx --no-ws --scene contracts/fixtures/scene.json
 ./target/release/pcx-renderer --headless --out /tmp/pcx     # contra el core en ws://127.0.0.1:9200/render, sin fin
 ```
 
-**Mac del montaje (con ventana; no se ejecuta en los tests ni en el Mac de desarrollo):**
+**Elegir proyector (macOS, Windows y Linux; solo en la máquina del montaje):**
 
 ```bash
-./target/release/pcx-renderer --display 1                    # índice del display (se listan en el log al arrancar)
-./target/release/pcx-renderer --display LS24 --ws ws://127.0.0.1:9200/render
+./target/release/pcx-renderer --list-displays                # no crea ventanas ni conecta WS
+./target/release/pcx-renderer --display 1                    # índice de la lista actual
+./target/release/pcx-renderer --display T749                 # subcadena del nombre real, sin distinguir mayúsculas
+./target/release/pcx-renderer --display 0 --allow-main        # opt-in explícito para pantalla principal
+# Windows (PowerShell): .\target\release\pcx-renderer.exe --list-displays / --display T749
 ```
 
-Ventana sin bordes del tamaño del display, `PresentMode::Fifo` (vsync), **nunca pantalla completa nativa** (provocó kernel
-panics). En macOS (`#[cfg(target_os = "macos")]`): visible en todos los Spaces, nivel `NSStatusWindowLevel` (sobre la barra
-de menú) y `ActivationPolicy::Accessory` (sin Dock). En Windows y Linux: ventana sin bordes, siempre encima. ESC cierra.
+La lista incluye índice, nombre, bounds físicos, escala y principal. macOS usa `NSScreen.localizedName`, asociado por
+el ID de CoreGraphics; Windows usa `EnumDisplayDevicesW` (nombre del monitor); Linux usa el nombre de winit.
+Un nombre inexistente o ambiguo **aborta**; no hay fallback a otro display. La principal se rechaza sin `--allow-main`
+(también si el compositor no permite identificarla, por ejemplo Wayland). Se verifican bounds y monitor de la ventana
+antes de dibujar y durante los eventos; si el SO la ubica fuera del display elegido, se cierra y termina con error.
+
+macOS mantiene una ventana sin bordes del tamaño del display, `PresentMode::Fifo` (vsync), **nunca pantalla completa
+nativa** (provocó kernel panics). Visible en todos los Spaces, nivel `NSStatusWindowLevel` y `ActivationPolicy::Accessory`
+(sin Dock). Windows y Linux usan `Fullscreen::Borderless(Some(monitor))`. ESC cierra. Los tests son siempre headless.
 
 ### Flags
 
@@ -42,12 +52,15 @@ de menú) y `ActivationPolicy::Accessory` (sin Dock). En Windows y Linux: ventan
 | `--scene ARCHIVO` (repetible) | | aplica `scene`/`scene_diff` desde JSON al arrancar |
 | `--ppmm N` | 2.5 | px del lienzo por mm de superficie |
 | `--effects DIR` | `renderer/effects` | catálogo WGSL con recarga en caliente |
-| `--assets DIR` | `renderer/assets` | `image.src = "asset:NOMBRE"` → `DIR/NOMBRE.png` |
+| `--assets-dir DIR` (`--assets` alias) | `renderer/assets` | raíz de archivos locales; `asset:NOMBRE` → `DIR/NOMBRE.png` |
+| `--allow-remote-images` | no | habilita HTTP(S) para widgets `image` |
 | `--fonts DIR` | `renderer/fonts` | `.ttf/.otf/.ttc` propios, primeros en la pila de fuentes |
 | `--projector ID` | `main` | usa los transforms `table_mm → proj:<ID>` |
 | `--lut ARCHIVO.npy` `--lut-step MM` | —, 1 | LUT local si la escena no trae una `kind: lut` para el proyector (sin sha256) |
 | `--headless` `--frames N` `--out DIR` `--hz N` `--time T` `--size WxH` | ∞, —, 60, reloj, 1920x1080 | offscreen; `frame_NNNNN.png` + `superficie.png`; `--time` fija la animación |
-| `--display IDX\|NOMBRE` `--latency N` | —, 1 | ventana en el display (subcadena del nombre o índice) |
+| `--list-displays` | no | lista pantallas sin crear ventanas |
+| `--display IDX\|NOMBRE` `--latency N` | —, 1 | display exacto por índice o subcadena única del nombre real |
+| `--allow-main` | no | permite abrir en la principal |
 | `--bench` `--bench-frames N` | 200 | benchmark |
 
 ## Protocolo
@@ -60,9 +73,14 @@ de menú) y `ActivationPolicy::Accessory` (sin Dock). En Windows y Linux: ventan
 - `blank{request_id, ms}`: desde el próximo cuadro la salida va negra `ms` ms, encima de la escena (que se sigue
   actualizando). Un `blank` nuevo durante uno activo reemplaza el plazo desde ese momento. Al volver la escena se manda
   `blanked{request_id, t_start_ms, t_end_ms}` por cada pedido: presentación del primer cuadro negro y del primer cuadro
-  con escena otra vez.
-- **Extensión (no está en `FromRenderer` de contracts):** `{"type":"resync","have_rev":N|null}` para pedir un `scene`
-  completo; se repite como máximo cada 250 ms mientras falte. Propuesta: agregarlo a `contracts/render`.
+  sin blank otra vez (escena o patrón).
+- `pattern{pattern_id, image:{path}|{data_uri}, until_ms:null|época_ms}` tapa la escena hasta `pattern_clear` o el plazo.
+  Dibuja desde (0,0), 1 texel por píxel nativo, sin warp ni widgets: recorta si sobra imagen y rellena negro si falta.
+  El patrón admite archivos locales (también temporales fuera de assets); `data_uri` usa `data:image/...;base64,...`.
+  `blank` tiene prioridad. La escena sigue actualizándose debajo; sus revs se confirman al volver a mostrarla.
+  `pattern_shown{pattern_id,t_present_ms}` se envía una vez tras el primer cuadro presentado con ese patrón;
+  un patrón inválido da negro y no se confirma.
+- `resync{have_rev:N|null}` (tipo de contracts v2.1) pide un `scene` completo; se repite como máximo cada 250 ms.
 - `ttl_s`: cuenta desde que llegó esa versión del widget (reenviar el mismo widget no reinicia el TTL).
 - Orden: por `z` (estable por orden de llegada). Dentro de un mismo `z`, los `effect` van encima de los vectores
   (así un `z` común cuesta una sola pasada de vello).
@@ -70,6 +88,13 @@ de menú) y `ActivationPolicy::Accessory` (sin Dock). En Windows y Linux: ventan
   (LUT > homografía; mayor `version`). `homography` legado se usa si no hay transform para el proyector. Sin ninguna,
   la superficie se centra en la salida. La LUT se recarga al cambiar `path`, `version` o `sha256`; si no carga (no existe,
   sha256 distinto, tamaño distinto del descriptor) se usa el respaldo del contrato: `approx_matrix` o la mejor homografía.
+
+## Imágenes
+
+`image.src` admite `asset:NOMBRE`, rutas relativas a `--assets-dir`, rutas absolutas y `file://` dentro de esa raíz,
+verificadas con `canonicalize` (también symlinks); cualquier componente `..` se rechaza. Admite además data URIs base64.
+HTTP y HTTPS, incluido localhost, se rechazan salvo `--allow-remote-images`; sin redirects y con timeout de 2 s.
+Máximo 8 MiB comprimidos y 4096×4096 píxeles, con límites de decodificación antes de reservar la imagen.
 
 ## LUT (superficies no planas)
 
@@ -104,8 +129,11 @@ a `renderer/fonts/` (p. ej. Noto Sans + Noto Sans Symbols 2 + Noto Color Emoji, 
 
 ## Golden images
 
+Las pruebas GPU requieren un adaptador disponible: en un sandbox sin Metal fallan con `adapter: NotFound`
+(no se omiten). Unitarios y protocolo WS se pueden ejecutar sin GPU: `cargo test -p pcx-renderer --lib --test protocol`.
+
 `tests/golden/*.png` (1920×1080, generadas en macOS). Tolerancia: ≤ 0,5 % de píxeles con algún canal a más de 24
-niveles. Regenerar: `UPDATE_GOLDEN=1 cargo test --test golden`. Si falta una referencia (otra máquina u otro SO),
+niveles. Regenerar: `UPDATE_GOLDEN=1 cargo test --test golden`. El golden `pattern.png` es un tablero analítico de 320×180, comparado además píxel a píxel. Si falta una referencia (otra máquina u otro SO),
 se escribe y el test pasa.
 
 ## Benchmark (`--bench`, medido)

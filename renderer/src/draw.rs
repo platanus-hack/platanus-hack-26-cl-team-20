@@ -109,7 +109,7 @@ impl Painter {
     /// Avanza un cuadro y desaloja layouts sin uso.
     pub fn begin_frame(&mut self) {
         self.frame += 1;
-        if self.frame % 60 == 0 {
+        if self.frame.is_multiple_of(60) {
             let f = self.frame;
             self.cache.retain(|_, (_, used)| f - *used < 120);
         }
