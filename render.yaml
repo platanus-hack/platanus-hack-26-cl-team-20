@@ -1,6 +1,6 @@
 # Render Blueprint de pcx (gateway en la nube). Referencia: https://render.com/docs/blueprint-spec
 # Una instancia y un worker: los WSS de los nodos y las tool calls pendientes viven en ese proceso.
-# Secretos (sync: false) se cargan a mano en el dashboard; nada secreto en este archivo.
+# Los tres tokens los genera Render (generateValue): nadie los tipea ni quedan en el repo.
 services:
   - type: web
     name: pcx-gateway
@@ -27,11 +27,11 @@ services:
           name: pcx-events
           property: connectionString
       - key: PCX_USER_TOKEN      # MCP (agentes)
-        sync: false
+        generateValue: true
       - key: PCX_NODE_TOKEN      # WSS del nodo y subida de miniaturas
-        sync: false
+        generateValue: true
       - key: PCX_CONSOLE_TOKEN   # personas: aprobar confirmaciones de domótica; nunca a un agente
-        sync: false
+        generateValue: true
       - key: PCX_OPEN_SESSIONS   # consola web en /: cada visita crea su propio usuario + espacio + nodo
         value: "1"
       - key: PCX_NODE_ID
