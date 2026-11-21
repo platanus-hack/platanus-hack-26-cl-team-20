@@ -7,6 +7,7 @@ Responsables: **Pablo y Matilda**.
 Pablo identifica **propósito, valor e ICP** como el bloqueo principal. El objetivo inmediato es construir una buena demo según la rúbrica del concurso. La secuencia de trabajo actual es investigación → conversación exploratoria → hipótesis → pruebas → elección con el equipo → demo y marca.
 
 - [Protocolo, estructura y nombres](00-coordinacion/protocolo.md).
+- [Superhuman Desk para Matilda: tres modos y guion de cinco minutos](00-coordinacion/2026-11-21-reunion-superhuman-desk.md).
 - [Estado y preguntas abiertas](00-coordinacion/estado.md).
 - [Ruta orientativa para las 30 horas restantes](00-coordinacion/ruta-30-horas.md).
 - [Investigación nueva: índice y recorrido de lectura](01-investigacion/README.md).
