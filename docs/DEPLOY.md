@@ -2,13 +2,13 @@
 
 ## Render: una operación de alta
 
-Prerrequisito del integrador: publicar este commit en `codex/deploy` en GitHub; esta entrega **no hace push**. Si se integra en otra rama, cambiar `branch` en `render.yaml` antes de crear el Blueprint.
-1. Render Dashboard → **New → Blueprint** → conectar el repositorio → rama `codex/deploy` → Blueprint Path `render.yaml` → revisar los tres recursos en Virginia.
+Prerrequisito del integrador: el Blueprint despliega la rama `manu/plataforma` (cambiar `branch` en `render.yaml` si se integra en otra).
+1. Render Dashboard → **New → Blueprint** → conectar el repositorio → rama `manu/plataforma` → Blueprint Path `render.yaml` → revisar los tres recursos en Virginia.
 2. En ese mismo formulario cargar `PCX_USER_TOKEN`, `PCX_NODE_TOKEN` y `PCX_CONSOLE_TOKEN`: tres valores distintos, cada uno generado con `openssl rand -hex 32`; guardarlos en el gestor de secretos. Crear/aplicar el Blueprint y esperar a que `pcx-gateway` esté **Live**.
 3. Copiar la URL pública del servicio (no asumir que el nombre estará disponible). `DATABASE_URL` y `REDIS_URL` se enlazan automáticamente por red privada; no cargarlos a mano. No hay OAuth: los agentes reciben únicamente el token de usuario; el de consola es exclusivo de personas.
 
 Docker fija Python 3.12 y `uv.lock`, comparte entorno con Compose y empaqueta `contracts/` sin instalación editable; usuario UID 10001, sin secretos ni uv en runtime. El contexto es la raíz, filtrada por `.dockerignore`.
-`PORT` lo entrega Render; `/health` verifica DB. Una instancia/un worker: Redis no distribuye sockets ni llamadas pendientes. `autoDeployTrigger: checksPass` espera CI; `.github/workflows/gateway.yml` ejecuta pytest en `codex/deploy`. Sin checks, Render no autodespliega; si se cambia de rama, actualizar también el workflow.
+`PORT` lo entrega Render; `/health` verifica DB. Una instancia/un worker: Redis no distribuye sockets ni llamadas pendientes. `autoDeployTrigger: checksPass` espera CI; `.github/workflows/gateway.yml` ejecuta pytest en `manu/plataforma`. Sin checks, Render no autodespliega; si se cambia de rama, actualizar también el workflow.
 Cada deploy corta WSS: cierre gracioso ≤20 s, límite Render 30 s, nodo reconecta con backoff; las acciones en vuelo pueden fallar. Evitar deploys durante la demo. Véase [Blueprint spec](https://render.com/docs/blueprint-spec).
 
 ## Verificar y conectar

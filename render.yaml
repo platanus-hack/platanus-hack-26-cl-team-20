@@ -5,7 +5,7 @@ services:
   - type: web
     name: pcx-gateway
     runtime: docker
-    branch: codex/deploy
+    branch: manu/plataforma
     autoDeployTrigger: checksPass # espera los checks de CI de la rama
     region: virginia
     plan: starter            # alias válido de 0.5c-512mb: pago, no se duerme

@@ -2,7 +2,7 @@ name: Gateway checks
 
 on:
   push:
-    branches: [codex/deploy]
+    branches: [manu/plataforma]
     paths:
       - cloud/gateway/**
       - contracts/src/**
