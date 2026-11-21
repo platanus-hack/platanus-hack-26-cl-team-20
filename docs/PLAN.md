@@ -57,6 +57,8 @@ Repo privado del equipo: `github.com/satelerd/platanus-hack-26` (local: `~/code/
 
 Créditos disponibles según Daniel: Vercel, Render, Anthropic. Anthropic se canjea en `hack.platan.us/26-cl/hacker/anthropic` (Matilda, sáb 00:36). Montos sin verificar.
 
+Seguimiento de uso de LLM («token maxxing») del evento: por persona en `hack.platan.us/26-cl/hacker/llm`, general en `hack.platan.us/26-cl/llm` (Matilda, sáb 02:58). Cada uno se conecta con su sesión.
+
 ## Demo y pitch
 - **La demo de 5 minutos es lo que más pesa:** nadie revisa el código; se busca factor wow en cada paso. La categoría importa menos que la presentación.
 - Scope ambicioso con «room to grow»: si algo no queda perfecto (por ejemplo el tracking), igual se muestra.
