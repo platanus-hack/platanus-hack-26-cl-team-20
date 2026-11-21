@@ -1,0 +1,205 @@
+{
+  "type": "scene",
+  "rev": 12,
+  "t_send_ms": 1795231660123.4,
+  "surface": {
+    "width_mm": 800.0,
+    "height_mm": 500.0
+  },
+  "transforms": [
+    {
+      "from_frame": "table_mm",
+      "to_frame": "proj:main",
+      "kind": "homography",
+      "matrix": [
+        2.16,
+        0.0,
+        96.0,
+        0.0,
+        2.16,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "lut_ref": null,
+      "version": 3,
+      "residual_mm": 1.8
+    },
+    {
+      "from_frame": "cam:top",
+      "to_frame": "table_mm",
+      "kind": "lut",
+      "matrix": null,
+      "lut_ref": "shm:lut/cam:top/v2",
+      "version": 2,
+      "residual_mm": null
+    }
+  ],
+  "widgets": [
+    {
+      "type": "label",
+      "id": "lbl-taza",
+      "anchor": {
+        "object_id": "taza",
+        "point_mm": [
+          110.0,
+          314.0
+        ],
+        "offset_mm": null
+      },
+      "z": 2,
+      "ttl_s": null,
+      "on_press": null,
+      "text": "Tu café ☕\nya está frío",
+      "size_mm": 14.0,
+      "color": "#FFFFFF",
+      "bg": "#00000099"
+    },
+    {
+      "type": "halo",
+      "id": "halo-taza",
+      "anchor": {
+        "object_id": "taza",
+        "point_mm": null,
+        "offset_mm": null
+      },
+      "z": 0,
+      "ttl_s": null,
+      "on_press": null,
+      "polygon_mm": [
+        [
+          155.0,
+          370.0
+        ],
+        [
+          110.0,
+          415.0
+        ],
+        [
+          65.0,
+          370.0
+        ],
+        [
+          110.0,
+          325.0
+        ]
+      ],
+      "color": "#00E5FF",
+      "width_mm": 4.0,
+      "pulse_hz": 1.5
+    },
+    {
+      "type": "arrow",
+      "id": "flecha",
+      "anchor": null,
+      "z": 0,
+      "ttl_s": null,
+      "on_press": null,
+      "from_mm": [
+        330.0,
+        120.0
+      ],
+      "to_mm": [
+        330.0,
+        221.0
+      ],
+      "color": "#FFD400",
+      "width_mm": 5.0
+    },
+    {
+      "type": "panel",
+      "id": "receta",
+      "anchor": null,
+      "z": 0,
+      "ttl_s": 120.0,
+      "on_press": null,
+      "rect_mm": [
+        470.0,
+        220.0,
+        200.0,
+        110.0
+      ],
+      "title": "Paso 1 de 3",
+      "body": "Pon el cuaderno abierto frente a ti.",
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "button",
+      "id": "siguiente",
+      "anchor": null,
+      "z": 0,
+      "ttl_s": null,
+      "on_press": {
+        "value": "next",
+        "triggers": [
+          "dwell",
+          "pinch"
+        ],
+        "dwell_ms": 700
+      },
+      "rect_mm": [
+        470.0,
+        340.0,
+        110.0,
+        45.0
+      ],
+      "label": "Siguiente ✓",
+      "progress": 0.35,
+      "color": "#00E676"
+    },
+    {
+      "type": "image",
+      "id": "qr",
+      "anchor": null,
+      "z": 0,
+      "ttl_s": null,
+      "on_press": null,
+      "rect_mm": [
+        700.0,
+        20.0,
+        80.0,
+        80.0
+      ],
+      "src": "asset:qr-celular",
+      "opacity": 1.0
+    },
+    {
+      "type": "effect",
+      "id": "ondas",
+      "anchor": null,
+      "z": -1,
+      "ttl_s": null,
+      "on_press": null,
+      "shader": "ripple",
+      "params": {
+        "speed": 0.8,
+        "color": [
+          0.0,
+          0.9,
+          1.0
+        ]
+      },
+      "rect_mm": null,
+      "polygon_mm": [
+        [
+          680.0,
+          300.0
+        ],
+        [
+          760.0,
+          300.0
+        ],
+        [
+          760.0,
+          360.0
+        ],
+        [
+          680.0,
+          360.0
+        ]
+      ]
+    }
+  ],
+  "homography": null
+}

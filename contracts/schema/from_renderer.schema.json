@@ -1,0 +1,73 @@
+{
+  "anyOf": [
+    {
+      "$ref": "#/$defs/Presented"
+    },
+    {
+      "$ref": "#/$defs/Stats"
+    }
+  ],
+  "discriminator": {
+    "propertyName": "type",
+    "mapping": {
+      "presented": "#/$defs/Presented",
+      "stats": "#/$defs/Stats"
+    }
+  },
+  "$defs": {
+    "Presented": {
+      "title": "Presented",
+      "description": "Una vez por `rev`, en el primer cuadro presentado que la contiene.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "presented"
+          ]
+        },
+        "rev": {
+          "type": "integer"
+        },
+        "t_present_ms": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "rev",
+        "t_present_ms"
+      ]
+    },
+    "Stats": {
+      "title": "Stats",
+      "description": "Cada 1 s.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "stats"
+          ]
+        },
+        "fps": {
+          "type": "number"
+        },
+        "frame_ms_p50": {
+          "type": "number"
+        },
+        "frame_ms_p95": {
+          "type": "number"
+        },
+        "dropped": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "type",
+        "fps",
+        "frame_ms_p50",
+        "frame_ms_p95"
+      ]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "include_hands": {
+      "type": "boolean",
+      "default": false
+    },
+    "include_devices": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

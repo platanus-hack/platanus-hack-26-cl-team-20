@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "request_id": {
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "precise",
+        "quick",
+        "verify"
+      ],
+      "default": "quick"
+    },
+    "camera_id": {
+      "type": "string"
+    },
+    "projector_id": {
+      "type": "string"
+    }
+  }
+}
