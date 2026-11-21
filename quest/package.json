@@ -1,0 +1,6 @@
+{
+  "name": "quest-proyector",
+  "private": true,
+  "type": "module",
+  "description": "Projection mapping con Meta Quest 3 + proyector Android (WebXR). Sin dependencias npm."
+}

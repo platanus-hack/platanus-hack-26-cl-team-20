@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SL scan · Pipeline</title><link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header><div><h1>Del patrón a la escena</h1><p id="session">Esperando una ejecución</p></div>
+    <span id="connection" role="status">Conectando…</span></header>
+  <div class="evidence"><strong id="evidence">Sin evidencia</strong><span id="physical">Precisión física sin verificar</span>
+    <span id="run"></span></div>
+  <main>
+    <nav aria-label="Etapas del escaneo"><ol id="stages"></ol><p class="hint">Procesado indica que la etapa terminó. La precisión física necesita mediciones independientes.</p></nav>
+    <section class="workspace" aria-labelledby="stageTitle">
+      <div class="stageHeading"><h2 id="stageTitle">Inspección del escaneo</h2><span id="stageState"></span></div>
+      <p id="reason" role="status">Ejecuta el pipeline hacia esta carpeta para ver el avance.</p>
+      <div class="viewer"><canvas id="geometry" aria-label="Vista 3D de nube, malla y dispositivos. Arrastra para rotar." tabindex="0"></canvas>
+        <div class="viewTools"><label><input type="checkbox" id="showMesh" checked>Malla</label>
+          <label><input type="checkbox" id="showFill">Interpolados</label><label><input type="checkbox" id="showDevices" checked>Dispositivos</label>
+          <button id="reset" type="button">Restablecer vista</button></div>
+        <p id="viewHint">La geometría aparecerá al completar la triangulación.</p>
+      </div>
+      <div id="metrics" class="metrics"></div>
+      <div id="images" class="images"></div>
+      <div id="entities" class="entities"></div>
+      <details><summary>Artefactos y trazabilidad</summary><ul id="artifacts"></ul><pre id="details"></pre></details>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body></html>

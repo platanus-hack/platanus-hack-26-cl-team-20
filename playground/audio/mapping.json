@@ -1,0 +1,15 @@
+{
+  "_doc": "Qué parte de la escena sigue a qué señal (efecto channel_react; se recarga al guardar). part: buda | keys (teclas) | jogs (platos de la DDJ) | cocodrilo | circuit | ohm | keyboard, o el nombre de un objeto de la escena. source: mix | ch1..chN (1 = primer canal del dispositivo; con la QX1222USB ch1 = L y ch2 = R) | L | R; un canal que el dispositivo no tiene cae a la mezcla. feature: sub | bass | mid | high | rms | beat | low (sub o bajo) | kick (bajo o golpe). style: halo | keys | rings | outline | fill (vacío = según la parte). ripples: ondas en cada golpe de esa fuente. Colores RGB 0-255.",
+  "parts": [
+    {"part": "buda", "source": "ch1", "feature": "rms", "style": "halo", "color": [255, 170, 40],
+     "label": "canal 1 (L) → halo del Buda"},
+    {"part": "keys", "source": "ch2", "feature": "rms", "style": "keys", "color": [0, 200, 255],
+     "label": "canal 2 (R) → teclas"},
+    {"part": "jogs", "source": "mix", "feature": "bass", "style": "rings", "ripples": true, "color": [80, 220, 255],
+     "label": "bajo → platos de la DDJ (anillos en cada golpe)"},
+    {"part": "cocodrilo", "source": "mix", "feature": "high", "style": "outline", "color": [120, 255, 90],
+     "label": "agudos → cocodrilo"},
+    {"part": "circuit", "source": "mix", "feature": "mid", "style": "outline", "color": [255, 60, 180],
+     "label": "medios → Circuit Tracks"}
+  ]
+}

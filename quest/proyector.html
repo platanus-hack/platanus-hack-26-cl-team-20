@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Proyector</title>
+<link rel="icon" href="data:,">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  body.quieto { cursor: none; }
+  video { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: contain; background: #000; }
+  body.llenar video { object-fit: fill; }
+  #patron { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: none; }
+  #ui { position: fixed; left: 16px; bottom: 16px; display: flex; gap: 12px; align-items: center; transition: opacity .6s; }
+  body.quieto #ui { opacity: 0; }
+  button { font: 600 20px system-ui, sans-serif; padding: 12px 20px; border-radius: 10px; border: 2px solid #555; background: #1a1a1a; color: #ddd; }
+  button:focus { border-color: #ffd166; outline: none; }
+  #msg { font: 15px system-ui, sans-serif; color: #888; }
+  #stats { position: fixed; top: 8px; left: 8px; margin: 0; font: 12px/1.4 ui-monospace, monospace; color: #3f3; display: none; background: rgba(0,0,0,.6); }
+</style>
+</head>
+<body>
+<video id="v" autoplay muted playsinline disablepictureinpicture></video>
+<canvas id="patron"></canvas>
+<div id="ui"><button id="fs" autofocus>Pantalla completa</button><button id="pat">Patrón</button><span id="msg">conectando…</span></div>
+<pre id="stats"></pre>
+<script>
+// Receptor del video del casco. JS conservador (sin ?. ni ??) para navegadores viejos de proyectores Android.
+// URL: ?sala=sala  ?senal=peerjs  ?debug=1 (estadísticas)  ?llenar=1 (estirar, sin barras)  ?ws=ws://host:puerto/ws
+(function () {
+  'use strict';
+  var Q = new URLSearchParams(location.search);
+  var SALA = Q.get('sala') || 'sala';
+  var KBPS = Number(Q.get('kbps')) || 12000;
+  var video = document.getElementById('v');
+  var msg = document.getElementById('msg');
+  var statsEl = document.getElementById('stats');
+  var pc = null, de = null, nOferta = 0, ws = null, peers = {};
+  if (Q.get('llenar') === '1') document.body.classList.add('llenar');
+  if (Q.get('debug') === '1') statsEl.style.display = 'block';
+
+  // ── log al servidor (aparece en la terminal de server.py)
+  var logOk = location.protocol !== 'file:';
+  function log(m, datos) {
+    console.log('[proyector] ' + m, datos || '');
+    msg.textContent = m;
+    if (!logOk) return;
+    try {
+      fetch('/api/log', { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify([{ t: Date.now(), nivel: 'info', origen: 'proyector', msg: m, datos: datos || null }]) })
+        .catch(function () { logOk = false; });
+    } catch (e) { logOk = false; }
+  }
+  window.addEventListener('error', function (e) { log('error JS: ' + e.message); });
+
+  // ── pantalla completa, cursor, control remoto
+  var fsBtn = document.getElementById('fs');
+  function pantallaCompleta() {
+    var el = document.documentElement;
+    var f = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (f) { try { var p = f.call(el); if (p && p.catch) p.catch(function () {}); } catch (e) { /* nada */ } }
+    video.play().catch(function () {});
+  }
+  fsBtn.addEventListener('click', pantallaCompleta);
+  document.getElementById('pat').addEventListener('click', togglePatron);
+  var quietoT = null;
+  function despertar() { document.body.classList.remove('quieto'); clearTimeout(quietoT); quietoT = setTimeout(function () { document.body.classList.add('quieto'); }, 3000); }
+  ['mousemove', 'keydown', 'touchstart'].forEach(function (ev) { window.addEventListener(ev, despertar); });
+  despertar();
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'f' || e.key === 'F') pantallaCompleta();
+    if (e.key === 'd' || e.key === 'D') statsEl.style.display = statsEl.style.display === 'block' ? 'none' : 'block';
+    if (e.key === 'p' || e.key === 'P') togglePatron();
+  });
+
+  // ── patrón local (sin red): revisa encuadre, overscan y keystone del proyector
+  var patron = document.getElementById('patron');
+  function togglePatron() {
+    var on = patron.style.display !== 'block';
+    patron.style.display = on ? 'block' : 'none';
+    if (!on) return;
+    var w = patron.width = window.innerWidth * (window.devicePixelRatio || 1), h = patron.height = window.innerHeight * (window.devicePixelRatio || 1);
+    var c = patron.getContext('2d');
+    c.fillStyle = '#000'; c.fillRect(0, 0, w, h);
+    c.strokeStyle = '#888'; c.lineWidth = 2;
+    for (var i = 1; i < 8; i++) { c.beginPath(); c.moveTo(w * i / 8, 0); c.lineTo(w * i / 8, h); c.moveTo(0, h * i / 8); c.lineTo(w, h * i / 8); c.stroke(); }
+    c.strokeStyle = '#fff'; c.lineWidth = 6; c.strokeRect(3, 3, w - 6, h - 6);
+    c.beginPath(); c.arc(w / 2, h / 2, h / 4, 0, Math.PI * 2); c.stroke();
+    c.fillStyle = '#fff'; c.font = (h / 30) + 'px system-ui'; c.fillText(w + 'x' + h + ' (pantalla del proyector)', w / 2 + 20, h / 2 - 20);
+  }
+
+  // ── WebRTC
+  function bajaLatencia(r) {
+    try { r.playoutDelayHint = 0; } catch (e) { /* viejo */ }
+    try { r.jitterBufferTarget = 0; } catch (e) { /* estándar */ }
+  }
+  function enviar(to, data) { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'signal', to: to, data: data })); }
+  function cerrar() { if (pc) { pc.close(); pc = null; de = null; } }
+
+  function alSenal(from, d) {
+    if (d.sdp && d.sdp.type === 'offer') {
+      cerrar();
+      de = from; nOferta = d.n;
+      pc = new RTCPeerConnection({ iceServers: [] });
+      pc.onicecandidate = function (e) { if (e.candidate) enviar(from, { ice: e.candidate.toJSON(), n: d.n }); };
+      pc.ontrack = function (e) {
+        bajaLatencia(e.receiver);
+        video.srcObject = (e.streams && e.streams[0]) || new MediaStream([e.track]);
+        video.play().catch(function () {});
+      };
+      pc.onconnectionstatechange = function () {
+        log('video del casco: ' + pc.connectionState);
+      };
+      pc.setRemoteDescription(d.sdp)
+        .then(function () { pc.getReceivers().forEach(bajaLatencia); return pc.createAnswer(); })
+        .then(function (a) { return pc.setLocalDescription(a); })
+        .then(function () { enviar(from, { sdp: pc.localDescription.toJSON(), n: d.n }); })
+        .catch(function (e) { log('error negociando: ' + e.message); });
+    } else if (d.ice && pc && from === de && (!d.n || d.n === nOferta)) {
+      pc.addIceCandidate(d.ice).catch(function () {});
+    }
+  }
+
+  function conectarWS() {
+    var url = Q.get('ws') || ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+    ws = new WebSocket(url);
+    ws.onopen = function () { ws.send(JSON.stringify({ t: 'hello', rol: 'proyector', sala: SALA })); };
+    ws.onmessage = function (ev) {
+      var m = JSON.parse(ev.data);
+      if (m.t === 'welcome') {
+        peers = {}; m.peers.forEach(function (p) { peers[p.id] = p.rol; });
+        log(Object.keys(peers).some(function (k) { return peers[k] === 'quest'; }) ? 'casco en la sala, esperando video…' : 'esperando al casco (sala ' + SALA + ')…');
+      } else if (m.t === 'join') { peers[m.id] = m.rol; if (m.rol === 'quest') log('entró el casco'); }
+      else if (m.t === 'leave') { delete peers[m.id]; if (m.id === de) { log('el casco salió'); cerrar(); } }
+      else if (m.t === 'signal') alSenal(m.from, m.data);
+    };
+    ws.onclose = function () { log('sin señalización, reintentando…'); setTimeout(conectarWS, 1500); };
+  }
+  // si en 4 s no hay video, pedirle una oferta al casco (recupera caídas)
+  setInterval(function () {
+    var ok = pc && ['connected', 'connecting', 'new'].indexOf(pc.connectionState) >= 0;
+    if (ok) return;
+    Object.keys(peers).forEach(function (k) { if (peers[k] === 'quest') enviar(k, { pedir: 1 }); });
+  }, 4000);
+
+  function conectarPeerJS() {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';
+    s.onload = function () {
+      var id = ('smartup-proyector-' + SALA).replace(/[^A-Za-z0-9_-]/g, '-');
+      var peer = new window.Peer(id, { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
+      peer.on('open', function () { log('peerjs: esperando al casco como ' + id); });
+      peer.on('error', function (e) { log('peerjs error: ' + e.type); });
+      peer.on('call', function (call) {
+        call.answer(undefined, { sdpTransform: function (sdp) { return conBitrate(h264Primero(sdp), KBPS); } });
+        pc = call.peerConnection;
+        call.on('stream', function (st) { pc.getReceivers().forEach(bajaLatencia); video.srcObject = st; video.play().catch(function () {}); log('peerjs: video del casco'); });
+      });
+    };
+    s.onerror = function () { log('no cargó PeerJS (¿sin internet?)'); };
+    document.head.appendChild(s);
+  }
+  // el emisor lee x-google-* del SDP remoto: arranca alto en vez de ~300 kbps
+  function conBitrate(sdp, kbps) {
+    return sdp.replace(/^(a=fmtp:\d+ .*)$/gm, function (l) {
+      return /x-google-|apt=/.test(l) ? l : l + ';x-google-start-bitrate=' + Math.round(kbps * 0.8) + ';x-google-min-bitrate=' + Math.round(kbps * 0.5) + ';x-google-max-bitrate=' + kbps;
+    });
+  }
+  function h264Primero(sdp) {
+    var L = sdp.split('\r\n'), im = -1, pts = [];
+    L.forEach(function (l, i) { if (l.indexOf('m=video') === 0) im = i; var m = l.match(/^a=rtpmap:(\d+) H264\//i); if (m) pts.push(m[1]); });
+    if (im < 0 || !pts.length) return sdp;
+    var p = L[im].split(' '), cab = p.slice(0, 3), lista = p.slice(3);
+    L[im] = cab.concat(pts.filter(function (x) { return lista.indexOf(x) >= 0; }), lista.filter(function (x) { return pts.indexOf(x) < 0; })).join(' ');
+    return L.join('\r\n');
+  }
+
+  if (Q.get('senal') === 'peerjs') conectarPeerJS(); else conectarWS();
+
+  // ── estadísticas (D o ?debug=1)
+  var prev = null, cuadros = 0;
+  if (video.requestVideoFrameCallback) {
+    var cb = function () { cuadros++; video.requestVideoFrameCallback(cb); };
+    video.requestVideoFrameCallback(cb);
+  }
+  setInterval(function () {
+    if (!pc) { window.__statsProyector = null; return; }
+    pc.getStats().then(function (r) {
+      var o = { estado: pc.connectionState, cuadrosPintados: cuadros, video: video.videoWidth + 'x' + video.videoHeight };
+      r.forEach(function (s) {
+        if (s.type === 'inbound-rtp' && s.kind === 'video') {
+          o.fps = s.framesPerSecond; o.decodificados = s.framesDecoded; o.caidos = s.framesDropped; o.perdidos = s.packetsLost;
+          o.jitterBufferMsProm = s.jitterBufferEmittedCount ? Math.round(s.jitterBufferDelay / s.jitterBufferEmittedCount * 1000) : null;
+          if (prev && s.jitterBufferEmittedCount > prev.jitterBufferEmittedCount) {
+            o.jitterBufferMs = Math.round((s.jitterBufferDelay - prev.jitterBufferDelay) / (s.jitterBufferEmittedCount - prev.jitterBufferEmittedCount) * 1000);
+          }
+          o.decodMs = s.framesDecoded ? Math.round(s.totalDecodeTime / s.framesDecoded * 10000) / 10 : null;
+          o.decoder = s.decoderImplementation;
+          if (prev) o.kbps = Math.round((s.bytesReceived - prev.bytesReceived) * 8 / ((s.timestamp - prev.timestamp) / 1000) / 1000);
+          prev = s;
+          var c = r.get(s.codecId); if (c) o.codec = c.mimeType;
+        }
+        if (s.type === 'candidate-pair' && s.nominated && s.state === 'succeeded') o.rttMs = Math.round((s.currentRoundTripTime || 0) * 1000);
+      });
+      window.__statsProyector = o;
+      statsEl.textContent = JSON.stringify(o, null, 1);
+    });
+  }, 1000);
+  log('proyector listo · ' + navigator.userAgent);
+})();
+</script>
+</body>
+</html>

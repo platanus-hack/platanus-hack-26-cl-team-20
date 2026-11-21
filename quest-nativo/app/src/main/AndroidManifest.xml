@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:horizonos="http://schemas.horizonos/sdk"
+  android:versionCode="1"
+  android:versionName="0.1"
+  android:installLocation="auto"
+>
+  <horizonos:uses-horizonos-sdk
+    horizonos:minSdkVersion="69"
+    horizonos:targetSdkVersion="69"
+  />
+
+  <uses-feature android:name="android.hardware.vr.headtracking" android:required="true" />
+  <!-- controles o manos: ninguno obligatorio (el casco va en un rig, sin nadie puesto) -->
+  <uses-feature android:name="oculus.software.handtracking" android:required="false" />
+  <uses-permission android:name="com.oculus.permission.HAND_TRACKING" />
+  <!-- body tracking (cuerpo de quien lleva el casco, inferido): opcional -->
+  <uses-feature android:name="com.oculus.software.body_tracking" android:required="false" />
+  <uses-permission android:name="com.oculus.permission.BODY_TRACKING" />
+
+  <uses-feature android:name="com.oculus.feature.PASSTHROUGH" android:required="true" />
+  <!-- sin límite de guardian: el rig se mueve por la sala -->
+  <uses-feature android:name="com.oculus.feature.CONTEXTUAL_BOUNDARYLESS_APP" android:required="true" />
+  <uses-feature android:glEsVersion="0x00030001" />
+
+  <!-- Scene Understanding (salas, anclas, global mesh) y Environment Raycaster (profundidad) -->
+  <uses-permission android:name="com.oculus.permission.USE_ANCHOR_API" />
+  <uses-permission android:name="com.oculus.permission.USE_SCENE" />
+
+  <!-- Passthrough Camera API -->
+  <uses-permission android:name="horizonos.permission.HEADSET_CAMERA" />
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+  <!-- monitor HTTP en :8787 (tools/monitor_adb.py y el browser del Mac) -->
+  <uses-permission android:name="android.permission.INTERNET" />
+
+  <application
+    android:allowBackup="false"
+    android:label="@string/app_name"
+  >
+    <meta-data android:name="com.oculus.supportedDevices" android:value="quest3|quest3s" />
+    <meta-data android:name="com.oculus.handtracking.version" android:value="V2.0" />
+    <meta-data android:name="com.oculus.vr.focusaware" android:value="true" />
+    <meta-data android:name="com.oculus.ossplash.background" android:value="passthrough" />
+
+    <activity
+      android:name=".MainActivity"
+      android:exported="true"
+      android:screenOrientation="landscape"
+      android:excludeFromRecents="false"
+      android:launchMode="singleTask"
+      android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard|navigation|uiMode|density|smallestScreenSize"
+    >
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+        <category android:name="com.oculus.intent.category.VR" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>

@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Monitor Quest</title>
+<style>
+:root{--bg:#0b0d10;--pn:#14181d;--ln:#232a32;--tx:#d7dde4;--mu:#7d8a97;--ok:#4ade80;--wa:#fbbf24;--er:#f87171;--ac:#60a5fa}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
+header{display:flex;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--ln);flex-wrap:wrap}
+header b{font-size:15px}.pill{padding:2px 8px;border-radius:10px;background:#1d242c;color:var(--mu)}.pill.ok{color:#04130a;background:var(--ok)}.pill.er{color:#1a0505;background:var(--er)}.pill.wa{color:#1a1203;background:var(--wa)}
+main{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;padding:10px}
+.p{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:8px 10px;min-width:0;overflow:hidden}
+.p h2{margin:0 0 6px;font-size:12px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:flex;justify-content:space-between;gap:8px}
+.c3{grid-column:span 3}.c4{grid-column:span 4}.c5{grid-column:span 5}.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}.c12{grid-column:span 12}
+@media(max-width:1100px){.c3,.c4,.c5,.c6,.c7,.c8{grid-column:span 12}}
+img.v{width:100%;height:360px;object-fit:contain;background:#000;border-radius:4px;display:block}
+iframe{width:100%;height:520px;border:0;border-radius:4px;background:#07090c;display:block}
+table{width:100%;border-collapse:collapse}td{padding:2px 4px;border-bottom:1px solid #1b2128;vertical-align:top;word-break:break-word}td:first-child{color:var(--mu);white-space:nowrap;width:1%}
+.log{height:420px;overflow:auto;white-space:pre-wrap;word-break:break-all;font-size:12px}.log .E,.log .F{color:var(--er)}.log .W{color:var(--wa)}.log .t{color:#55606b}
+.ok{color:var(--ok)}.er{color:var(--er)}.wa{color:var(--wa)}.mu{color:var(--mu)}
+button,input{background:#1d242c;color:var(--tx);border:1px solid var(--ln);border-radius:5px;padding:3px 8px;font:inherit;cursor:pointer}button.on{border-color:var(--ok);color:var(--ok)}
+.age{font-size:11px;color:var(--mu);text-transform:none;letter-spacing:0}a{color:var(--ac)}
+.btns button{margin:2px}
+</style>
+</head>
+<body>
+<header><b>Monitor Quest · com.smartup.proyector</b>
+<span id="p_con" class="pill">app</span><span id="p_foco" class="pill">foco</span><span id="p_cam" class="pill">cámara</span><span id="p_cal" class="pill">calib</span><span id="p_hdmi" class="pill">HDMI</span><span id="p_adb" class="pill" style="display:none">adb</span>
+<span class="mu" id="hora"></span><a href="3d.html" target="_blank">3D a pantalla completa ↗</a>
+<span style="margin-left:auto"></span><input id="cmd" placeholder="comando (ver prueba, efecto aristas, escanear…)" size="34"><button id="enviar">enviar</button><span id="resp" class="mu"></span></header>
+<main>
+<section class="p c4"><h2>Cámara passthrough (izq, en vivo) <span class="age" id="a_cam"></span></h2><div style="position:relative"><img class="v" id="v_cam" alt="cámara"><canvas id="ov_cam" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas></div><div class="mu" id="t_cam"></div></section>
+<section class="p c4"><h2>Render del proyector (FBO, antes del warp) <span class="age" id="a_ren"></span></h2><img class="v" id="v_ren" alt="render"><div class="mu" id="t_ren"></div></section>
+<section class="p c4"><h2>Estado de la app <span class="age" id="a_est"></span></h2><table id="t_est"></table></section>
+<section class="p c4"><h2>Profundidad en vivo (raycast del entorno) <span class="age" id="a_dep"></span></h2><img class="v" id="v_dep" alt="profundidad" style="height:420px"><div class="mu" id="t_dep"></div></section>
+<section class="p c8"><h2>Escena 3D (malla, cabeza, cámara, proyector, superficie proyectada)</h2><iframe id="f3d" src="3d.html?embed=1" title="3D"></iframe></section>
+<section class="p c4"><h2>Pose · tracking</h2><table id="t_pose"></table></section>
+<section class="p c4"><h2>MRUK · profundidad</h2><table id="t_mruk"></table></section>
+<section class="p c4"><h2>Calibración · marcadores</h2><table id="t_cal"></table></section>
+<section class="p c4"><h2>Salida · displays · sistema</h2><table id="t_sis"></table></section>
+<section class="p c7"><h2>Log en vivo <span class="age"><label><input type="checkbox" id="soloerr"> solo W/E</label></span></h2><div class="log" id="log"></div></section>
+<section class="p c5"><h2>Atajos</h2><div class="btns" id="atajos"></div><div class="mu" style="margin-top:6px" id="nota"></div></section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const f = (v, n = 2) => v == null || isNaN(v) ? '—' : (+v).toFixed(n);
+const v3 = a => a ? `(${f(a[0])}, ${f(a[1])}, ${f(a[2])})` : '—';
+const fila = (k, v, cl) => `<tr><td>${esc(k)}</td><td class="${cl || ''}">${v}</td></tr>`;
+function pill(id, txt, cl) { const e = $(id); e.textContent = txt; e.className = 'pill ' + (cl || ''); e.style.display = ''; }
+let E = null, A = null, tE = 0;
+
+// streams MJPEG: se cortan con la pestaña oculta (el Wi-Fi lo comparte el AirPlay del proyector de la mesa)
+const streams = [];
+function stream(img, url) {
+  const st = { img, url, t: null };
+  st.abrir = () => { if (document.hidden) return; img.src = url + (url.includes('?') ? '&' : '?') + 'n=' + Date.now(); };
+  img.onerror = () => { clearTimeout(st.t); if (!document.hidden) st.t = setTimeout(st.abrir, 2500); };
+  streams.push(st); st.abrir();
+}
+document.addEventListener('visibilitychange', () => {
+  for (const st of streams) { clearTimeout(st.t); if (document.hidden) st.img.removeAttribute('src'); else st.abrir(); }
+});
+stream($('v_cam'), 'cam.mjpg');      // 864 px, 8 fps por defecto
+stream($('v_ren'), 'render.mjpg');   // 5 fps
+stream($('v_dep'), 'depth.mjpg');    // 5 fps
+
+async function mandar(c) {
+  c = c || $('cmd').value.trim(); if (!c) return;
+  try { const r = await (await fetch('cmd?c=' + encodeURIComponent(c))).json(); $('resp').textContent = '→ ' + (r.r || r.error || JSON.stringify(r)).slice(0, 140); }
+  catch (e) { $('resp').textContent = 'error ' + e; }
+  $('cmd').value = '';
+}
+$('enviar').onclick = () => mandar();
+$('cmd').addEventListener('keydown', e => { if (e.key === 'Enter') mandar(); });
+for (const c of ['aruco par on', 'aruco par off', 'aruco zoom 2', 'aruco zoom 1', 'proyector recargar', 'proyector recalibrar', 'aruco on', 'aruco off', 'aruco reset', 'aruco ev -1', 'aruco ev auto', 'aruco params fabrica', 'aruco params ajustado', 'aruco aruco3 on', 'aruco aruco3 off', 'aruco grid 4 3 250', 'aruco voltear', 'proyector mesa', 'proyector rig', 'proyector auto', 'depth 40 40', 'estado', 'escanear', 'recargar_sala', 'profundidad', 'camara', 'camara_debug', 'ver prueba', 'ver mapeo', 'ver marcadores', 'marcadores detectar', 'efecto siguiente', 'salida auto', 'calibrar', 'cancelar'])
+  $('atajos').insertAdjacentHTML('beforeend', `<button data-c="${c}">${c}</button>`);
+$('atajos').onclick = e => { const c = e.target.dataset?.c; if (c) mandar(c); };
+
+async function tick() {
+  try { E = await (await fetch('estado.json', { cache: 'no-store' })).json(); tE = Date.now(); } catch (e) { E = null; }
+  if (document.hidden) return;   // oculta: solo /estado.json cada 2 s
+  try { const r = await fetch('api/estado', { cache: 'no-store' }); A = r.ok ? await r.json() : null; } catch { A = null; }
+  if (A?.version) { if (window.VER && window.VER !== A.version) { location.reload(); return; } window.VER = window.VER || A.version; }
+  pintar();
+}
+function pintar() {
+  $('hora').textContent = new Date().toLocaleTimeString();
+  const vivo = E && Date.now() - tE < 4000 && !E.fuente;
+  pill('p_con', vivo ? 'app :8787 en vivo' : E?.fuente ? 'solo adb (app sin :8787)' : 'sin conexión con la app', vivo ? 'ok' : 'er');
+  if (A) pill('p_adb', A.adb_ok ? 'adb ok' : 'adb caído', A.adb_ok ? 'ok' : 'er');
+  if (!E) return;
+  const ap = E.app || {}, c = E.camara || {}, cal = E.calibracion || {}, sal = E.salida || {}, mr = E.mruk || {}, r = E.render || {};
+  pill('p_foco', ap.foco ? 'app con foco' : 'app SIN foco' + (ap.resumida ? ' (resumida)' : ''), ap.foco ? 'ok' : 'wa');
+  pill('p_cam', 'cámara ' + (c.abierta ? Math.round(c.fps) + ' fps' : c.estado || '—'), c.abierta ? 'ok' : 'er');
+  pill('p_cal', 'calib ' + (cal.fase || '—') + (cal.tipo ? ' · ' + cal.tipo : ''), cal.fase === 'LISTO' ? 'ok' : cal.fase === 'ERROR' ? 'er' : '');
+  const hd = (sal.displays || []).filter(d => d.hdmi); pill('p_hdmi', hd.length ? 'HDMI ' + hd[0].w + 'x' + hd[0].h : 'sin HDMI', hd.length ? 'ok' : '');
+  $('a_cam').textContent = c.edad_ms != null ? 'cuadro de hace ' + f(c.edad_ms, 0) + ' ms' : '';
+  $('t_cam').textContent = c.intrinsecos ? `fx ${f(c.intrinsecos.fx, 1)} fy ${f(c.intrinsecos.fy, 1)} cx ${f(c.intrinsecos.cx, 1)} cy ${f(c.intrinsecos.cy, 1)} · ${c.intrinsecos.w}x${c.intrinsecos.h} · ${c.cuadros ?? 0} cuadros` : (c.estado || '');
+  $('a_ren').textContent = f(r.fps, 0) + ' fps';
+  const dp = E.depth;
+  $('a_dep').textContent = dp ? `${f(dp.hz, 1)} Hz · ${dp.nx}x${dp.ny}` : '';
+  $('t_dep').textContent = dp ? `${dp.fuente} · ${dp.aciertos} puntos · ${dp.ms} ms · marco ${dp.marco}` : 'sin frames todavía';
+  $('t_ren').textContent = `proyector: ${cal.proyector_activo || 'rig'} (${cal.proyector_sel || 'auto'}) · ` + `vista ${r.vista || '—'} · efecto ${r.efecto || '—'} · destino ${sal.destino || '—'}` + (r.error ? ' · GL: ' + r.error : '');
+  let h = '';
+  h += fila('calibración', esc(`${cal.fase || '—'} ${f((cal.progreso || 0) * 100, 0)}% · ${cal.mensaje || ''}`), cal.fase === 'ERROR' ? 'er' : '');
+  h += fila('render', `${f(r.fps, 0)} fps · ${r.cuadros ?? '—'} cuadros`, r.fps >= 55 ? 'ok' : 'wa');
+  h += fila('cámara', esc(c.estado || '—') + (c.edad_ms != null ? ` · edad ${f(c.edad_ms, 0)} ms` : ''), c.abierta ? 'ok' : 'er');
+  h += fila('salida', esc(`${sal.activa || '—'} (pref ${sal.preferencia || '—'})`));
+  const m = E.modo || {}; h += fila('modo', esc(`${m.modo || '—'} · predicción ${m.prediccion ? 'on' : 'off'} ${f(m.latencia_prediccion_ms, 0)} ms`));
+  if (m.ajuste) h += fila('ajuste', esc(`dx ${f(m.ajuste.dx, 1)} dy ${f(m.ajuste.dy, 1)} rot ${f(m.ajuste.rot_deg, 2)}° esc ${f(m.ajuste.escala, 4)}`));
+  h += fila('latencias', esc(`lazo ${f(cal.latencia_lazo_ms, 0)} ms · cámara ${f(c.edad_ms, 0)} ms · pose ${f(E.cabeza?.edad_ms, 1)} ms`));
+  h += fila('http', esc(`${ap.http_peticiones ?? '—'} pedidos · ${ap.http_clientes ?? '—'} clientes`));
+  $('t_est').innerHTML = h; $('a_est').textContent = vivo ? 'en vivo' : '';
+  h = '';
+  const cb = E.cabeza; h += fila('cabeza t', cb ? v3(cb.t) + ' m' : '<span class="wa">sin pose</span>');
+  if (cb) h += fila('cabeza q', esc(cb.q.map(x => f(x, 3)).join(', '))) + fila('adelante', v3(cb.adelante));
+  if (c.pose) h += fila('cámara izq t', v3(c.pose.t)) + fila('cámara adelante', v3(c.pose.adelante));
+  for (const [k, v] of Object.entries(E.controles || {})) if (v && v.t) h += fila('control ' + k, `${esc(v.tipo)} ${v.activo ? '' : '(inactivo)'} ${v3(v.t)} botones ${v.botones}`, v.activo ? '' : 'mu');
+  if (!Object.keys(E.controles || {}).some(k => E.controles[k]?.t)) h += fila('controles', '<span class="mu">sin controles ni manos</span>');
+  if (E.cuerpo) h += fila('cuerpo', esc(`${E.cuerpo.estado}${E.cuerpo.n ? ' · ' + E.cuerpo.validas + '/' + E.cuerpo.n : ''}`), E.cuerpo.validas ? 'ok' : 'mu');
+  $('t_pose').innerHTML = h;
+  h = '';
+  h += fila('sala', esc(mr.resumen || '—'), /SIN|error/.test(mr.resumen || '') ? 'wa' : '');
+  h += fila('raycaster', esc(mr.raycaster || '—'), mr.raycaster_ok ? 'ok' : 'er');
+  h += fila('malla', `${mr.triangulos_mruk ?? 0} tris MRUK · ${mr.triangulos_prof ?? 0} tris prof · geometría ${esc(mr.geometria || '—')}`);
+  h += fila('anclas', (mr.anclas || []).length ? (mr.anclas || []).map(a => `${esc(a.etiqueta.toLowerCase())} ${a.volumen ? a.volumen.map(x => f(x, 2)).join('×') : a.plano ? a.plano.map(x => f(x, 2)).join('×') : ''}`).join('<br>') : '<span class="mu">ninguna (sin Space Setup)</span>');
+  $('t_mruk').innerHTML = h;
+  h = '';
+  h += fila('estado', esc(`${cal.fase || '—'} · vistas ${cal.vistas ?? 0}`));
+  if (cal.tipo) {
+    h += fila('modelo', esc(cal.tipo + ' · ' + (cal.modelo || '')));
+    h += fila('gray', `mediana ${f(cal.gray_mediana_px)} px · p90 ${f(cal.gray_p90_px)} px · ${cal.pares ?? 0} pares (${cal.inliers ?? 0} inliers)`);
+    h += fila('lazo', `mediana ${f(cal.lazo_mediana_px)} px · p90 ${f(cal.lazo_p90_px)} px · ${cal.lazo_iter ?? 0} iter`);
+  } else h += fila('modelo', '<span class="mu">sin calibrar</span>');
+  const mk = E.marcadores;
+  if (mk) {
+    h += fila('marcadores', esc(`${mk.modo || '—'} · ${(mk.detectados || []).length}/${mk.total ?? '—'} detectados · tasa ${f((mk.tasa ?? 0) * 100, 0)}%`) + (mk.residuo_px != null ? ` · residuo ${f(mk.residuo_px)} px` : ''));
+    if (mk.mensaje) h += fila('', esc(mk.mensaje), 'mu');
+  }
+  const ar = E.aruco;
+  if (ar) {
+    h += fila('ArUco', esc(`${ar.activo ? 'activo' : 'apagado'} · ${ar.detector || ''} · ${ar.mensaje || ''}`) + (ar.n != null ? ` · det ${ar.ms_det} ms` : ''), ar.n ? 'ok' : '');
+    if (ar.por_cuadro_10s) h += fila('por cuadro (10 s)', `media ${f(ar.por_cuadro_10s.media, 1)} · máx ${ar.por_cuadro_10s.max} · mín ${ar.por_cuadro_10s.min} · ${ar.por_cuadro_10s.cuadros} cuadros · acumulados ${ar.n_acumulados ?? 0}${ar.n_descartados ? ' · descartados ' + ar.n_descartados : ''}`);
+    if (ar.modo) h += fila('modo', esc(`${ar.modo}${ar.par ? ' · par patrón/invertido' : ''}${ar.zoom > 1 ? ' · zoom ' + ar.zoom + 'x' : ''}`));
+    if (ar.exposicion) h += fila('exposición', esc(`${ar.exposicion} · actual ${f(ar.exp_ms, 2)} ms iso ${ar.iso ?? '—'}`));
+    if (ar.plano) h += fila('plano ArUco', `rms ${f(ar.plano.rms_mm, 1)} mm · homografía ${f(ar.homografia_rms_mm, 1)} mm · n ${v3(ar.plano.normal)}`);
+    if (ar.pnp) h += fila(ar.pnp.pose_fija ? 'proyector mesa (FIJA)' : 'PnP mesa', esc(ar.pnp.info || ''), ar.pnp.pose_fija ? 'ok' : ar.pnp.mediana_px < 3 ? 'ok' : 'wa');
+    if (ar.pnp?.pose_fija) {
+      const v = ar.pnp.verificacion || {};
+      h += fila('verificación', `residuo ${f(v.residuo_mediana_px, 1)} px (p90 ${f(v.residuo_p90_px, 1)}) con ${v.marcadores ?? 0} marcadores · umbral ${f(v.umbral_px, 0)} px` + (v.rig_movido ? ' · <b>RIG MOVIDO: recalibrar</b>' : ''), v.rig_movido ? 'er' : 'ok');
+      h += fila('incertidumbre', esc(JSON.stringify(ar.pnp.incertidumbre ?? '—').slice(0, 300)), 'mu');
+    }
+    for (const c of ar.pnp?.candidatos || []) h += fila(c.elegido ? 'elegida' : 'descartada', esc(`${c.tipo} · ${f(c.mediana_px)} px · prior ${f(c.dist_prior_m)} m · C ${v3(c.centro)}`), c.elegido ? '' : 'mu');
+    if (ar.pnp) h += fila('', esc(ar.pnp.modelo), 'mu');
+  }
+  $('t_cal').innerHTML = h;
+  dibujarOverlay(ar);
+  h = '';
+  for (const d of sal.displays || []) h += fila('display ' + d.id, `${esc(d.nombre)} ${d.w}x${d.h} @${f(d.hz, 0)} <span class="mu">${esc((d.flags || []).join(' '))}</span>`, d.hdmi ? 'ok' : '');
+  if (A) {
+    const F = A.foco || {}, Si = A.sistema || {};
+    h += fila('foco (dumpsys)', esc((F.window || []).join(' · ')));
+    h += fila('batería', esc(Si.bateria || '')) + fila('cpu app', esc(Si.top || '')) + fila('memoria', esc(Si.mem || '')) + fila('wifi', esc(Si.wifi || ''));
+  }
+  $('t_sis').innerHTML = h;
+}
+function dibujarOverlay(ar) {
+  const cv = $('ov_cam'), img = $('v_cam'); const W = cv.clientWidth, H = cv.clientHeight;
+  if (cv.width !== W) cv.width = W; if (cv.height !== H) cv.height = H;
+  const x = cv.getContext('2d'); x.clearRect(0, 0, W, H);
+  if (!img.naturalWidth) return;
+  const ia0 = img.naturalWidth / img.naturalHeight, ba0 = W / H;
+  const dw0 = ia0 > ba0 ? W : H * ia0, dh0 = ia0 > ba0 ? W / ia0 : H, ox0 = (W - dw0) / 2, oy0 = (H - dh0) / 2;
+  // cuerpo proyectado en la cámara (pose e intrínsecos de la cámara izquierda del último cuadro)
+  const cb = E?.cuerpo, cp = E?.camara?.pose, it = E?.camara?.intrinsecos;
+  if (cb?.t && cp && it) {
+    const [w, qx, qy, qz] = cp.q;
+    const rot = v => { // q⁻¹ · v · q  (marco mundo → cámara), q = [w, x, y, z]
+      const x = -qx, y = -qy, z = -qz;
+      const tx = 2 * (y * v[2] - z * v[1]), ty = 2 * (z * v[0] - x * v[2]), tz = 2 * (x * v[1] - y * v[0]);
+      return [v[0] + w * tx + (y * tz - z * ty), v[1] + w * ty + (z * tx - x * tz), v[2] + w * tz + (x * ty - y * tx)];
+    };
+    const pxj = i => { const d = rot([cb.t[i * 3] - cp.t[0], cb.t[i * 3 + 1] - cp.t[1], cb.t[i * 3 + 2] - cp.t[2]]); if (d[2] <= 0.05) return null;
+      return [ox0 + (it.cx + it.fx * d[0] / d[2]) * dw0 / it.w, oy0 + (it.cy - it.fy * d[1] / d[2]) * dh0 / it.h]; };
+    x.strokeStyle = '#f59e0b'; x.lineWidth = 3;
+    for (let i = 0; i < cb.n; i++) {
+      const pa = cb.padre[i]; if (pa < 0 || !cb.valido[i] || !cb.valido[pa]) continue;
+      const a = pxj(i), b = pxj(pa); if (!a || !b) continue;
+      x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke();
+    }
+  }
+  if (!ar || !ar.marcas || !ar.cam_w) return;
+  const ia = img.naturalWidth / img.naturalHeight, ba = W / H;
+  const dw = ia > ba ? W : H * ia, dh = ia > ba ? W / ia : H, ox = (W - dw) / 2, oy = (H - dh) / 2;
+  const sx = dw / ar.cam_w, sy = dh / ar.cam_h;
+  x.lineWidth = 2; x.font = 'bold 13px ui-monospace,Menlo,monospace';
+  for (const m of ar.marcas) {
+    const e = m.esq_cam; x.strokeStyle = m.esq_mundo.every(p => p) ? '#4ade80' : '#fbbf24';
+    x.beginPath(); for (let k = 0; k < 4; k++) { const px = ox + e[k * 2] * sx, py = oy + e[k * 2 + 1] * sy; k ? x.lineTo(px, py) : x.moveTo(px, py); } x.closePath(); x.stroke();
+    x.fillStyle = '#ff4df0'; x.fillRect(ox + e[0] * sx - 3, oy + e[1] * sy - 3, 6, 6);
+    x.fillStyle = '#fff'; x.fillText(m.id, ox + (e[0] + e[4]) / 2 * sx - 6, oy + (e[1] + e[5]) / 2 * sy + 4);
+  }
+}
+async function bucleLog() {
+  if (document.hidden) { setTimeout(bucleLog, 2000); return; }
+  let lineas = [];
+  if (A && A.log) lineas = A.log.map(l => ({ n: l.n, t: l.t, m: (l.tag && l.tag !== 'Proyector' ? l.tag + ': ' : '') + l.m }));
+  else {
+    try {
+      const t = await (await fetch('log?n=120', { cache: 'no-store' })).text();
+      lineas = t.split('\n').filter(Boolean).map(l => { const m = l.match(/^(\S+ \S+) ([VDIWEF])\/([^(]+)\(\s*\d+\):\s?(.*)$/); return m ? { t: m[1], n: m[2], m: (m[3].trim() !== 'Proyector' ? m[3].trim() + ': ' : '') + m[4] } : { t: '', n: 'I', m: l }; });
+    } catch {}
+  }
+  const se = $('soloerr').checked, lg = $('log'), abajo = lg.scrollTop + lg.clientHeight >= lg.scrollHeight - 30;
+  lg.innerHTML = lineas.filter(l => !se || /[WEF]/.test(l.n)).slice(-80).map(l => `<div class="${l.n}"><span class="t">${esc((l.t || '').slice(6))}</span> ${esc(l.m)}</div>`).join('');
+  if (abajo) lg.scrollTop = lg.scrollHeight;
+  setTimeout(bucleLog, 2000);
+}
+tick(); setInterval(tick, 2000); bucleLog();
+</script>
+</body>
+</html>

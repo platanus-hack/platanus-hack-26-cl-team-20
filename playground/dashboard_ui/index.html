@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SL Scanner Dashboard</title>
+<link rel="stylesheet" href="/ui/style.css">
+</head>
+<body>
+<header>
+  <h1>SL scanner · show</h1>
+  <span id="estado-proc" class="pill">sin dale</span>
+  <span id="estado-rt" class="pill">runtime ?</span>
+</header>
+
+<div id="espera" class="espera" hidden>
+  <div class="espera-txt" id="espera-txt"></div>
+  <div class="espera-sub" id="espera-sub"></div>
+  <button id="btn-continuar" class="grande verde">Continuar</button>
+</div>
+
+<main>
+  <section class="col">
+    <div class="card">
+      <h2>Nueva vista</h2>
+      <p class="ayuda">Coloca el proyector, déjalo quieto y aprieta. El dale libera el proyector, calibra, escanea, corre el pipeline y prende efectos.</p>
+      <div class="opts">
+        <label>Vistas <select id="o-views"><option>1</option><option>2</option><option>3</option></select></label>
+        <label>Escala <input id="o-scale" placeholder="huincha:600" size="12"></label>
+        <label>Efectos al final <select id="o-escena"></select></label>
+        <label><input type="checkbox" id="o-synthetic"> ensayo sintético</label>
+        <label><input type="checkbox" id="o-noruntime"> sin runtime</label>
+      </div>
+      <div class="botones">
+        <button id="btn-dale" class="grande">Nueva vista</button>
+        <button id="btn-cancelar" class="rojo" disabled>Cancelar</button>
+      </div>
+      <div id="dale-err" class="err"></div>
+      <ol id="pasos" class="pasos"></ol>
+      <details>
+        <summary>Log</summary>
+        <pre id="log"></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="col">
+    <div class="card">
+      <h2>Proyectado ahora</h2>
+      <div class="preview"><img id="frame" alt="frame del runtime"><div id="frame-off" class="off" hidden>runtime apagado</div></div>
+    </div>
+    <div class="card">
+      <h2>Escenas</h2>
+      <div id="escenas" class="escenas"></div>
+      <div class="botones"><button id="btn-apagar" class="rojo">Apagar todo</button></div>
+      <div id="showcase-msg" class="ayuda"></div>
+    </div>
+    <div class="card">
+      <h2>Efectos vivos</h2>
+      <div id="vivos" class="vivos"></div>
+    </div>
+    <div class="card">
+      <h2>Objetos y efectos</h2>
+      <div id="rt-msg" class="err"></div>
+      <div id="objetos"></div>
+    </div>
+  </section>
+</main>
+
+<section class="card pipeline">
+  <h2>Pipeline P6 <button id="btn-visor" class="chico">recargar visor</button> <a href="http://127.0.0.1:8796" target="_blank" rel="noopener" class="chico">abrir</a></h2>
+  <iframe id="visor" src="http://127.0.0.1:8796" title="visor del pipeline"></iframe>
+</section>
+
+<script src="/ui/app.js"></script>
+</body>
+</html>

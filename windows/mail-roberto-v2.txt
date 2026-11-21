@@ -1,0 +1,63 @@
+Para: mardonesroberto@gmail.com
+Asunto: PC NEW-WHITE-4K: pegar esto en PowerShell (5 minutos) · v2
+
+Hola Roberto,
+
+Necesito dejar el PC blanco (NEW-WHITE-4K) accesible desde mi Mac. Son 3 pasos.
+
+1. En el PC, abre el menú Inicio y escribe "PowerShell".
+   Clic derecho en "Windows PowerShell" y elige "Ejecutar como administrador".
+   Acepta el aviso de Windows.
+
+2. Copia TODO el bloque de abajo (desde "# sl-scanner" hasta la última línea), pégalo en la ventana azul y aprieta Enter.
+   Si pide confirmación, aprieta Enter de nuevo. Demora 1 a 3 minutos.
+
+3. Al final dice "LISTO" y deja el resultado copiado.
+   Responde este mail y pega con Ctrl+V. Si no funciona, mándame una foto de la pantalla.
+
+Si sale algo en rojo, mándame una foto y lo vemos.
+
+Gracias,
+Max
+
+---------- copiar desde aquí ----------
+# sl-scanner · bootstrap SSH del PC Windows. Pegar ENTERO en PowerShell como Administrador y Enter.
+& {
+$ErrorActionPreference = "Stop"
+$Key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINeY+d2U0TNtZZI8eDbvI5vtk7BfXNblFrRiL7hAxdz9 max@macbook"
+$IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $IsAdmin) { throw "Abre PowerShell como Administrador y vuelve a pegar." }
+# 1. OpenSSH Server instalado y automático
+$cap = Get-WindowsCapability -Online | Where-Object Name -like "OpenSSH.Server*"
+if ($cap.State -ne "Installed") { Add-WindowsCapability -Online -Name $cap.Name | Out-Null }
+Set-Service sshd -StartupType Automatic; Start-Service sshd
+# 2. firewall: puerto 22 solo desde la red local y la tailnet
+Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyContinue | Disable-NetFirewallRule
+Get-NetFirewallRule -Name "sl-scanner-sshd" -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+New-NetFirewallRule -Name "sl-scanner-sshd" -DisplayName "sshd solo LAN y tailnet" -Direction Inbound -Protocol TCP -LocalPort 22 -Action Allow -Profile Any -RemoteAddress @("LocalSubnet","100.64.0.0/10") | Out-Null
+# 3. llave del Mac para administradores, con la ACL que exige sshd
+$auth = "$env:ProgramData\ssh\administrators_authorized_keys"
+if (-not (Test-Path $auth) -or -not ((Get-Content $auth) -contains $Key)) { Add-Content -Path $auth -Value $Key }
+icacls $auth /inheritance:r /grant '*S-1-5-18:F' /grant '*S-1-5-32-544:F' | Out-Null   # SIDs: SYSTEM y Administradores, en cualquier idioma
+# 4. sin contraseña: 'PasswordAuthentication no' (+ KbdInteractive, ChallengeResponse) antes del primer Match
+$cfg = "$env:ProgramData\ssh\sshd_config"
+# en Windows, keyboard-interactive también acepta la contraseña: se apagan los tres
+$lines = @(Get-Content $cfg | Where-Object { $_ -notmatch '^\s*#?\s*(PasswordAuthentication|KbdInteractiveAuthentication|ChallengeResponseAuthentication)\s' })
+$add = @("PasswordAuthentication no", "KbdInteractiveAuthentication no", "ChallengeResponseAuthentication no")
+$out = New-Object System.Collections.Generic.List[string]; $done = $false
+foreach ($l in $lines) { if (-not $done -and $l -match '^\s*Match\s') { $add | ForEach-Object { $out.Add($_) }; $done = $true }; $out.Add($l) }
+if (-not $done) { for ($i = $add.Count - 1; $i -ge 0; $i--) { $out.Insert(0, $add[$i]) } }
+Set-Content -Path $cfg -Value $out
+New-Item -Path "HKLM:\SOFTWARE\OpenSSH" -Force | Out-Null      # la clave no existe hasta el primer uso
+New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force | Out-Null
+Restart-Service sshd
+# 5. sin suspensión ni apagado de pantalla
+powercfg /change standby-timeout-ac 0; powercfg /change monitor-timeout-ac 0; powercfg /change hibernate-timeout-ac 0
+# 6. resultado para responder el mail
+$ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -like "192.168.*" -or $_.IPAddress -like "10.*" } | Select-Object -First 1).IPAddress
+$res = "usuario: $env:USERNAME`nadmin: $IsAdmin`nhostname: $env:COMPUTERNAME`nip: $ip`nsshd: $((Get-Service sshd).Status)"
+Write-Host "`nLISTO. Resultado (ya quedo copiado, responde el mail y pega con Ctrl+V):" -ForegroundColor Green
+Write-Host $res
+Set-Clipboard -Value $res
+}
+---------- hasta aquí ----------

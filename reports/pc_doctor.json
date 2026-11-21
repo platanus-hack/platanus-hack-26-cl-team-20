@@ -1,0 +1,46 @@
+{
+  "host": "New-White-4K",
+  "os": "Windows-11-10.0.26300-SP0",
+  "python": "3.12.15",
+  "disk_free_gb": 105.1,
+  "disk_total_gb": 999.0,
+  "gpu": {
+    "nvidia_smi": [
+      "NVIDIA GeForce RTX 4070, 610.88, 12282 MiB, 1143 MiB"
+    ],
+    "torch": {
+      "version": "2.14.1+cu126",
+      "cuda": "12.6",
+      "available": true,
+      "devices": [
+        "NVIDIA GeForce RTX 4070"
+      ]
+    }
+  },
+  "displays": [
+    {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 1024,
+      "h": 768
+    }
+  ],
+  "cameras": [
+    {
+      "index": 0,
+      "width": 640,
+      "height": 480,
+      "fps": -1.0,
+      "backend": "DSHOW"
+    }
+  ],
+  "serial_ports": [],
+  "modules": {
+    "cv2": "5.0.0",
+    "numpy": "2.5.2",
+    "scipy": "1.18.1",
+    "serial": "3.5",
+    "open3d": "0.20.0"
+  }
+}

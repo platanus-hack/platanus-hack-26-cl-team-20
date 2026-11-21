@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Escena métrica registrada</title><link rel="stylesheet" href="registered.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head><body><header><h1>Escena registrada</h1><p id="status" role="status">Cargando geometría…</p></header>
+<main><section><h2>Mundo · milímetros</h2><canvas id="navigation" aria-label="Cámara de navegación independiente"></canvas>
+<p>Cámara cian · proyector ámbar · ejes X derecha, Y arriba, Z atrás. Arrastra para navegar.</p></section>
+<section><h2>Salida del proyector <span id="size"></span></h2><canvas id="output" aria-label="Salida calibrada del proyector"></canvas>
+<div class="controls"><label>Contenido <select id="mode"><option value="appearance">Apariencia</option><option value="mask">Visibilidad</option><option value="outlines">Blanco con contornos negros</option><option value="white">Blanco de referencia</option><option value="pbr">Material PBR disponible</option></select></label>
+<label>Objeto <select id="object"><option value="">Toda la malla</option></select></label>
+<button id="send" disabled>Enviar al runtime</button><button id="stop">Detener salida</button></div>
+<p id="detail">Sin verificación física. El tamaño de esta vista no cambia los píxeles enviados.</p></section></main>
+<script type="module" src="registered.js"></script></body></html>

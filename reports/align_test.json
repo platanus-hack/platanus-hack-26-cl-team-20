@@ -1,0 +1,9 @@
+{
+ "edge_var_gray": 30.2,
+ "edge_var_inverted": 33.3,
+ "best_shift": {
+  "dx": -3,
+  "dy": -3,
+  "edge_var": 31.7
+ }
+}
