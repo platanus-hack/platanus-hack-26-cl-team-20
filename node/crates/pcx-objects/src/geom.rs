@@ -235,7 +235,9 @@ impl Poly2 {
 /// Resuelve `A x = b` para dos lados derechos (eliminación gaussiana con pivoteo parcial).
 fn solve2(mut a: Vec<f64>, mut bx: Vec<f64>, mut by: Vec<f64>, n: usize) -> Option<(Vec<f64>, Vec<f64>)> {
     for c in 0..n {
-        let piv = (c..n).max_by(|&i, &j| a[i * n + c].abs().partial_cmp(&a[j * n + c].abs()).unwrap_or(std::cmp::Ordering::Equal))?;
+        let piv = (c..n).max_by(|&i, &j| {
+            a[i * n + c].abs().partial_cmp(&a[j * n + c].abs()).unwrap_or(std::cmp::Ordering::Equal)
+        })?;
         if a[piv * n + c].abs() < 1e-13 {
             return None;
         }
@@ -409,7 +411,12 @@ impl Rectifier {
     }
 
     /// Homografía (del pinhole ideal) + distorsión radial de la lente, con tabla precalculada.
-    pub fn with_radial(cam_to_table_mm: Homography, lens: Radial, canvas: Canvas, cam_size: (u32, u32)) -> Option<Rectifier> {
+    pub fn with_radial(
+        cam_to_table_mm: Homography,
+        lens: Radial,
+        canvas: Canvas,
+        cam_size: (u32, u32),
+    ) -> Option<Rectifier> {
         let h = cam_to_table_mm.inverse()?;
         let remap = Remap::build(&canvas, cam_size, |u, v| {
             let (x, y) = canvas.px_to_mm(u, v);
@@ -629,7 +636,8 @@ mod tests {
                 let (mut x, mut y) = truth(u, v);
                 x += (rng.unit() - 0.5) * 0.2;
                 y += (rng.unit() - 0.5) * 0.2;
-                let bulto = (12..17).contains(&i) && (8..12).contains(&j) || (30..36).contains(&i) && (15..18).contains(&j);
+                let bulto =
+                    (12..17).contains(&i) && (8..12).contains(&j) || (30..36).contains(&i) && (15..18).contains(&j);
                 if bulto || rng.unit() < 0.03 {
                     x += 6.0 + 10.0 * rng.unit();
                     y -= 4.0 + 6.0 * rng.unit();

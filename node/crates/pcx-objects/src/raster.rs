@@ -453,7 +453,14 @@ pub fn open_sq_fast(m: &Mask, k: u8) -> Mask {
         return m.clone();
     }
     // una pasada 1-D sobre `n` elementos de paso `step` desde `base`: erosión (todos) o dilatación (alguno)
-    fn pass(src: &[u8], dst: &mut [u8], (base, step, n): (usize, usize, usize), r: usize, erode: bool, acc: &mut [u32]) {
+    fn pass(
+        src: &[u8],
+        dst: &mut [u8],
+        (base, step, n): (usize, usize, usize),
+        r: usize,
+        erode: bool,
+        acc: &mut [u32],
+    ) {
         acc[0] = 0;
         for i in 0..n {
             acc[i + 1] = acc[i] + (src[base + i * step] > 0) as u32;
