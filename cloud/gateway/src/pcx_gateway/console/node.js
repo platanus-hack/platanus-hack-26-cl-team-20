@@ -1,12 +1,16 @@
 // El navegador como nodo de pcx: habla por WSS con el gateway el mismo protocolo que el nodo Rust
 // (contracts/src/pcx_contracts/cloud.py) y resuelve las tools con la cámara y la ventana del proyector.
 
+import { annotate, apply, blob, gray, invert, solveH } from "./calib.js";
+
 const CONTRACT = 2;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const round = (v, d = 1) => Math.round(v * 10 ** d) / 10 ** d;
 const now_ns = () => Date.now() * 1e6;
 const uuid = () => crypto.randomUUID();
 
 export class BrowserNode extends EventTarget {
-  /** hooks: { capture(cameraId) → {data, mime, w, h, camera}, projectorOpen() → bool } */
+  /** hooks: { frame(cameraId) → {canvas, camera}, projectorOpen() → bool, showCalib(dots|null), saveCalib(calib) } */
   constructor(session, hooks) {
     super();
     this.session = session;
@@ -20,6 +24,7 @@ export class BrowserNode extends EventTarget {
     this.delay = 500;
     this.asks = new Map(); // request_id → {resolve, options, ids}
     this.ttl = new Map();
+    this.calib = null; // {camera_id, matrix (px de look → mm), image_px, residual_mm, points, version}
     this.world = {
       rev: 1,
       surface: { width_mm: 1000, height_mm: 562 },
@@ -161,7 +166,136 @@ export class BrowserNode extends EventTarget {
     });
   }
 
+  // ------------------------------------------------------------------ calibración cámara↔mesa
+  setCalib(calib) {
+    this.calib = calib;
+    this.world.transforms = calib
+      ? [
+          {
+            kind: "homography",
+            from_frame: `cam:${calib.camera_id}`,
+            to_frame: "table_mm",
+            version: calib.version,
+            residual_mm: calib.residual_mm,
+            matrix: calib.matrix,
+          },
+        ]
+      : [];
+    this.changed();
+  }
+
+  /** Píxeles de la foto de `look` → mm de la mesa. */
+  toMm(p, cameraId) {
+    const c = this.calib;
+    if (!c) throw new Error("Sin calibración: llama a calibrate antes de usar coordenadas en píxeles de cámara.");
+    if (cameraId && cameraId !== c.camera_id)
+      throw new Error(`La calibración es de ${c.camera_id}, no de ${cameraId}. Calibra esa cámara o usa los píxeles de ${c.camera_id}.`);
+    return apply(c.matrix, p).map((v) => round(v));
+  }
+
+  /** Acepta geometría en píxeles de cámara (anchor.point_px, polygon_px, from_px, to_px) y la deja en mm. */
+  resolve(w) {
+    const out = { ...w };
+    const cam = w.anchor?.camera_id ?? w.camera_id;
+    if (w.anchor?.point_px) out.anchor = { ...w.anchor, point_mm: this.toMm(w.anchor.point_px, cam) };
+    if (w.polygon_px) out.polygon_mm = w.polygon_px.map((p) => this.toMm(p, cam));
+    if (w.from_px) out.from_mm = this.toMm(w.from_px, cam);
+    if (w.to_px) out.to_mm = this.toMm(w.to_px, cam);
+    return out;
+  }
+
+  async calibrate(args = {}) {
+    if (this.calibrating) throw new Error("Ya hay una calibración en curso.");
+    if (!this.hooks.projectorOpen())
+      throw new Error("La ventana del proyector está cerrada: pídele a la persona que apriete «Lanzar proyección» en la consola.");
+    const mode = args.mode ?? "quick";
+    if (mode === "verify" && !this.calib) throw new Error("No hay calibración que verificar: llama a calibrate con mode quick.");
+    const { width_mm: W, height_mm: H } = this.world.surface;
+    const [nx, ny] = mode === "precise" ? [5, 4] : [3, 3];
+    const targets = [];
+    for (let j = 0; j < ny; j++)
+      for (let i = 0; i < nx; i++) targets.push([W * (0.12 + (0.76 * i) / (nx - 1)), H * (0.12 + (0.76 * j) / (ny - 1))]);
+    const shot = async () => {
+      const f = await this.hooks.frame(args.camera_id);
+      return { ...f, gray: gray(f.canvas) };
+    };
+    this.calibrating = true;
+    const px = [];
+    const mm = [];
+    let first;
+    try {
+      this.hooks.showCalib([]);
+      await sleep(800);
+      first = await shot();
+      for (const t of targets) {
+        this.hooks.showCalib([[t[0], t[1], 16]]);
+        await sleep(350);
+        // La marca vale cuando dos cuadros seguidos la ven en el mismo lugar (descarta el cuadro de transición).
+        let prev = null;
+        for (let k = 0; k < 12; k++) {
+          const b = blob((await shot()).gray, first.gray);
+          if (b && prev && Math.hypot(b.x - prev.x, b.y - prev.y) < 2.5) {
+            px.push([(b.x + prev.x) / 2, (b.y + prev.y) / 2]);
+            mm.push(t);
+            break;
+          }
+          prev = b;
+          await sleep(120);
+        }
+      }
+    } finally {
+      this.hooks.showCalib(null);
+      this.calibrating = false;
+    }
+    const camera_id = first.camera.id;
+    const fail = (why) =>
+      new Error(
+        `${why} Revisa que ${camera_id} mire la proyección completa, que no haya manos ni reflejos fuertes, y baja la luz ambiente si puedes.`,
+      );
+    if (px.length < 4) throw fail(`Solo encontré ${px.length} de ${targets.length} marcas en la cámara.`);
+    const errs = (M) => px.map((p, i) => Math.hypot(...apply(M, p).map((v, a) => v - mm[i][a])));
+    const rms = (e) => Math.sqrt(e.reduce((a, v) => a + v * v, 0) / e.length);
+    const image_px = [first.canvas.width, first.canvas.height];
+    if (mode === "verify") {
+      const e = errs(this.calib.matrix);
+      return { camera_id, mode, points_found: px.length, points_total: targets.length, residual_mm: round(rms(e)), max_error_mm: round(Math.max(...e)), ok: rms(e) < 12 };
+    }
+    let M = solveH(px, mm);
+    if (M && px.length > 5) {
+      // Una marca mal detectada (reflejo) se descarta y se vuelve a ajustar.
+      const e = errs(M);
+      const keep = e.map((v) => v < Math.max(15, 3 * [...e].sort((a, b) => a - b)[e.length >> 1]));
+      if (keep.includes(false) && keep.filter(Boolean).length >= 4) {
+        for (const list of [px, mm]) list.splice(0, list.length, ...list.filter((_, i) => keep[i]));
+        M = solveH(px, mm);
+      }
+    }
+    if (!M) throw fail("Las marcas encontradas no alcanzan para calcular la homografía.");
+    const residual_mm = round(rms(errs(M)));
+    if (residual_mm > 25) throw fail(`La calibración quedó con ${residual_mm} mm de error: no la guardé.`);
+    const toPx = invert(M);
+    const corners = [[0, 0], [W, 0], [W, H], [0, H]].map((p) => apply(toPx, p).map((v) => Math.round(v)));
+    const calib = { camera_id, matrix: M, image_px, residual_mm, points: px.length, version: (this.calib?.version ?? 0) + 1 };
+    this.setCalib(calib);
+    this.hooks.saveCalib(calib);
+    return {
+      camera_id,
+      mode,
+      points_found: px.length,
+      points_total: targets.length,
+      residual_mm,
+      image_px,
+      matrix_px_to_mm: M.map((v) => round(v, 6)),
+      surface_corners_px: corners,
+      rotation_deg: Math.round((Math.atan2(corners[1][1] - corners[0][1], corners[1][0] - corners[0][0]) * 180) / Math.PI),
+      note:
+        "Homografía guardada: píxeles de la foto de look → mm de la mesa. look ahora trae la grilla en mm; en project puedes usar " +
+        "anchor.point_px (y polygon_px en halo, from_px/to_px en arrow) con píxeles de esa foto. Si mueven la cámara o el proyector, calibra de nuevo.",
+    };
+  }
+
   put(widgets) {
+    widgets = widgets.map((w) => this.resolve(w));
     const byId = new Map(this.world.widgets.map((w) => [w.id, w]));
     for (const w of widgets) {
       byId.set(w.id, w);
@@ -189,7 +323,7 @@ export class BrowserNode extends EventTarget {
     let images = [];
     try {
       const fn = this.tools[tool];
-      if (!fn) throw new Error(`El nodo navegador todavía no soporta «${tool}». Disponibles: look, project, remove, ask.`);
+      if (!fn) throw new Error(`El nodo navegador todavía no soporta «${tool}». Disponibles: look, project, remove, ask, calibrate.`);
       const out = await fn.call(this, args || {});
       data = out.data;
       images = out.images || [];
@@ -212,20 +346,33 @@ export class BrowserNode extends EventTarget {
 
   tools = {
     async look(args) {
-      const shot = await this.hooks.capture(args.camera_id);
+      const { canvas, camera } = await this.hooks.frame(args.camera_id);
       const { surface, widgets } = this.world;
+      const calibrated = this.calib?.camera_id === camera.id;
+      if (calibrated && args.annotate !== false) annotate(canvas.getContext("2d"), this.calib.matrix, surface);
       return {
-        images: [{ type: "image", data: shot.data, mime_type: shot.mime }],
+        images: [{ type: "image", data: canvas.toDataURL("image/jpeg", 0.82).split(",")[1], mime_type: "image/jpeg" }],
         data: {
-          camera_id: shot.camera.id,
-          camera: shot.camera.meta.label,
-          image_px: [shot.w, shot.h],
+          camera_id: camera.id,
+          camera: camera.meta.label,
+          image_px: [canvas.width, canvas.height],
           surface_mm: [surface.width_mm, surface.height_mm],
           widgets: widgets.map((w) => w.id),
           projector_open: this.hooks.projectorOpen(),
-          summary:
-            "Cuadro en vivo de la cámara, sin anotar. Este nodo corre en un navegador: no hay calibración " +
-            "cámara↔proyección ni detección de objetos. Para ubicar algo, proyecta una marca, vuelve a mirar y corrige.",
+          calibrated,
+          ...(calibrated
+            ? {
+                matrix_px_to_mm: this.calib.matrix.map((v) => round(v, 6)),
+                residual_mm: this.calib.residual_mm,
+                summary:
+                  "Cuadro en vivo con la superficie proyectable y una grilla cada 100 mm (annotate=false la quita). Para apuntar a " +
+                  "algo que ves, usa sus píxeles en esta foto: anchor.point_px en project (polygon_px en halo, from_px/to_px en arrow).",
+              }
+            : {
+                summary:
+                  "Cuadro en vivo, sin calibrar: no hay relación entre píxeles y mm. Llama a calibrate (quick, unos 10 s) y vuelve " +
+                  "a mirar; este nodo corre en un navegador y no detecta objetos.",
+              }),
         },
       };
     },
@@ -241,6 +388,10 @@ export class BrowserNode extends EventTarget {
           ...(open ? {} : { warning: "La ventana del proyector está cerrada: solo se ve en la vista previa de la consola." }),
         },
       };
+    },
+
+    async calibrate(args) {
+      return { data: await this.calibrate(args) };
     },
 
     async remove(args) {

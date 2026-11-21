@@ -7,6 +7,7 @@ const canvas = document.getElementById("out");
 const ctx = canvas.getContext("2d");
 let world = null;
 let pattern = true;
+let calib = null;
 let bounds = new Map();
 
 function size() {
@@ -30,11 +31,12 @@ bus.onmessage = ({ data }) => {
   if (data.t === "world") {
     world = data.world;
     pattern = data.pattern;
+    calib = data.calib;
   } else if (data.t === "close") window.close();
 };
 
 function frame(t) {
-  if (world) bounds = drawScene(ctx, canvas.width, canvas.height, world, t, { pattern });
+  if (world) bounds = drawScene(ctx, canvas.width, canvas.height, world, t, { pattern, calib });
   requestAnimationFrame(frame);
 }
 

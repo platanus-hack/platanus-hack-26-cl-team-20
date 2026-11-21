@@ -119,7 +119,28 @@ async function refreshCams() {
   }
 }
 
-async function capture(cameraId) {
+// `?sim=1`: cámara simulada que «ve» la proyección rotada 180°, para probar sin proyector ni cámara.
+const SIM = new URLSearchParams(location.search).has("sim");
+const simCam = { id: "cam-sim", kind: "camera", adapter: "sim", caps: ["frames"], status: "online", meta: { label: "Cámara simulada", main: true } };
+let calibDots = null;
+
+function simFrame() {
+  const { width_mm, height_mm } = node.world.surface;
+  const scene = Object.assign(document.createElement("canvas"), { width: 800, height: Math.round((800 * height_mm) / width_mm) });
+  drawScene(scene.getContext("2d"), scene.width, scene.height, node.world, performance.now(), { calib: calibDots });
+  const c = Object.assign(document.createElement("canvas"), { width: 1280, height: 720 });
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#2a2a2a";
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.translate(1040, 360 + scene.height / 2);
+  ctx.rotate(Math.PI);
+  ctx.drawImage(scene, 0, 0);
+  return { canvas: c, camera: simCam };
+}
+
+/** Cuadro actual de una cámara como canvas (máx. 1280 px de ancho): es el marco de píxeles que ve el agente. */
+async function camFrame(cameraId) {
+  if (SIM && (!cameraId || cameraId === simCam.id)) return simFrame();
   const list = [...cams.values()];
   const cam = cameraId ? list.find((c) => c.id === cameraId) : cams.get(mainCam) || list[0];
   if (!cam) {
@@ -133,14 +154,14 @@ async function capture(cameraId) {
   let src = cam.video;
   if ("ImageCapture" in window) {
     const grab = new ImageCapture(cam.stream.getVideoTracks()[0]).grabFrame();
-    src = await Promise.race([grab, new Promise((r) => setTimeout(r, 1500))]).catch(() => null) || cam.video;
+    src = (await Promise.race([grab, new Promise((r) => setTimeout(r, 1500))]).catch(() => null)) || cam.video;
   }
   const [vw, vh] = [src.videoWidth ?? src.width, src.videoHeight ?? src.height];
   if (!vw) throw new Error(`La cámara ${cam.id} todavía no entrega imagen; reintenta en un momento.`);
   const k = Math.min(1, 1280 / vw);
   const c = Object.assign(document.createElement("canvas"), { width: Math.round(vw * k), height: Math.round(vh * k) });
   c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
-  return { data: c.toDataURL("image/jpeg", 0.82).split(",")[1], mime: "image/jpeg", w: c.width, h: c.height, camera: device(cam) };
+  return { canvas: c, camera: device(cam) };
 }
 
 const device = (c) => ({
@@ -153,11 +174,22 @@ const device = (c) => ({
 });
 
 // ------------------------------------------------------------------ nodo
-const node = new BrowserNode(ses, { capture, projectorOpen });
+const node = new BrowserNode(ses, {
+  frame: camFrame,
+  projectorOpen: () => SIM || projectorOpen(),
+  showCalib(dots) {
+    calibDots = dots;
+    pushWorld();
+  },
+  saveCalib: (calib) => store.set("calib", { session_id: ses.session_id, calib }),
+});
+const saved = store.get("calib");
+if (saved?.session_id === ses.session_id) node.setCalib(saved.calib);
 
 function syncDevices() {
   const open = projectorOpen();
   node.setDevices([
+    ...(SIM ? [simCam] : []),
     ...[...cams.values()].map(device),
     {
       id: "proj-1",
@@ -250,9 +282,20 @@ $("lanzar").onclick = async () => {
 };
 $("cerrar").onclick = () => bus.postMessage({ t: "close" });
 $("patron").onchange = pushWorld;
+$("calibrar").onclick = async () => {
+  $("calibrar").disabled = true;
+  $("calib-estado").textContent = "Calibrando: proyectando marcas y buscándolas con la cámara…";
+  try {
+    await node.calibrate({ mode: "quick" });
+  } catch (err) {
+    $("calib-estado").textContent = err.message;
+  }
+  $("calibrar").disabled = false;
+  paintProjector();
+};
 
 function pushWorld() {
-  bus.postMessage({ t: "world", world: node.world, pattern: $("patron").checked });
+  bus.postMessage({ t: "world", world: node.world, pattern: $("patron").checked, calib: calibDots });
 }
 
 function paintProjector() {
@@ -264,6 +307,11 @@ function paintProjector() {
     : proj.fullscreen
       ? `Proyectando a ${proj.w}×${proj.h} en pantalla completa.`
       : `Ventana abierta a ${proj.w}×${proj.h}. Falta la pantalla completa: aprieta el botón de esa ventana (o F).`;
+  const c = node.calib;
+  if (c && !$("calibrar").disabled)
+    $("calib-estado").textContent = `Calibrada con ${c.camera_id}: ${c.points} marcas, error ${c.residual_mm} mm. El agente ya puede apuntar en píxeles de la foto.`;
+  else if (!c && !$("calib-estado").textContent)
+    $("calib-estado").textContent = "Sin calibrar: el agente ve la foto, pero no sabe dónde cae cada punto de la mesa.";
   const { width_mm, height_mm } = node.world.surface;
   $("previa-mm").textContent = `· ${width_mm} × ${height_mm} mm`;
 }
@@ -301,7 +349,7 @@ function frame(t) {
   const { width_mm, height_mm } = node.world.surface;
   const h = Math.round((previa.width * height_mm) / width_mm);
   if (previa.height !== h) previa.height = h;
-  bounds = drawScene(pctx, previa.width, previa.height, node.world, t, { pattern: $("patron").checked });
+  bounds = drawScene(pctx, previa.width, previa.height, node.world, t, { pattern: $("patron").checked, calib: calibDots });
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -319,7 +367,8 @@ const PROMPT =
   "Estás conectado por MCP (servidor pcx) a una cámara y un proyector reales, en vivo. " +
   "Parte con look para ver la escena y con scene para conocer la superficie proyectable en mm. " +
   "Después proyecta con project un saludo corto al centro y vuelve a mirar con look para confirmar que se ve. " +
-  "No hay calibración automática: para ubicar algo, proyecta una marca, mira dónde cayó y corrige. " +
+  "Si look dice calibrated=false, llama a calibrate (unos 10 s, proyecta marcas). Ya calibrado, look trae una grilla en mm y " +
+  "puedes anclar widgets a lo que ves con anchor.point_px (píxeles de la foto de look). " +
   "Cuéntame qué ves y pregúntame qué hacemos.";
 const mcpUrl = `${location.origin}/mcp`;
 const commands = (token) => ({
@@ -361,7 +410,9 @@ const brief = (tool, args, data) =>
           ? `${args.question} → ${data.timed_out ? "sin respuesta" : data.answer}`
           : tool === "look"
             ? `${data.camera_id} · ${data.image_px.join("×")}`
-            : "";
+            : tool === "calibrate"
+              ? `${data.camera_id} · ${data.points_found}/${data.points_total} marcas · ${data.residual_mm} mm`
+              : "";
 node.addEventListener("call", ({ detail: d }) => {
   lastCall = Date.now();
   if (d.tool === "project" && d.ok && $("patron").checked) {

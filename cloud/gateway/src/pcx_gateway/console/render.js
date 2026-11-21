@@ -264,6 +264,12 @@ export function drawScene(ctx, W, H, world, tMs, opts = {}) {
   ctx.fillRect(0, 0, W, H);
   const s = W / world.surface.width_mm;
   const bounds = new Map();
+  if (opts.calib) {
+    // Calibrando: solo las marcas, sobre negro, para que la cámara las encuentre por diferencia.
+    ctx.fillStyle = "#fff";
+    for (const [x, y, r] of opts.calib) (ctx.beginPath(), ctx.arc(x * s, y * s, r * s, 0, Math.PI * 2), ctx.fill());
+    return bounds;
+  }
   if (opts.pattern) {
     ctx.save();
     pattern(ctx, W, H, world, s);
