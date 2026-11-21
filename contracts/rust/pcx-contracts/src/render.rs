@@ -2,7 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::geometry::{Surface, Transform};
+use crate::geometry::{Matrix9, Surface, Transform};
+use crate::validate as v;
 use crate::widgets::Widget;
 
 /// Escena completa (`type: "scene"`).
@@ -16,9 +17,9 @@ pub struct SceneSnapshot {
     pub transforms: Vec<Transform>,
     #[serde(default)]
     pub widgets: Vec<Widget>,
-    /// Legado v0: igual a la `matrix` de `table_mm → proj:*`.
+    /// Legado v0: igual a `Transform::projector_matrix(transforms, "main")`.
     #[serde(default)]
-    pub homography: Option<Vec<f64>>,
+    pub homography: Option<Matrix9>,
 }
 
 /// Cambios sobre `base_rev` (`type: "scene_diff"`). Si `base_rev` no es la última aplicada, esperar un `scene`.
@@ -52,12 +53,32 @@ pub struct Stats {
     pub dropped: i64,
 }
 
+/// Salida negra durante `ms` desde el próximo vsync, encima de la escena (`type: "blank"`), para «fotos limpias».
+/// Un `blank` nuevo durante uno activo lo reemplaza desde ese momento.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Blank {
+    pub request_id: String,
+    #[serde(deserialize_with = "v::blank_ms")]
+    pub ms: u32,
+    pub reason: String,
+}
+
+/// Intervalo realmente negro (`type: "blanked"`): `t_start_ms` = presentación del primer cuadro negro,
+/// `t_end_ms` = presentación del primer cuadro con escena otra vez (ms de época).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Blanked {
+    pub request_id: String,
+    pub t_start_ms: f64,
+    pub t_end_ms: f64,
+}
+
 /// core → renderer.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ToRenderer {
     Scene(SceneSnapshot),
     SceneDiff(SceneDiff),
+    Blank(Blank),
 }
 
 /// renderer → core.
@@ -66,4 +87,5 @@ pub enum ToRenderer {
 pub enum FromRenderer {
     Presented(Presented),
     Stats(Stats),
+    Blanked(Blanked),
 }

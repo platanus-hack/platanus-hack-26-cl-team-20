@@ -15,7 +15,8 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/FlowState"
-          }
+          },
+          "minItems": 1
         },
         "cleanup": {
           "type": "boolean",
@@ -24,7 +25,9 @@
         "timeout_s": {
           "anyOf": [
             {
-              "type": "number"
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 86400
             },
             {
               "type": "null"
@@ -51,33 +54,33 @@
           "items": {
             "anyOf": [
               {
-                "$ref": "#/$defs/Project"
+                "$ref": "#/$defs/ProjectAction"
               },
               {
-                "$ref": "#/$defs/Update"
+                "$ref": "#/$defs/UpdateAction"
               },
               {
-                "$ref": "#/$defs/Remove"
+                "$ref": "#/$defs/RemoveAction"
               },
               {
-                "$ref": "#/$defs/Clear"
+                "$ref": "#/$defs/ClearAction"
               },
               {
-                "$ref": "#/$defs/Emit"
+                "$ref": "#/$defs/EmitAction"
               },
               {
-                "$ref": "#/$defs/HomeCall"
+                "$ref": "#/$defs/HomeCallAction"
               }
             ],
             "discriminator": {
               "propertyName": "type",
               "mapping": {
-                "project": "#/$defs/Project",
-                "update": "#/$defs/Update",
-                "remove": "#/$defs/Remove",
-                "clear": "#/$defs/Clear",
-                "emit": "#/$defs/Emit",
-                "home_call": "#/$defs/HomeCall"
+                "project": "#/$defs/ProjectAction",
+                "update": "#/$defs/UpdateAction",
+                "remove": "#/$defs/RemoveAction",
+                "clear": "#/$defs/ClearAction",
+                "emit": "#/$defs/EmitAction",
+                "home_call": "#/$defs/HomeCallAction"
               }
             }
           },
@@ -99,8 +102,8 @@
         "id"
       ]
     },
-    "Project": {
-      "title": "Project",
+    "ProjectAction": {
+      "title": "ProjectAction",
       "description": "Crea o reemplaza widgets (por `id`).",
       "type": "object",
       "properties": {
@@ -108,17 +111,6 @@
           "enum": [
             "project"
           ]
-        },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         },
         "widgets": {
           "type": "array",
@@ -290,7 +282,7 @@
     },
     "PointMM": {
       "title": "PointMM",
-      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]` (exactamente 2 números).",
       "type": "array",
       "prefixItems": [
         {
@@ -300,7 +292,8 @@
           "type": "number"
         }
       ],
-      "minItems": 2
+      "minItems": 2,
+      "maxItems": 2
     },
     "OnPress": {
       "title": "OnPress",
@@ -389,7 +382,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/$defs/PointMM"
@@ -605,7 +598,8 @@
           "type": "number"
         }
       ],
-      "minItems": 4
+      "minItems": 4,
+      "maxItems": 4
     },
     "Button": {
       "title": "Button",
@@ -837,7 +831,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/$defs/PointMM"
@@ -857,8 +851,8 @@
         "shader"
       ]
     },
-    "Update": {
-      "title": "Update",
+    "UpdateAction": {
+      "title": "UpdateAction",
       "description": "Cambia solo algunos campos de un widget existente (merge superficial).",
       "type": "object",
       "properties": {
@@ -866,17 +860,6 @@
           "enum": [
             "update"
           ]
-        },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         },
         "id": {
           "type": "string"
@@ -891,25 +874,14 @@
         "set"
       ]
     },
-    "Remove": {
-      "title": "Remove",
+    "RemoveAction": {
+      "title": "RemoveAction",
       "type": "object",
       "properties": {
         "type": {
           "enum": [
             "remove"
           ]
-        },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         },
         "ids": {
           "type": "array",
@@ -923,33 +895,22 @@
         "ids"
       ]
     },
-    "Clear": {
-      "title": "Clear",
+    "ClearAction": {
+      "title": "ClearAction",
       "type": "object",
       "properties": {
         "type": {
           "enum": [
             "clear"
           ]
-        },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         }
       },
       "required": [
         "type"
       ]
     },
-    "Emit": {
-      "title": "Emit",
+    "EmitAction": {
+      "title": "EmitAction",
       "description": "Emite un evento propio (`flow_emitted`), p. ej. para avisar al agente que un flujo terminó.",
       "type": "object",
       "properties": {
@@ -957,17 +918,6 @@
           "enum": [
             "emit"
           ]
-        },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         },
         "event": {
           "type": "string"
@@ -982,9 +932,9 @@
         "event"
       ]
     },
-    "HomeCall": {
-      "title": "HomeCall",
-      "description": "Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).",
+    "HomeCallAction": {
+      "title": "HomeCallAction",
+      "description": "Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).\n\n    Quien llama **no** decide si se confirma: lo decide la `HomePolicy` del nodo (ver `home.py`). Si requiere\n    confirmación, el resultado es `pending{confirmation_id}` y la acción se ejecuta solo tras un toque físico o la\n    consola. Campos desconocidos (p. ej. el antiguo `requires_confirmation`) se rechazan.",
       "type": "object",
       "properties": {
         "type": {
@@ -992,41 +942,29 @@
             "home_call"
           ]
         },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
         "domain": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
         },
         "service": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
         },
         "data": {
           "type": "object",
           "default": {}
-        },
-        "requires_confirmation": {
-          "type": "boolean",
-          "default": true
         }
       },
       "required": [
         "type",
         "domain",
         "service"
-      ]
+      ],
+      "additionalProperties": false
     },
     "Transition": {
       "title": "Transition",
-      "description": "Se dispara por `on` (evento) o por `after_s` (segundos en el estado). Ejecuta `actions` y pasa a `to`.",
+      "description": "Exactamente uno de `on` (evento) o `after_s` (segundos en el estado, ≥ 0). Ejecuta `actions` y pasa a `to`.",
       "type": "object",
       "properties": {
         "on": {
@@ -1043,7 +981,9 @@
         "after_s": {
           "anyOf": [
             {
-              "type": "number"
+              "type": "number",
+              "minimum": 0,
+              "maximum": 86400
             },
             {
               "type": "null"
@@ -1059,33 +999,33 @@
           "items": {
             "anyOf": [
               {
-                "$ref": "#/$defs/Project"
+                "$ref": "#/$defs/ProjectAction"
               },
               {
-                "$ref": "#/$defs/Update"
+                "$ref": "#/$defs/UpdateAction"
               },
               {
-                "$ref": "#/$defs/Remove"
+                "$ref": "#/$defs/RemoveAction"
               },
               {
-                "$ref": "#/$defs/Clear"
+                "$ref": "#/$defs/ClearAction"
               },
               {
-                "$ref": "#/$defs/Emit"
+                "$ref": "#/$defs/EmitAction"
               },
               {
-                "$ref": "#/$defs/HomeCall"
+                "$ref": "#/$defs/HomeCallAction"
               }
             ],
             "discriminator": {
               "propertyName": "type",
               "mapping": {
-                "project": "#/$defs/Project",
-                "update": "#/$defs/Update",
-                "remove": "#/$defs/Remove",
-                "clear": "#/$defs/Clear",
-                "emit": "#/$defs/Emit",
-                "home_call": "#/$defs/HomeCall"
+                "project": "#/$defs/ProjectAction",
+                "update": "#/$defs/UpdateAction",
+                "remove": "#/$defs/RemoveAction",
+                "clear": "#/$defs/ClearAction",
+                "emit": "#/$defs/EmitAction",
+                "home_call": "#/$defs/HomeCallAction"
               }
             }
           },

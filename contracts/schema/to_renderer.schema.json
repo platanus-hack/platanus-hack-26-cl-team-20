@@ -5,13 +5,17 @@
     },
     {
       "$ref": "#/$defs/SceneDiff"
+    },
+    {
+      "$ref": "#/$defs/RenderBlank"
     }
   ],
   "discriminator": {
     "propertyName": "type",
     "mapping": {
       "scene": "#/$defs/SceneSnapshot",
-      "scene_diff": "#/$defs/SceneDiff"
+      "scene_diff": "#/$defs/SceneDiff",
+      "blank": "#/$defs/RenderBlank"
     }
   },
   "$defs": {
@@ -44,7 +48,21 @@
         "transforms": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/Transform"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/HomographyTransform"
+              },
+              {
+                "$ref": "#/$defs/LutTransform"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "homography": "#/$defs/HomographyTransform",
+                "lut": "#/$defs/LutTransform"
+              }
+            }
           },
           "default": []
         },
@@ -92,10 +110,13 @@
         "homography": {
           "anyOf": [
             {
+              "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
               "type": "array",
               "items": {
                 "type": "number"
-              }
+              },
+              "maxItems": 9,
+              "minItems": 9
             },
             {
               "type": "null"
@@ -127,50 +148,21 @@
         "height_mm"
       ]
     },
-    "Transform": {
-      "title": "Transform",
-      "description": "Transformación con nombre y versión entre dos marcos.\n\n    `homography`: `matrix` = 9 floats en fila mayor (lleva puntos de `from_frame` a `to_frame`).\n    `lut`: `lut_ref` apunta a la LUT (p. ej. `shm:lut/proj:main/v3` o una ruta de asset); `matrix` es opcional\n    (aproximación). `residual_mm`: error medido en la última verificación.",
+    "HomographyTransform": {
+      "title": "HomographyTransform",
+      "description": "`matrix` lleva puntos de `from_frame` a `to_frame` (coordenadas homogéneas, fila mayor).",
       "type": "object",
       "properties": {
+        "kind": {
+          "enum": [
+            "homography"
+          ]
+        },
         "from_frame": {
           "type": "string"
         },
         "to_frame": {
           "type": "string"
-        },
-        "kind": {
-          "enum": [
-            "homography",
-            "lut"
-          ],
-          "default": "homography"
-        },
-        "matrix": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "type": "number"
-              },
-              "maxItems": 9,
-              "minItems": 9
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
-        "lut_ref": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         },
         "version": {
           "type": "integer",
@@ -186,11 +178,132 @@
             }
           ],
           "default": null
+        },
+        "matrix": {
+          "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 9,
+          "minItems": 9
         }
       },
       "required": [
+        "kind",
         "from_frame",
-        "to_frame"
+        "to_frame",
+        "matrix"
+      ]
+    },
+    "LutTransform": {
+      "title": "LutTransform",
+      "description": "LUT precisa (gray code). `approx_matrix`: homografía aproximada opcional para consumidores sin LUT.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "lut"
+          ]
+        },
+        "from_frame": {
+          "type": "string"
+        },
+        "to_frame": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "default": 1
+        },
+        "residual_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lut": {
+          "$ref": "#/$defs/LutDescriptor"
+        },
+        "approx_matrix": {
+          "anyOf": [
+            {
+              "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "kind",
+        "from_frame",
+        "to_frame",
+        "lut"
+      ]
+    },
+    "LutDescriptor": {
+      "title": "LutDescriptor",
+      "description": "LUT densa en un archivo `.npy`.\n\n    - `format`: `npy_f32_hw2` = array float32 de forma `(height, width, 2)`, C-order.\n    - Índice: `lut[v, u]` corresponde a la muestra del marco de entrada (`from_frame`) cuyo **centro** está en las\n      coordenadas enteras `(u * grid_step, v * grid_step)` (convención `integer_centers`: el centro del px (0,0) es\n      (0,0), no (0.5,0.5)). `grid_step` está en unidades de `from_frame` (px, o mm si es `table_mm`).\n    - Valor: `(x, y)` en **px de salida** (`to_frame`, que debe ser `proj:*` o `cam:*`). NaN = sin dato.\n    - `path`: ruta local o `shm:` del nodo; `sha256`: del archivo `.npy` completo (verificar antes de usar).",
+      "type": "object",
+      "properties": {
+        "format": {
+          "enum": [
+            "npy_f32_hw2"
+          ],
+          "default": "npy_f32_hw2"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "units": {
+          "enum": [
+            "output_px"
+          ],
+          "default": "output_px"
+        },
+        "sampling": {
+          "enum": [
+            "integer_centers"
+          ],
+          "default": "integer_centers"
+        },
+        "grid_step": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1.0
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "path",
+        "sha256"
       ]
     },
     "Label": {
@@ -317,7 +430,7 @@
     },
     "PointMM": {
       "title": "PointMM",
-      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]` (exactamente 2 números).",
       "type": "array",
       "prefixItems": [
         {
@@ -327,7 +440,8 @@
           "type": "number"
         }
       ],
-      "minItems": 2
+      "minItems": 2,
+      "maxItems": 2
     },
     "OnPress": {
       "title": "OnPress",
@@ -416,7 +530,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/$defs/PointMM"
@@ -632,7 +746,8 @@
           "type": "number"
         }
       ],
-      "minItems": 4
+      "minItems": 4,
+      "maxItems": 4
     },
     "Button": {
       "title": "Button",
@@ -864,7 +979,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/$defs/PointMM"
@@ -963,7 +1078,21 @@
             {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/Transform"
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/HomographyTransform"
+                  },
+                  {
+                    "$ref": "#/$defs/LutTransform"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "kind",
+                  "mapping": {
+                    "homography": "#/$defs/HomographyTransform",
+                    "lut": "#/$defs/LutTransform"
+                  }
+                }
               }
             },
             {
@@ -977,6 +1106,35 @@
         "type",
         "rev",
         "base_rev"
+      ]
+    },
+    "RenderBlank": {
+      "title": "RenderBlank",
+      "description": "Salida completamente negra durante `ms` desde el próximo vsync (encima de la escena, que sigue viva).\n    Un `blank` nuevo mientras hay uno activo lo reemplaza (extiende o acorta desde ese momento).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "blank"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "ms",
+        "reason"
       ]
     }
   }

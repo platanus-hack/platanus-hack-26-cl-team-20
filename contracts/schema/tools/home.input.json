@@ -1,27 +1,29 @@
 {
-  "description": "Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).",
   "type": "object",
   "properties": {
-    "request_id": {
-      "type": "string"
-    },
     "domain": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
     },
     "service": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
     },
     "data": {
       "type": "object",
       "default": {}
     },
-    "requires_confirmation": {
-      "type": "boolean",
-      "default": true
+    "request_id": {
+      "description": "Clave de idempotencia (obligatoria)",
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 1
     }
   },
   "required": [
     "domain",
-    "service"
-  ]
+    "service",
+    "request_id"
+  ],
+  "additionalProperties": false
 }

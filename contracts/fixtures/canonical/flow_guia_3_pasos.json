@@ -10,7 +10,6 @@
         "on_enter": [
           {
             "type": "project",
-            "request_id": null,
             "widgets": [
               {
                 "type": "halo",
@@ -104,7 +103,6 @@
         "on_enter": [
           {
             "type": "update",
-            "request_id": null,
             "id": "g-panel",
             "set": {
               "title": "Paso 2 de 3",
@@ -113,7 +111,6 @@
           },
           {
             "type": "project",
-            "request_id": null,
             "widgets": [
               {
                 "type": "arrow",
@@ -147,7 +144,6 @@
             "actions": [
               {
                 "type": "remove",
-                "request_id": null,
                 "ids": [
                   "g-arrow"
                 ]
@@ -162,7 +158,6 @@
         "on_enter": [
           {
             "type": "update",
-            "request_id": null,
             "id": "g-panel",
             "set": {
               "title": "Paso 3 de 3",
@@ -171,14 +166,12 @@
           },
           {
             "type": "home_call",
-            "request_id": null,
             "domain": "light",
             "service": "turn_on",
             "data": {
               "entity_id": "light.cocina",
               "brightness_pct": 80
-            },
-            "requires_confirmation": false
+            }
           }
         ],
         "transitions": [
@@ -207,7 +200,6 @@
         "on_enter": [
           {
             "type": "emit",
-            "request_id": null,
             "event": "guia_terminada",
             "data": {
               "guia": "cafe",

@@ -6,7 +6,12 @@
   "transforms": [
     {"from_frame": "table_mm", "to_frame": "proj:main", "kind": "homography",
      "matrix": [2.16, 0, 96, 0, 2.16, 0, 0, 0, 1], "version": 3, "residual_mm": 1.8},
-    {"from_frame": "cam:top", "to_frame": "table_mm", "kind": "lut", "lut_ref": "shm:lut/cam:top/v2", "version": 2}
+    {"from_frame": "table_mm", "to_frame": "proj:main", "kind": "lut", "version": 4, "residual_mm": 0.6,
+     "lut": {"format": "npy_f32_hw2", "width": 800, "height": 500, "units": "output_px", "sampling": "integer_centers",
+             "grid_step": 1.0, "path": "/var/lib/pcx/calib/table_mm-proj_main-v4.npy",
+             "sha256": "9f2c4be1d0a7c3e5f6a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0"}},
+    {"from_frame": "cam:top", "to_frame": "table_mm", "kind": "homography",
+     "matrix": [0.42, 0, -12, 0, 0.42, -8, 0, 0, 1], "version": 2}
   ],
   "widgets": [
     {"type": "label", "id": "lbl-taza", "anchor": {"object_id": "taza", "point_mm": [110, 314]},

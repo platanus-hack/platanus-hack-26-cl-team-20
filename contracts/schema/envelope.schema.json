@@ -9,8 +9,7 @@
           "type": "string"
         },
         "v": {
-          "type": "integer",
-          "default": 1
+          "type": "integer"
         },
         "seq": {
           "type": "integer"
@@ -71,6 +70,9 @@
               "$ref": "#/$defs/HomeCall"
             },
             {
+              "$ref": "#/$defs/Blank"
+            },
+            {
               "$ref": "#/$defs/ObjectAppeared"
             },
             {
@@ -111,6 +113,18 @@
             },
             {
               "$ref": "#/$defs/DeviceChanged"
+            },
+            {
+              "$ref": "#/$defs/ConfirmationRequested"
+            },
+            {
+              "$ref": "#/$defs/ConfirmationResolved"
+            },
+            {
+              "$ref": "#/$defs/HomeCallDone"
+            },
+            {
+              "$ref": "#/$defs/Blanked"
             }
           ],
           "discriminator": {
@@ -127,6 +141,7 @@
               "calibrate": "#/$defs/Calibrate",
               "set_transform": "#/$defs/SetTransform",
               "home_call": "#/$defs/HomeCall",
+              "blank": "#/$defs/Blank",
               "object_appeared": "#/$defs/ObjectAppeared",
               "object_moved": "#/$defs/ObjectMoved",
               "object_removed": "#/$defs/ObjectRemoved",
@@ -140,13 +155,18 @@
               "flow_state_changed": "#/$defs/FlowStateChanged",
               "flow_emitted": "#/$defs/FlowEmitted",
               "frame_meta": "#/$defs/FrameMeta",
-              "device_changed": "#/$defs/DeviceChanged"
+              "device_changed": "#/$defs/DeviceChanged",
+              "confirmation_requested": "#/$defs/ConfirmationRequested",
+              "confirmation_resolved": "#/$defs/ConfirmationResolved",
+              "home_call_done": "#/$defs/HomeCallDone",
+              "blanked": "#/$defs/Blanked"
             }
           }
         }
       },
       "required": [
         "type",
+        "v",
         "seq",
         "t_pub_ns",
         "source",
@@ -156,24 +176,12 @@
     },
     "Project": {
       "title": "Project",
-      "description": "Crea o reemplaza widgets (por `id`).",
       "type": "object",
       "properties": {
         "type": {
           "enum": [
             "project"
           ]
-        },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         },
         "widgets": {
           "type": "array",
@@ -214,11 +222,18 @@
               }
             }
           }
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         }
       },
       "required": [
         "type",
-        "widgets"
+        "widgets",
+        "request_id"
       ]
     },
     "Label": {
@@ -345,7 +360,7 @@
     },
     "PointMM": {
       "title": "PointMM",
-      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]` (exactamente 2 números).",
       "type": "array",
       "prefixItems": [
         {
@@ -355,7 +370,8 @@
           "type": "number"
         }
       ],
-      "minItems": 2
+      "minItems": 2,
+      "maxItems": 2
     },
     "OnPress": {
       "title": "OnPress",
@@ -444,7 +460,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/$defs/PointMM"
@@ -660,7 +676,8 @@
           "type": "number"
         }
       ],
-      "minItems": 4
+      "minItems": 4,
+      "maxItems": 4
     },
     "Button": {
       "title": "Button",
@@ -892,7 +909,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/$defs/PointMM"
@@ -914,7 +931,6 @@
     },
     "Update": {
       "title": "Update",
-      "description": "Cambia solo algunos campos de un widget existente (merge superficial).",
       "type": "object",
       "properties": {
         "type": {
@@ -922,28 +938,24 @@
             "update"
           ]
         },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
         "id": {
           "type": "string"
         },
         "set": {
           "type": "object"
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         }
       },
       "required": [
         "type",
         "id",
-        "set"
+        "set",
+        "request_id"
       ]
     },
     "Remove": {
@@ -955,27 +967,23 @@
             "remove"
           ]
         },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
         "ids": {
           "type": "array",
           "items": {
             "type": "string"
           }
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         }
       },
       "required": [
         "type",
-        "ids"
+        "ids",
+        "request_id"
       ]
     },
     "Clear": {
@@ -988,24 +996,20 @@
           ]
         },
         "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         }
       },
       "required": [
-        "type"
+        "type",
+        "request_id"
       ]
     },
     "Ask": {
       "title": "Ask",
-      "description": "Proyecta una pregunta con un botón por opción; responde con el evento `ask_answered` o vence.",
+      "description": "Proyecta una pregunta con un botón por opción; responde con `ask_answered{request_id}` o vence.",
       "type": "object",
       "properties": {
         "type": {
@@ -1014,15 +1018,10 @@
           ]
         },
         "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         },
         "question": {
           "type": "string"
@@ -1055,13 +1054,13 @@
       },
       "required": [
         "type",
+        "request_id",
         "question",
         "options"
       ]
     },
     "Emit": {
       "title": "Emit",
-      "description": "Emite un evento propio (`flow_emitted`), p. ej. para avisar al agente que un flujo terminó.",
       "type": "object",
       "properties": {
         "type": {
@@ -1069,28 +1068,24 @@
             "emit"
           ]
         },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
         "event": {
           "type": "string"
         },
         "data": {
           "type": "object",
           "default": {}
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         }
       },
       "required": [
         "type",
-        "event"
+        "event",
+        "request_id"
       ]
     },
     "RunFlow": {
@@ -1103,15 +1098,10 @@
           ]
         },
         "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         },
         "flow": {
           "$ref": "#/$defs/Flow"
@@ -1119,6 +1109,7 @@
       },
       "required": [
         "type",
+        "request_id",
         "flow"
       ]
     },
@@ -1136,7 +1127,8 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/FlowState"
-          }
+          },
+          "minItems": 1
         },
         "cleanup": {
           "type": "boolean",
@@ -1145,7 +1137,9 @@
         "timeout_s": {
           "anyOf": [
             {
-              "type": "number"
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 86400
             },
             {
               "type": "null"
@@ -1172,33 +1166,33 @@
           "items": {
             "anyOf": [
               {
-                "$ref": "#/$defs/Project"
+                "$ref": "#/$defs/ProjectAction"
               },
               {
-                "$ref": "#/$defs/Update"
+                "$ref": "#/$defs/UpdateAction"
               },
               {
-                "$ref": "#/$defs/Remove"
+                "$ref": "#/$defs/RemoveAction"
               },
               {
-                "$ref": "#/$defs/Clear"
+                "$ref": "#/$defs/ClearAction"
               },
               {
-                "$ref": "#/$defs/Emit"
+                "$ref": "#/$defs/EmitAction"
               },
               {
-                "$ref": "#/$defs/HomeCall"
+                "$ref": "#/$defs/HomeCallAction"
               }
             ],
             "discriminator": {
               "propertyName": "type",
               "mapping": {
-                "project": "#/$defs/Project",
-                "update": "#/$defs/Update",
-                "remove": "#/$defs/Remove",
-                "clear": "#/$defs/Clear",
-                "emit": "#/$defs/Emit",
-                "home_call": "#/$defs/HomeCall"
+                "project": "#/$defs/ProjectAction",
+                "update": "#/$defs/UpdateAction",
+                "remove": "#/$defs/RemoveAction",
+                "clear": "#/$defs/ClearAction",
+                "emit": "#/$defs/EmitAction",
+                "home_call": "#/$defs/HomeCallAction"
               }
             }
           },
@@ -1220,9 +1214,146 @@
         "id"
       ]
     },
-    "HomeCall": {
-      "title": "HomeCall",
-      "description": "Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).",
+    "ProjectAction": {
+      "title": "ProjectAction",
+      "description": "Crea o reemplaza widgets (por `id`).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "project"
+          ]
+        },
+        "widgets": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Label"
+              },
+              {
+                "$ref": "#/$defs/Halo"
+              },
+              {
+                "$ref": "#/$defs/Arrow"
+              },
+              {
+                "$ref": "#/$defs/Panel"
+              },
+              {
+                "$ref": "#/$defs/Button"
+              },
+              {
+                "$ref": "#/$defs/Image"
+              },
+              {
+                "$ref": "#/$defs/Effect"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "label": "#/$defs/Label",
+                "halo": "#/$defs/Halo",
+                "arrow": "#/$defs/Arrow",
+                "panel": "#/$defs/Panel",
+                "button": "#/$defs/Button",
+                "image": "#/$defs/Image",
+                "effect": "#/$defs/Effect"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "type",
+        "widgets"
+      ]
+    },
+    "UpdateAction": {
+      "title": "UpdateAction",
+      "description": "Cambia solo algunos campos de un widget existente (merge superficial).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "update"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "set": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "set"
+      ]
+    },
+    "RemoveAction": {
+      "title": "RemoveAction",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "remove"
+          ]
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "ids"
+      ]
+    },
+    "ClearAction": {
+      "title": "ClearAction",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "clear"
+          ]
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "EmitAction": {
+      "title": "EmitAction",
+      "description": "Emite un evento propio (`flow_emitted`), p. ej. para avisar al agente que un flujo terminó.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "emit"
+          ]
+        },
+        "event": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "default": {}
+        }
+      },
+      "required": [
+        "type",
+        "event"
+      ]
+    },
+    "HomeCallAction": {
+      "title": "HomeCallAction",
+      "description": "Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).\n\n    Quien llama **no** decide si se confirma: lo decide la `HomePolicy` del nodo (ver `home.py`). Si requiere\n    confirmación, el resultado es `pending{confirmation_id}` y la acción se ejecuta solo tras un toque físico o la\n    consola. Campos desconocidos (p. ej. el antiguo `requires_confirmation`) se rechazan.",
       "type": "object",
       "properties": {
         "type": {
@@ -1230,41 +1361,29 @@
             "home_call"
           ]
         },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
         "domain": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
         },
         "service": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
         },
         "data": {
           "type": "object",
           "default": {}
-        },
-        "requires_confirmation": {
-          "type": "boolean",
-          "default": true
         }
       },
       "required": [
         "type",
         "domain",
         "service"
-      ]
+      ],
+      "additionalProperties": false
     },
     "Transition": {
       "title": "Transition",
-      "description": "Se dispara por `on` (evento) o por `after_s` (segundos en el estado). Ejecuta `actions` y pasa a `to`.",
+      "description": "Exactamente uno de `on` (evento) o `after_s` (segundos en el estado, ≥ 0). Ejecuta `actions` y pasa a `to`.",
       "type": "object",
       "properties": {
         "on": {
@@ -1281,7 +1400,9 @@
         "after_s": {
           "anyOf": [
             {
-              "type": "number"
+              "type": "number",
+              "minimum": 0,
+              "maximum": 86400
             },
             {
               "type": "null"
@@ -1297,33 +1418,33 @@
           "items": {
             "anyOf": [
               {
-                "$ref": "#/$defs/Project"
+                "$ref": "#/$defs/ProjectAction"
               },
               {
-                "$ref": "#/$defs/Update"
+                "$ref": "#/$defs/UpdateAction"
               },
               {
-                "$ref": "#/$defs/Remove"
+                "$ref": "#/$defs/RemoveAction"
               },
               {
-                "$ref": "#/$defs/Clear"
+                "$ref": "#/$defs/ClearAction"
               },
               {
-                "$ref": "#/$defs/Emit"
+                "$ref": "#/$defs/EmitAction"
               },
               {
-                "$ref": "#/$defs/HomeCall"
+                "$ref": "#/$defs/HomeCallAction"
               }
             ],
             "discriminator": {
               "propertyName": "type",
               "mapping": {
-                "project": "#/$defs/Project",
-                "update": "#/$defs/Update",
-                "remove": "#/$defs/Remove",
-                "clear": "#/$defs/Clear",
-                "emit": "#/$defs/Emit",
-                "home_call": "#/$defs/HomeCall"
+                "project": "#/$defs/ProjectAction",
+                "update": "#/$defs/UpdateAction",
+                "remove": "#/$defs/RemoveAction",
+                "clear": "#/$defs/ClearAction",
+                "emit": "#/$defs/EmitAction",
+                "home_call": "#/$defs/HomeCallAction"
               }
             }
           },
@@ -1361,15 +1482,10 @@
           ]
         },
         "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         },
         "flow_id": {
           "type": "string"
@@ -1377,6 +1493,7 @@
       },
       "required": [
         "type",
+        "request_id",
         "flow_id"
       ]
     },
@@ -1390,15 +1507,10 @@
           ]
         },
         "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         },
         "mode": {
           "enum": [
@@ -1432,7 +1544,8 @@
         }
       },
       "required": [
-        "type"
+        "type",
+        "request_id"
       ]
     },
     "SetTransform": {
@@ -1445,69 +1558,50 @@
           ]
         },
         "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         },
         "transform": {
-          "$ref": "#/$defs/Transform"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HomographyTransform"
+            },
+            {
+              "$ref": "#/$defs/LutTransform"
+            }
+          ],
+          "discriminator": {
+            "propertyName": "kind",
+            "mapping": {
+              "homography": "#/$defs/HomographyTransform",
+              "lut": "#/$defs/LutTransform"
+            }
+          }
         }
       },
       "required": [
         "type",
+        "request_id",
         "transform"
       ]
     },
-    "Transform": {
-      "title": "Transform",
-      "description": "Transformación con nombre y versión entre dos marcos.\n\n    `homography`: `matrix` = 9 floats en fila mayor (lleva puntos de `from_frame` a `to_frame`).\n    `lut`: `lut_ref` apunta a la LUT (p. ej. `shm:lut/proj:main/v3` o una ruta de asset); `matrix` es opcional\n    (aproximación). `residual_mm`: error medido en la última verificación.",
+    "HomographyTransform": {
+      "title": "HomographyTransform",
+      "description": "`matrix` lleva puntos de `from_frame` a `to_frame` (coordenadas homogéneas, fila mayor).",
       "type": "object",
       "properties": {
+        "kind": {
+          "enum": [
+            "homography"
+          ]
+        },
         "from_frame": {
           "type": "string"
         },
         "to_frame": {
           "type": "string"
-        },
-        "kind": {
-          "enum": [
-            "homography",
-            "lut"
-          ],
-          "default": "homography"
-        },
-        "matrix": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "type": "number"
-              },
-              "maxItems": 9,
-              "minItems": 9
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
-        "lut_ref": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         },
         "version": {
           "type": "integer",
@@ -1523,11 +1617,211 @@
             }
           ],
           "default": null
+        },
+        "matrix": {
+          "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 9,
+          "minItems": 9
         }
       },
       "required": [
+        "kind",
         "from_frame",
-        "to_frame"
+        "to_frame",
+        "matrix"
+      ]
+    },
+    "LutTransform": {
+      "title": "LutTransform",
+      "description": "LUT precisa (gray code). `approx_matrix`: homografía aproximada opcional para consumidores sin LUT.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "lut"
+          ]
+        },
+        "from_frame": {
+          "type": "string"
+        },
+        "to_frame": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "default": 1
+        },
+        "residual_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lut": {
+          "$ref": "#/$defs/LutDescriptor"
+        },
+        "approx_matrix": {
+          "anyOf": [
+            {
+              "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "kind",
+        "from_frame",
+        "to_frame",
+        "lut"
+      ]
+    },
+    "LutDescriptor": {
+      "title": "LutDescriptor",
+      "description": "LUT densa en un archivo `.npy`.\n\n    - `format`: `npy_f32_hw2` = array float32 de forma `(height, width, 2)`, C-order.\n    - Índice: `lut[v, u]` corresponde a la muestra del marco de entrada (`from_frame`) cuyo **centro** está en las\n      coordenadas enteras `(u * grid_step, v * grid_step)` (convención `integer_centers`: el centro del px (0,0) es\n      (0,0), no (0.5,0.5)). `grid_step` está en unidades de `from_frame` (px, o mm si es `table_mm`).\n    - Valor: `(x, y)` en **px de salida** (`to_frame`, que debe ser `proj:*` o `cam:*`). NaN = sin dato.\n    - `path`: ruta local o `shm:` del nodo; `sha256`: del archivo `.npy` completo (verificar antes de usar).",
+      "type": "object",
+      "properties": {
+        "format": {
+          "enum": [
+            "npy_f32_hw2"
+          ],
+          "default": "npy_f32_hw2"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "units": {
+          "enum": [
+            "output_px"
+          ],
+          "default": "output_px"
+        },
+        "sampling": {
+          "enum": [
+            "integer_centers"
+          ],
+          "default": "integer_centers"
+        },
+        "grid_step": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1.0
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "path",
+        "sha256"
+      ]
+    },
+    "HomeCall": {
+      "title": "HomeCall",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "home_call"
+          ]
+        },
+        "domain": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "service": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "data": {
+          "type": "object",
+          "default": {}
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        }
+      },
+      "required": [
+        "type",
+        "domain",
+        "service",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "Blank": {
+      "title": "Blank",
+      "description": "Apaga la salida del proyector `ms` milisegundos (p. ej. ~300 ms para una «foto limpia» de la cámara).\n\n    El renderer responde `blanked{request_id, t_start_ms, t_end_ms}` con el intervalo realmente oscuro; el nodo lo\n    republica como evento `blanked` para que la percepción elija cuadros con `t_capture` dentro del intervalo.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "blank"
+          ]
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "reason": {
+          "type": "string"
+        },
+        "projector_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "ms",
+        "reason"
       ]
     },
     "ObjectAppeared": {
@@ -1562,7 +1856,7 @@
           "type": "number"
         },
         "polygon_mm": {
-          "description": "Polígono cerrado en mm: [[x,y],...]",
+          "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
           "type": "array",
           "items": {
             "$ref": "#/$defs/PointMM"
@@ -1583,10 +1877,10 @@
           ],
           "default": null
         },
-        "since": {
+        "since_ns": {
           "type": "integer"
         },
-        "last_seen": {
+        "last_seen_ns": {
           "type": "integer"
         }
       },
@@ -1596,8 +1890,8 @@
         "confidence",
         "polygon_mm",
         "center_mm",
-        "since",
-        "last_seen"
+        "since_ns",
+        "last_seen_ns"
       ]
     },
     "ObjectMoved": {
@@ -1618,7 +1912,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/$defs/PointMM"
@@ -1839,7 +2133,9 @@
           "$ref": "#/$defs/PointMM"
         },
         "progress": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
         },
         "widget_id": {
           "anyOf": [
@@ -1880,15 +2176,7 @@
           ]
         },
         "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "type": "string"
         },
         "answer": {
           "anyOf": [
@@ -1918,7 +2206,8 @@
         }
       },
       "required": [
-        "type"
+        "type",
+        "request_id"
       ]
     },
     "CalibrationDrift": {
@@ -1963,6 +2252,9 @@
         "flow_id": {
           "type": "string"
         },
+        "request_id": {
+          "type": "string"
+        },
         "from_state": {
           "anyOf": [
             {
@@ -1999,7 +2291,8 @@
       },
       "required": [
         "type",
-        "flow_id"
+        "flow_id",
+        "request_id"
       ]
     },
     "FlowEmitted": {
@@ -2012,6 +2305,17 @@
           ]
         },
         "flow_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "request_id": {
           "anyOf": [
             {
               "type": "string"
@@ -2131,6 +2435,173 @@
         "id",
         "kind",
         "adapter"
+      ]
+    },
+    "ConfirmationRequested": {
+      "title": "ConfirmationRequested",
+      "description": "El nodo espera confirmación física o de consola para una acción (ver `home.py`).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "confirmation_requested"
+          ]
+        },
+        "confirmation_id": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "via": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "console",
+              "touch"
+            ]
+          }
+        },
+        "expires_ns": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "confirmation_id",
+        "request_id",
+        "action_digest",
+        "summary",
+        "via",
+        "expires_ns"
+      ]
+    },
+    "ConfirmationResolved": {
+      "title": "ConfirmationResolved",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "confirmation_resolved"
+          ]
+        },
+        "confirmation_id": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "approved": {
+          "type": "boolean"
+        },
+        "via": {
+          "enum": [
+            "console",
+            "timeout",
+            "touch"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "confirmation_id",
+        "request_id",
+        "action_digest",
+        "approved",
+        "via"
+      ]
+    },
+    "HomeCallDone": {
+      "title": "HomeCallDone",
+      "description": "Desenlace final de un `home_call` (inmediato o tras la confirmación).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "home_call_done"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "confirmation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": [
+            "denied",
+            "done",
+            "expired",
+            "failed",
+            "rejected"
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "status"
+      ]
+    },
+    "Blanked": {
+      "title": "Blanked",
+      "description": "El proyector estuvo oscuro en [t_start_ms, t_end_ms] (ms de época, reportado por el renderer).\n    Un cuadro de cámara es limpio si su `t_capture` cae dentro, descontando la latencia proyector→cámara.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "blanked"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "projector_id": {
+          "type": "string"
+        },
+        "t_start_ms": {
+          "type": "number"
+        },
+        "t_end_ms": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "projector_id",
+        "t_start_ms",
+        "t_end_ms"
       ]
     }
   }

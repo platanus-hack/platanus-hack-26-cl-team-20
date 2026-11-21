@@ -78,14 +78,14 @@ def test_tool_schemas_are_flat_objects() -> None:
 
 def test_envelope_wrap() -> None:
     env = wrap(WidgetPressed(widget_id="b"), seq=7, source="core", node_id="n1")
-    assert env.type == "widget_pressed" and env.v == 1
+    assert env.type == "widget_pressed" and env.v == 2
     assert msgspec.json.decode(msgspec.json.encode(env), type=Envelope) == env
 
 
 def test_legacy_scene_matches_protocolo_v0() -> None:
     snap = load("scene.json")
     assert isinstance(snap, SceneSnapshot)
-    legacy = to_legacy(snap)
+    legacy = to_legacy(snap, "main")
     assert legacy["homography"] == [2.16, 0, 96, 0, 2.16, 0, 0, 0, 1]
     types = [w["type"] for w in legacy["widgets"]]
     assert types == ["label", "halo", "arrow", "panel", "button"]

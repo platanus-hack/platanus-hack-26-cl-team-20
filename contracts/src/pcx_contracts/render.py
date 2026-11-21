@@ -9,15 +9,19 @@ Cambios respecto de v0:
   `on_press`, `image` y `effect`. Hacia el renderer la geometría va resuelta en mm absolutos; `ttl_s` y
   `on_press` los gestiona el core (el renderer los puede ignorar). `to_legacy()` produce el formato v0.
 - `presented` y `stats` no cambian.
+
+Cambios v2: `Transform` es unión por `kind` (ver `geometry`); el renderer elige con
+`select_projector_transform(transforms, projector_id)` (LUT > homografía). Nuevos `blank` (core → renderer) y
+`blanked` (renderer → core) para «fotos limpias».
 """
 
 from __future__ import annotations
 
-from typing import Any, Union
+from typing import Annotated, Any, Union
 
-from msgspec import Struct, to_builtins
+from msgspec import Meta, Struct, to_builtins
 
-from .geometry import TABLE_MM, Surface, Transform
+from .geometry import Matrix9, Surface, Transform, projector_matrix
 from .widgets import Label, Widget
 
 
@@ -27,8 +31,8 @@ class SceneSnapshot(Struct, kw_only=True, tag_field="type", tag="scene"):
     surface: Surface
     transforms: list[Transform] = []
     widgets: list[Widget] = []
-    homography: list[float] | None = None
-    """Legado v0: igual a la `matrix` de `table_mm → proj:*`."""
+    homography: Matrix9 | None = None
+    """Legado v0: igual a `projector_matrix(transforms, "main")`."""
 
 
 class SceneDiff(Struct, kw_only=True, tag_field="type", tag="scene_diff"):
@@ -57,18 +61,29 @@ class Stats(Struct, kw_only=True, tag_field="type", tag="stats"):
     dropped: int = 0
 
 
-ToRenderer = Union[SceneSnapshot, SceneDiff]
-FromRenderer = Union[Presented, Stats]
+class RenderBlank(Struct, kw_only=True, tag_field="type", tag="blank"):
+    """Salida completamente negra durante `ms` desde el próximo vsync (encima de la escena, que sigue viva).
+    Un `blank` nuevo mientras hay uno activo lo reemplaza (extiende o acorta desde ese momento)."""
+
+    request_id: str
+    ms: Annotated[int, Meta(ge=1, le=2000)]
+    reason: str
 
 
-def projector_matrix(transforms: list[Transform]) -> list[float] | None:
-    for t in transforms:
-        if t.from_frame == TABLE_MM and t.to_frame.startswith("proj:") and t.matrix is not None:
-            return list(t.matrix)
-    return None
+class RenderBlanked(Struct, kw_only=True, tag_field="type", tag="blanked"):
+    """Intervalo en que la salida estuvo realmente negra: `t_start_ms` = presentación del primer cuadro negro,
+    `t_end_ms` = presentación del primer cuadro con escena otra vez (ms de época, como `presented`)."""
+
+    request_id: str
+    t_start_ms: float
+    t_end_ms: float
 
 
-def to_legacy(snap: SceneSnapshot) -> dict[str, Any]:
+ToRenderer = Union[SceneSnapshot, SceneDiff, RenderBlank]
+FromRenderer = Union[Presented, Stats, RenderBlanked]
+
+
+def to_legacy(snap: SceneSnapshot, projector_id: str = "main") -> dict[str, Any]:
     """Convierte a PROTOCOLO-ESCENA v0 (para los renderers del spike). `image`/`effect` se omiten."""
     widgets = []
     for w in snap.widgets:
@@ -84,6 +99,6 @@ def to_legacy(snap: SceneSnapshot) -> dict[str, Any]:
         "rev": snap.rev,
         "t_send_ms": snap.t_send_ms,
         "surface": to_builtins(snap.surface),
-        "homography": snap.homography or projector_matrix(snap.transforms),
+        "homography": snap.homography or projector_matrix(snap.transforms, projector_id),
         "widgets": widgets,
     }

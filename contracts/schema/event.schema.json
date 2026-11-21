@@ -41,6 +41,18 @@
     },
     {
       "$ref": "#/$defs/DeviceChanged"
+    },
+    {
+      "$ref": "#/$defs/ConfirmationRequested"
+    },
+    {
+      "$ref": "#/$defs/ConfirmationResolved"
+    },
+    {
+      "$ref": "#/$defs/HomeCallDone"
+    },
+    {
+      "$ref": "#/$defs/Blanked"
     }
   ],
   "discriminator": {
@@ -59,7 +71,11 @@
       "flow_state_changed": "#/$defs/FlowStateChanged",
       "flow_emitted": "#/$defs/FlowEmitted",
       "frame_meta": "#/$defs/FrameMeta",
-      "device_changed": "#/$defs/DeviceChanged"
+      "device_changed": "#/$defs/DeviceChanged",
+      "confirmation_requested": "#/$defs/ConfirmationRequested",
+      "confirmation_resolved": "#/$defs/ConfirmationResolved",
+      "home_call_done": "#/$defs/HomeCallDone",
+      "blanked": "#/$defs/Blanked"
     }
   },
   "$defs": {
@@ -95,7 +111,7 @@
           "type": "number"
         },
         "polygon_mm": {
-          "description": "Polígono cerrado en mm: [[x,y],...]",
+          "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
           "type": "array",
           "items": {
             "$ref": "#/$defs/PointMM"
@@ -116,10 +132,10 @@
           ],
           "default": null
         },
-        "since": {
+        "since_ns": {
           "type": "integer"
         },
-        "last_seen": {
+        "last_seen_ns": {
           "type": "integer"
         }
       },
@@ -129,13 +145,13 @@
         "confidence",
         "polygon_mm",
         "center_mm",
-        "since",
-        "last_seen"
+        "since_ns",
+        "last_seen_ns"
       ]
     },
     "PointMM": {
       "title": "PointMM",
-      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]` (exactamente 2 números).",
       "type": "array",
       "prefixItems": [
         {
@@ -145,7 +161,8 @@
           "type": "number"
         }
       ],
-      "minItems": 2
+      "minItems": 2,
+      "maxItems": 2
     },
     "RectMM": {
       "title": "RectMM",
@@ -165,7 +182,8 @@
           "type": "number"
         }
       ],
-      "minItems": 4
+      "minItems": 4,
+      "maxItems": 4
     },
     "ObjectMoved": {
       "title": "ObjectMoved",
@@ -185,7 +203,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/$defs/PointMM"
@@ -406,7 +424,9 @@
           "$ref": "#/$defs/PointMM"
         },
         "progress": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
         },
         "widget_id": {
           "anyOf": [
@@ -447,15 +467,7 @@
           ]
         },
         "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "type": "string"
         },
         "answer": {
           "anyOf": [
@@ -485,7 +497,8 @@
         }
       },
       "required": [
-        "type"
+        "type",
+        "request_id"
       ]
     },
     "CalibrationDrift": {
@@ -530,6 +543,9 @@
         "flow_id": {
           "type": "string"
         },
+        "request_id": {
+          "type": "string"
+        },
         "from_state": {
           "anyOf": [
             {
@@ -566,7 +582,8 @@
       },
       "required": [
         "type",
-        "flow_id"
+        "flow_id",
+        "request_id"
       ]
     },
     "FlowEmitted": {
@@ -579,6 +596,17 @@
           ]
         },
         "flow_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "request_id": {
           "anyOf": [
             {
               "type": "string"
@@ -698,6 +726,173 @@
         "id",
         "kind",
         "adapter"
+      ]
+    },
+    "ConfirmationRequested": {
+      "title": "ConfirmationRequested",
+      "description": "El nodo espera confirmación física o de consola para una acción (ver `home.py`).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "confirmation_requested"
+          ]
+        },
+        "confirmation_id": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "via": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "console",
+              "touch"
+            ]
+          }
+        },
+        "expires_ns": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "confirmation_id",
+        "request_id",
+        "action_digest",
+        "summary",
+        "via",
+        "expires_ns"
+      ]
+    },
+    "ConfirmationResolved": {
+      "title": "ConfirmationResolved",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "confirmation_resolved"
+          ]
+        },
+        "confirmation_id": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "approved": {
+          "type": "boolean"
+        },
+        "via": {
+          "enum": [
+            "console",
+            "timeout",
+            "touch"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "confirmation_id",
+        "request_id",
+        "action_digest",
+        "approved",
+        "via"
+      ]
+    },
+    "HomeCallDone": {
+      "title": "HomeCallDone",
+      "description": "Desenlace final de un `home_call` (inmediato o tras la confirmación).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "home_call_done"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "confirmation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": [
+            "denied",
+            "done",
+            "expired",
+            "failed",
+            "rejected"
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "status"
+      ]
+    },
+    "Blanked": {
+      "title": "Blanked",
+      "description": "El proyector estuvo oscuro en [t_start_ms, t_end_ms] (ms de época, reportado por el renderer).\n    Un cuadro de cámara es limpio si su `t_capture` cae dentro, descontando la latencia proyector→cámara.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "blanked"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "projector_id": {
+          "type": "string"
+        },
+        "t_start_ms": {
+          "type": "number"
+        },
+        "t_end_ms": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "projector_id",
+        "t_start_ms",
+        "t_end_ms"
       ]
     }
   }

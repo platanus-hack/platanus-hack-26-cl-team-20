@@ -1,9 +1,10 @@
-/* Generado desde contracts/schema/pcx.draft07.json. No editar: corre contracts/ts/generate.sh */
+/* Generado desde contracts/schema/pcx.ts.json. No editar: corre contracts/ts/generate.sh */
 
 /**
- * Punto en mm del marco `table_mm`. En el cable: `[x, y]`.
+ * Punto en mm del marco `table_mm`. En el cable: `[x, y]` (exactamente 2 números).
  *
  * @minItems 2
+ * @maxItems 2
  *
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "PointMM".
@@ -13,15 +14,17 @@ export type PointMM = [number, number];
  * Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).
  *
  * @minItems 4
+ * @maxItems 4
  *
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "RectMM".
  */
 export type RectMM = [number, number, number, number];
 /**
- * Punto en px de una imagen (cámara o proyector). En el cable: `[x, y]`.
+ * Punto en px de una imagen (cámara o proyector). En el cable: `[x, y]` (exactamente 2 números).
  *
  * @minItems 2
+ * @maxItems 2
  *
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "PointPX".
@@ -29,11 +32,12 @@ export type RectMM = [number, number, number, number];
 export type PointPX = [number, number];
 
 /**
- * Contratos pcx v1
+ * Contratos pcx v2
  */
 export interface Pcx {
   widget?: Label | Halo | Arrow | Panel | Button | Image | Effect;
-  command?: Project | Update | Remove | Clear | Ask | Emit | RunFlow | StopFlow | Calibrate | SetTransform | HomeCall;
+  command?:
+    Project | Update | Remove | Clear | Ask | Emit | RunFlow | StopFlow | Calibrate | SetTransform | HomeCall | Blank;
   event?:
     | ObjectAppeared
     | ObjectMoved
@@ -48,13 +52,31 @@ export interface Pcx {
     | FlowStateChanged
     | FlowEmitted
     | FrameMeta
-    | DeviceChanged;
+    | DeviceChanged
+    | ConfirmationRequested
+    | ConfirmationResolved
+    | HomeCallDone
+    | Blanked;
   envelope?: Envelope;
-  to_renderer?: SceneSnapshot | SceneDiff;
-  from_renderer?: Presented | Stats;
-  cloud?: Hello | Welcome | StateSnapshot | EventBatch | ToolCall | ToolResult | Heartbeat;
+  to_renderer?: SceneSnapshot | SceneDiff | RenderBlank;
+  from_renderer?: Presented | Stats | RenderBlanked;
+  cloud?:
+    | Hello
+    | Welcome
+    | HelloRejected
+    | StateSnapshot
+    | HistoryGap
+    | EventBatch
+    | ReplayDone
+    | ToolCall
+    | ToolResult
+    | Heartbeat;
   world?: WorldState;
   flow?: Flow;
+  transform?: HomographyTransform | LutTransform;
+  home_policy?: HomePolicy;
+  home_call_result?: HomeCallResult;
+  confirm_action?: ConfirmAction;
 }
 /**
  * Texto centrado en `anchor` (admite `\n` y Unicode).
@@ -204,29 +226,31 @@ export interface Effect {
   polygon_mm?: [PointMM, PointMM, PointMM, ...PointMM[]] | null;
 }
 /**
- * Crea o reemplaza widgets (por `id`).
- *
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "Project".
  */
 export interface Project {
   type: "project";
-  request_id?: string | null;
   widgets: (Label | Halo | Arrow | Panel | Button | Image | Effect)[];
+  /**
+   * Clave de idempotencia (obligatoria)
+   */
+  request_id: string;
 }
 /**
- * Cambia solo algunos campos de un widget existente (merge superficial).
- *
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "Update".
  */
 export interface Update {
   type: "update";
-  request_id?: string | null;
   id: string;
   set: {
     [k: string]: unknown;
   };
+  /**
+   * Clave de idempotencia (obligatoria)
+   */
+  request_id: string;
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -234,8 +258,11 @@ export interface Update {
  */
 export interface Remove {
   type: "remove";
-  request_id?: string | null;
   ids: string[];
+  /**
+   * Clave de idempotencia (obligatoria)
+   */
+  request_id: string;
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -243,17 +270,23 @@ export interface Remove {
  */
 export interface Clear {
   type: "clear";
-  request_id?: string | null;
+  /**
+   * Clave de idempotencia (obligatoria)
+   */
+  request_id: string;
 }
 /**
- * Proyecta una pregunta con un botón por opción; responde con el evento `ask_answered` o vence.
+ * Proyecta una pregunta con un botón por opción; responde con `ask_answered{request_id}` o vence.
  *
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "Ask".
  */
 export interface Ask {
   type: "ask";
-  request_id?: string | null;
+  /**
+   * Clave de idempotencia (obligatoria)
+   */
+  request_id: string;
   question: string;
   /**
    * @minItems 1
@@ -270,18 +303,19 @@ export interface Ask {
   anchor?: Anchor | null;
 }
 /**
- * Emite un evento propio (`flow_emitted`), p. ej. para avisar al agente que un flujo terminó.
- *
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "Emit".
  */
 export interface Emit {
   type: "emit";
-  request_id?: string | null;
   event: string;
   data?: {
     [k: string]: unknown;
   };
+  /**
+   * Clave de idempotencia (obligatoria)
+   */
+  request_id: string;
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -289,7 +323,10 @@ export interface Emit {
  */
 export interface RunFlow {
   type: "run_flow";
-  request_id?: string | null;
+  /**
+   * Clave de idempotencia (obligatoria)
+   */
+  request_id: string;
   flow: Flow;
 }
 /**
@@ -299,7 +336,10 @@ export interface RunFlow {
 export interface Flow {
   id: string;
   initial: string;
-  states: FlowState[];
+  /**
+   * @minItems 1
+   */
+  states: [FlowState, ...FlowState[]];
   cleanup?: boolean;
   timeout_s?: number | null;
 }
@@ -309,28 +349,81 @@ export interface Flow {
  */
 export interface FlowState {
   id: string;
-  on_enter?: (Project | Update | Remove | Clear | Emit | HomeCall)[];
+  on_enter?: (ProjectAction | UpdateAction | RemoveAction | ClearAction | EmitAction | HomeCallAction)[];
   transitions?: Transition[];
   final?: boolean;
 }
 /**
- * Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).
+ * Crea o reemplaza widgets (por `id`).
  *
  * This interface was referenced by `Pcx`'s JSON-Schema
- * via the `definition` "HomeCall".
+ * via the `definition` "ProjectAction".
  */
-export interface HomeCall {
+export interface ProjectAction {
+  type: "project";
+  widgets: (Label | Halo | Arrow | Panel | Button | Image | Effect)[];
+}
+/**
+ * Cambia solo algunos campos de un widget existente (merge superficial).
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "UpdateAction".
+ */
+export interface UpdateAction {
+  type: "update";
+  id: string;
+  set: {
+    [k: string]: unknown;
+  };
+}
+/**
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "RemoveAction".
+ */
+export interface RemoveAction {
+  type: "remove";
+  ids: string[];
+}
+/**
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "ClearAction".
+ */
+export interface ClearAction {
+  type: "clear";
+}
+/**
+ * Emite un evento propio (`flow_emitted`), p. ej. para avisar al agente que un flujo terminó.
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "EmitAction".
+ */
+export interface EmitAction {
+  type: "emit";
+  event: string;
+  data?: {
+    [k: string]: unknown;
+  };
+}
+/**
+ * Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).
+ *
+ *     Quien llama **no** decide si se confirma: lo decide la `HomePolicy` del nodo (ver `home.py`). Si requiere
+ *     confirmación, el resultado es `pending{confirmation_id}` y la acción se ejecuta solo tras un toque físico o la
+ *     consola. Campos desconocidos (p. ej. el antiguo `requires_confirmation`) se rechazan.
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "HomeCallAction".
+ */
+export interface HomeCallAction {
   type: "home_call";
-  request_id?: string | null;
   domain: string;
   service: string;
   data?: {
     [k: string]: unknown;
   };
-  requires_confirmation?: boolean;
 }
 /**
- * Se dispara por `on` (evento) o por `after_s` (segundos en el estado). Ejecuta `actions` y pasa a `to`.
+ * Exactamente uno de `on` (evento) o `after_s` (segundos en el estado, ≥ 0). Ejecuta `actions` y pasa a `to`.
  *
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "Transition".
@@ -339,7 +432,7 @@ export interface Transition {
   on?: EventFilter | null;
   after_s?: number | null;
   to: string;
-  actions?: (Project | Update | Remove | Clear | Emit | HomeCall)[];
+  actions?: (ProjectAction | UpdateAction | RemoveAction | ClearAction | EmitAction | HomeCallAction)[];
 }
 /**
  * Coincide con un evento si `event` == su `type` y cada par de `where` es igual al campo (rutas con punto,
@@ -360,7 +453,10 @@ export interface EventFilter {
  */
 export interface StopFlow {
   type: "stop_flow";
-  request_id?: string | null;
+  /**
+   * Clave de idempotencia (obligatoria)
+   */
+  request_id: string;
   flow_id: string;
 }
 /**
@@ -369,7 +465,10 @@ export interface StopFlow {
  */
 export interface Calibrate {
   type: "calibrate";
-  request_id?: string | null;
+  /**
+   * Clave de idempotencia (obligatoria)
+   */
+  request_id: string;
   mode?: "precise" | "quick" | "verify";
   camera_id?: string | null;
   projector_id?: string | null;
@@ -380,27 +479,104 @@ export interface Calibrate {
  */
 export interface SetTransform {
   type: "set_transform";
-  request_id?: string | null;
-  transform: Transform;
+  /**
+   * Clave de idempotencia (obligatoria)
+   */
+  request_id: string;
+  transform: HomographyTransform | LutTransform;
 }
 /**
- * Transformación con nombre y versión entre dos marcos.
- *
- *     `homography`: `matrix` = 9 floats en fila mayor (lleva puntos de `from_frame` a `to_frame`).
- *     `lut`: `lut_ref` apunta a la LUT (p. ej. `shm:lut/proj:main/v3` o una ruta de asset); `matrix` es opcional
- *     (aproximación). `residual_mm`: error medido en la última verificación.
+ * `matrix` lleva puntos de `from_frame` a `to_frame` (coordenadas homogéneas, fila mayor).
  *
  * This interface was referenced by `Pcx`'s JSON-Schema
- * via the `definition` "Transform".
+ * via the `definition` "HomographyTransform".
  */
-export interface Transform {
+export interface HomographyTransform {
+  kind: "homography";
   from_frame: string;
   to_frame: string;
-  kind?: "homography" | "lut";
-  matrix?: [number, number, number, number, number, number, number, number, number] | null;
-  lut_ref?: string | null;
   version?: number;
   residual_mm?: number | null;
+  /**
+   * Homografía 3x3 en fila mayor (exactamente 9 números)
+   *
+   * @minItems 9
+   * @maxItems 9
+   */
+  matrix: [number, number, number, number, number, number, number, number, number];
+}
+/**
+ * LUT precisa (gray code). `approx_matrix`: homografía aproximada opcional para consumidores sin LUT.
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "LutTransform".
+ */
+export interface LutTransform {
+  kind: "lut";
+  from_frame: string;
+  to_frame: string;
+  version?: number;
+  residual_mm?: number | null;
+  lut: LutDescriptor;
+  approx_matrix?: [number, number, number, number, number, number, number, number, number] | null;
+}
+/**
+ * LUT densa en un archivo `.npy`.
+ *
+ *     - `format`: `npy_f32_hw2` = array float32 de forma `(height, width, 2)`, C-order.
+ *     - Índice: `lut[v, u]` corresponde a la muestra del marco de entrada (`from_frame`) cuyo **centro** está en las
+ *       coordenadas enteras `(u * grid_step, v * grid_step)` (convención `integer_centers`: el centro del px (0,0) es
+ *       (0,0), no (0.5,0.5)). `grid_step` está en unidades de `from_frame` (px, o mm si es `table_mm`).
+ *     - Valor: `(x, y)` en **px de salida** (`to_frame`, que debe ser `proj:*` o `cam:*`). NaN = sin dato.
+ *     - `path`: ruta local o `shm:` del nodo; `sha256`: del archivo `.npy` completo (verificar antes de usar).
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "LutDescriptor".
+ */
+export interface LutDescriptor {
+  format?: "npy_f32_hw2";
+  width: number;
+  height: number;
+  units?: "output_px";
+  sampling?: "integer_centers";
+  grid_step?: number;
+  path: string;
+  sha256: string;
+}
+/**
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "HomeCall".
+ */
+export interface HomeCall {
+  type: "home_call";
+  domain: string;
+  service: string;
+  data?: {
+    [k: string]: unknown;
+  };
+  /**
+   * Clave de idempotencia (obligatoria)
+   */
+  request_id: string;
+}
+/**
+ * Apaga la salida del proyector `ms` milisegundos (p. ej. ~300 ms para una «foto limpia» de la cámara).
+ *
+ *     El renderer responde `blanked{request_id, t_start_ms, t_end_ms}` con el intervalo realmente oscuro; el nodo lo
+ *     republica como evento `blanked` para que la percepción elija cuadros con `t_capture` dentro del intervalo.
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "Blank".
+ */
+export interface Blank {
+  type: "blank";
+  /**
+   * Clave de idempotencia (obligatoria)
+   */
+  request_id: string;
+  ms: number;
+  reason: string;
+  projector_id?: string | null;
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -419,15 +595,21 @@ export interface ObjectState {
   label: string;
   confidence: number;
   /**
-   * Polígono cerrado en mm: [[x,y],...]
+   * Polígono cerrado en mm: [[x,y],...] (≥ 3)
    *
    * @minItems 3
    */
   polygon_mm: [PointMM, PointMM, PointMM, ...PointMM[]];
   center_mm: PointMM;
   bbox_mm?: RectMM | null;
-  since: number;
-  last_seen: number;
+  /**
+   * (ns como cadena decimal; usar BigInt)
+   */
+  since_ns: string;
+  /**
+   * (ns como cadena decimal; usar BigInt)
+   */
+  last_seen_ns: string;
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -514,7 +696,7 @@ export interface Dwell {
  */
 export interface AskAnswered {
   type: "ask_answered";
-  request_id?: string | null;
+  request_id: string;
   answer?: string | null;
   index?: number | null;
   timed_out?: boolean;
@@ -537,6 +719,7 @@ export interface CalibrationDrift {
 export interface FlowStateChanged {
   type: "flow_state_changed";
   flow_id: string;
+  request_id: string;
   from_state?: string | null;
   to_state?: string | null;
   cause?: string | null;
@@ -548,6 +731,7 @@ export interface FlowStateChanged {
 export interface FlowEmitted {
   type: "flow_emitted";
   flow_id?: string | null;
+  request_id?: string | null;
   event: string;
   data?: {
     [k: string]: unknown;
@@ -561,7 +745,10 @@ export interface FrameMeta {
   type: "frame_meta";
   camera_id: string;
   seq: number;
-  t_capture_ns: number;
+  /**
+   * (ns como cadena decimal; usar BigInt)
+   */
+  t_capture_ns: string;
   w: number;
   h: number;
 }
@@ -588,15 +775,75 @@ export interface Device {
   };
 }
 /**
+ * El nodo espera confirmación física o de consola para una acción (ver `home.py`).
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "ConfirmationRequested".
+ */
+export interface ConfirmationRequested {
+  type: "confirmation_requested";
+  confirmation_id: string;
+  request_id: string;
+  action_digest: string;
+  summary: string;
+  via: ("console" | "touch")[];
+  /**
+   * (ns como cadena decimal; usar BigInt)
+   */
+  expires_ns: string;
+}
+/**
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "ConfirmationResolved".
+ */
+export interface ConfirmationResolved {
+  type: "confirmation_resolved";
+  confirmation_id: string;
+  request_id: string;
+  action_digest: string;
+  approved: boolean;
+  via: "console" | "timeout" | "touch";
+}
+/**
+ * Desenlace final de un `home_call` (inmediato o tras la confirmación).
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "HomeCallDone".
+ */
+export interface HomeCallDone {
+  type: "home_call_done";
+  request_id: string;
+  confirmation_id?: string | null;
+  status: "denied" | "done" | "expired" | "failed" | "rejected";
+  error?: string | null;
+}
+/**
+ * El proyector estuvo oscuro en [t_start_ms, t_end_ms] (ms de época, reportado por el renderer).
+ *     Un cuadro de cámara es limpio si su `t_capture` cae dentro, descontando la latencia proyector→cámara.
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "Blanked".
+ */
+export interface Blanked {
+  type: "blanked";
+  request_id: string;
+  projector_id: string;
+  t_start_ms: number;
+  t_end_ms: number;
+}
+/**
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "Envelope".
  */
 export interface Envelope {
   type: string;
-  v?: number;
+  v: number;
   seq: number;
-  t_capture_ns?: number | null;
-  t_pub_ns: number;
+  t_capture_ns?: string | null;
+  /**
+   * (ns como cadena decimal; usar BigInt)
+   */
+  t_pub_ns: string;
   source: string;
   node_id: string;
   payload:
@@ -611,6 +858,7 @@ export interface Envelope {
     | Calibrate
     | SetTransform
     | HomeCall
+    | Blank
     | ObjectAppeared
     | ObjectMoved
     | ObjectRemoved
@@ -624,7 +872,11 @@ export interface Envelope {
     | FlowStateChanged
     | FlowEmitted
     | FrameMeta
-    | DeviceChanged;
+    | DeviceChanged
+    | ConfirmationRequested
+    | ConfirmationResolved
+    | HomeCallDone
+    | Blanked;
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -635,9 +887,9 @@ export interface SceneSnapshot {
   rev: number;
   t_send_ms?: number | null;
   surface: Surface;
-  transforms?: Transform[];
+  transforms?: (HomographyTransform | LutTransform)[];
   widgets?: (Label | Halo | Arrow | Panel | Button | Image | Effect)[];
-  homography?: number[] | null;
+  homography?: [number, number, number, number, number, number, number, number, number] | null;
 }
 /**
  * Superficie útil de la mesa en mm.
@@ -660,7 +912,20 @@ export interface SceneDiff {
   t_send_ms?: number | null;
   upsert?: (Label | Halo | Arrow | Panel | Button | Image | Effect)[];
   remove?: string[];
-  transforms?: Transform[] | null;
+  transforms?: (HomographyTransform | LutTransform)[] | null;
+}
+/**
+ * Salida completamente negra durante `ms` desde el próximo vsync (encima de la escena, que sigue viva).
+ *     Un `blank` nuevo mientras hay uno activo lo reemplaza (extiende o acorta desde ese momento).
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "RenderBlank".
+ */
+export interface RenderBlank {
+  type: "blank";
+  request_id: string;
+  ms: number;
+  reason: string;
 }
 /**
  * Una vez por `rev`, en el primer cuadro presentado que la contiene.
@@ -687,6 +952,19 @@ export interface Stats {
   dropped?: number;
 }
 /**
+ * Intervalo en que la salida estuvo realmente negra: `t_start_ms` = presentación del primer cuadro negro,
+ *     `t_end_ms` = presentación del primer cuadro con escena otra vez (ms de época, como `presented`).
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "RenderBlanked".
+ */
+export interface RenderBlanked {
+  type: "blanked";
+  request_id: string;
+  t_start_ms: number;
+  t_end_ms: number;
+}
+/**
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "Hello".
  */
@@ -696,6 +974,24 @@ export interface Hello {
   token: string;
   capabilities?: string[];
   version: string;
+  /**
+   * @minItems 1
+   */
+  contract_versions: [number, ...number[]];
+  stream_id: string;
+  log_first_cursor: number;
+  log_last_cursor: number;
+  retention?: LogRetention;
+}
+/**
+ * Cuánto historial retiene el nodo para replay (se descarta lo que exceda cualquiera de los dos).
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "LogRetention".
+ */
+export interface LogRetention {
+  max_events?: number;
+  max_age_s?: number;
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -704,14 +1000,29 @@ export interface Hello {
 export interface Welcome {
   type: "welcome";
   session_id: string;
+  contract_version: number;
+  last_stream_id?: string | null;
   last_cursor?: number | null;
 }
 /**
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "HelloRejected".
+ */
+export interface HelloRejected {
+  type: "hello_rejected";
+  reason: "auth" | "other" | "version";
+  supported_versions?: number[];
+  detail?: string | null;
+}
+/**
+ * Estado recuperado. No implica historial completo (ver `replay_done`).
+ *
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "StateSnapshot".
  */
 export interface StateSnapshot {
   type: "state_snapshot";
+  stream_id: string;
   cursor: number;
   world: WorldState;
 }
@@ -729,7 +1040,7 @@ export interface WorldState {
   touches?: Touch[];
   widgets?: (Label | Halo | Arrow | Panel | Button | Image | Effect)[];
   devices?: Device[];
-  transforms?: Transform[];
+  transforms?: (HomographyTransform | LutTransform)[];
   active_flows?: string[];
 }
 /**
@@ -743,7 +1054,23 @@ export interface HandState {
   landmarks_px?: PointPX[];
   tip_mm?: PointMM | null;
   pinch?: boolean;
-  t_capture_ns: number;
+  /**
+   * (ns como cadena decimal; usar BigInt)
+   */
+  t_capture_ns: string;
+}
+/**
+ * Eventos `seq` en [from, to] (inclusive) de `stream_id` que no se pueden reenviar.
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "HistoryGap".
+ */
+export interface HistoryGap {
+  type: "history_gap";
+  stream_id: string;
+  from: number;
+  to: number | null;
+  reason: "retention" | "stream_reset";
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -751,8 +1078,20 @@ export interface HandState {
  */
 export interface EventBatch {
   type: "event_batch";
+  stream_id: string;
   cursor: number;
   events: Envelope[];
+  replay?: boolean;
+}
+/**
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "ReplayDone".
+ */
+export interface ReplayDone {
+  type: "replay_done";
+  stream_id: string;
+  cursor: number;
+  history_complete: boolean;
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -774,6 +1113,7 @@ export interface ToolCall {
 export interface ToolResult {
   type: "tool_result";
   call_id: string;
+  request_id?: string | null;
   ok: boolean;
   content?: (TextContent | ImageContent)[];
   structured?: {
@@ -805,4 +1145,43 @@ export interface Heartbeat {
   type: "heartbeat";
   t_ms: number;
   cursor?: number | null;
+}
+/**
+ * Política del nodo. Patrones `domain.service` con comodines (`light.*`, `*`).
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "HomePolicy".
+ */
+export interface HomePolicy {
+  allow?: string[];
+  confirm?: string[];
+  confirm_via?: ("console" | "touch")[];
+  confirm_timeout_s?: number;
+}
+/**
+ * Resultado inmediato de un `home_call` (va en `ToolResult.structured` de la tool `home`).
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "HomeCallResult".
+ */
+export interface HomeCallResult {
+  request_id: string;
+  status: "denied" | "done" | "failed" | "pending";
+  confirmation_id?: string | null;
+  action_digest?: string | null;
+  expires_ns?: string | null;
+  error?: string | null;
+}
+/**
+ * Consola local → nodo. Aprueba o rechaza una confirmación pendiente; debe repetir el `action_digest`.
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "ConfirmAction".
+ */
+export interface ConfirmAction {
+  type: "confirm_action";
+  confirmation_id: string;
+  action_digest: string;
+  approve: boolean;
+  operator: string;
 }

@@ -55,6 +55,27 @@ def to_draft07(node: Any) -> Any:
     return node
 
 
+def to_ts_profile(node: Any, key: str | None = None) -> Any:
+    """Perfil JSON para clientes TS (sobre draft-07): campos `*_ns` enteros pasan a cadena decimal."""
+    if isinstance(node, dict):
+        if key is not None and key.endswith("_ns") and node.get("type") in ("integer", ["integer", "null"]):
+            nullable = isinstance(node.get("type"), list)
+            out = {k: v for k, v in node.items() if k not in ("type", "minimum", "maximum")}
+            out["type"] = ["string", "null"] if nullable else "string"
+            out["pattern"] = r"^-?[0-9]+$"
+            out["description"] = (out.get("description", "") + " (ns como cadena decimal; usar BigInt)").strip()
+            return out
+        if "properties" in node:
+            props = {k: to_ts_profile(v, k) for k, v in node["properties"].items()}
+            return {**{k: to_ts_profile(v) for k, v in node.items() if k != "properties"}, "properties": props}
+        if key is not None and key.endswith("_ns") and "anyOf" in node:
+            return {**node, "anyOf": [to_ts_profile(x, key) for x in node["anyOf"]]}
+        return {k: to_ts_profile(v) for k, v in node.items()}
+    if isinstance(node, list):
+        return [to_ts_profile(x) for x in node]
+    return node
+
+
 def canonical(name: str) -> Any:
     """Fixture decodificado y re-encodificado: forma completa (con defaults y nulls) que Rust debe reproducir."""
     raw = (FIXTURES_DIR / name).read_bytes()
@@ -68,6 +89,7 @@ def main() -> None:
     bundle = bundle_schema()
     _write(SCHEMA_DIR / "pcx.schema.json", bundle)
     _write(SCHEMA_DIR / "pcx.draft07.json", to_draft07(bundle))
+    _write(SCHEMA_DIR / "pcx.ts.json", to_ts_profile(to_draft07(bundle)))
     tools = mcp_tools()
     _write(SCHEMA_DIR / "tools.json", tools)
     for t in tools:

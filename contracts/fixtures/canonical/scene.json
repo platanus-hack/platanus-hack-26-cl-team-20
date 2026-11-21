@@ -8,9 +8,11 @@
   },
   "transforms": [
     {
+      "kind": "homography",
       "from_frame": "table_mm",
       "to_frame": "proj:main",
-      "kind": "homography",
+      "version": 3,
+      "residual_mm": 1.8,
       "matrix": [
         2.16,
         0.0,
@@ -21,19 +23,43 @@
         0.0,
         0.0,
         1.0
-      ],
-      "lut_ref": null,
-      "version": 3,
-      "residual_mm": 1.8
+      ]
     },
     {
+      "kind": "lut",
+      "from_frame": "table_mm",
+      "to_frame": "proj:main",
+      "version": 4,
+      "residual_mm": 0.6,
+      "lut": {
+        "format": "npy_f32_hw2",
+        "width": 800,
+        "height": 500,
+        "units": "output_px",
+        "sampling": "integer_centers",
+        "grid_step": 1.0,
+        "path": "/var/lib/pcx/calib/table_mm-proj_main-v4.npy",
+        "sha256": "9f2c4be1d0a7c3e5f6a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0"
+      },
+      "approx_matrix": null
+    },
+    {
+      "kind": "homography",
       "from_frame": "cam:top",
       "to_frame": "table_mm",
-      "kind": "lut",
-      "matrix": null,
-      "lut_ref": "shm:lut/cam:top/v2",
       "version": 2,
-      "residual_mm": null
+      "residual_mm": null,
+      "matrix": [
+        0.42,
+        0.0,
+        -12.0,
+        0.0,
+        0.42,
+        -8.0,
+        0.0,
+        0.0,
+        1.0
+      ]
     }
   ],
   "widgets": [

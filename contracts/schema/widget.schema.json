@@ -159,7 +159,7 @@
     },
     "PointMM": {
       "title": "PointMM",
-      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]` (exactamente 2 números).",
       "type": "array",
       "prefixItems": [
         {
@@ -169,7 +169,8 @@
           "type": "number"
         }
       ],
-      "minItems": 2
+      "minItems": 2,
+      "maxItems": 2
     },
     "OnPress": {
       "title": "OnPress",
@@ -258,7 +259,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/$defs/PointMM"
@@ -474,7 +475,8 @@
           "type": "number"
         }
       ],
-      "minItems": 4
+      "minItems": 4,
+      "maxItems": 4
     },
     "Button": {
       "title": "Button",
@@ -706,7 +708,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/$defs/PointMM"
