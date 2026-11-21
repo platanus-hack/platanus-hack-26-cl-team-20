@@ -28,8 +28,8 @@ Prioridad: **C** crítico · **A** alto · **M** medio. [✔] arreglado en esta 
 SQL: todo con parámetros de SQLAlchemy; `LIKE` de `history` escapado. Aislamiento: toda consulta filtra por `space_id`.
 
 ## Problemas en `contracts/` (no tocados)
-- `ConfirmAction` no está en `CloudMessage`: el gateway lo manda por la WSS como `{"type":"confirm_action",…}` y el
-  nodo debe decodificarlo aparte (el fake lo hace). Proponer `CloudMessage += ConfirmAction` (nube → nodo).
+- Resuelto en contratos v2.1: `ConfirmAction{confirmation_id, approved, by, action_digest, operator?}` es un
+  `CloudMessage` (nube → nodo); el core lo atiende en el enlace a la nube.
 - `EventsWaitArgs` no trae `stream_id`: un `seq` no sirve de cursor tras `stream_reset`. El gateway usa posición propia.
 - La tool `history` vive en el gateway; debería pasar a `tools.py`. Falta un mensaje para subir miniaturas por WSS
   (hoy `PUT /api/node/objects/{id}/thumbnail` con el token del nodo).
