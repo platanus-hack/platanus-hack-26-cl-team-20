@@ -43,7 +43,15 @@ impl BlockGrid {
         }
         let cam: Vec<[f32; 2]> = acc
             .iter()
-            .map(|&(sx, sy, c)| if c >= min_count { [(sx / c as f64) as f32, (sy / c as f64) as f32] } else { [f32::NAN; 2] })
+            .map(
+                |&(sx, sy, c)| {
+                    if c >= min_count {
+                        [(sx / c as f64) as f32, (sy / c as f64) as f32]
+                    } else {
+                        [f32::NAN; 2]
+                    }
+                },
+            )
             .collect();
         let mut g = Self { gx, gy, step, cam, cam_step: 1.0 };
         g.cam_step = g.typical_step();
@@ -89,7 +97,8 @@ impl BlockGrid {
                     for dj in -1i64..=1 {
                         for di in -1i64..=1 {
                             let (ni, nj) = (i as i64 + di, j as i64 + dj);
-                            if (di == 0 && dj == 0) || ni < 0 || nj < 0 || ni >= self.gx as i64 || nj >= self.gy as i64 {
+                            if (di == 0 && dj == 0) || ni < 0 || nj < 0 || ni >= self.gx as i64 || nj >= self.gy as i64
+                            {
                                 continue;
                             }
                             let v = prev[nj as usize * self.gx + ni as usize];
@@ -122,7 +131,12 @@ impl BlockGrid {
         let i0 = (fx.floor() as i64).clamp(0, self.gx as i64 - 2) as usize;
         let j0 = (fy.floor() as i64).clamp(0, self.gy as i64 - 2) as usize;
         let (tx, ty) = ((fx - i0 as f64).clamp(-0.5, 1.5), (fy - j0 as f64).clamp(-0.5, 1.5));
-        let corners = [(i0, j0, (1.0 - tx) * (1.0 - ty)), (i0 + 1, j0, tx * (1.0 - ty)), (i0, j0 + 1, (1.0 - tx) * ty), (i0 + 1, j0 + 1, tx * ty)];
+        let corners = [
+            (i0, j0, (1.0 - tx) * (1.0 - ty)),
+            (i0 + 1, j0, tx * (1.0 - ty)),
+            (i0, j0 + 1, (1.0 - tx) * ty),
+            (i0 + 1, j0 + 1, tx * ty),
+        ];
         // (cámara, peso, distancia en bloques) de los vecinos con dato, sin asignar memoria
         let mut vals = [([0f32; 2], 0f64, 0f64); 4];
         let mut n = 0;
@@ -140,7 +154,8 @@ impl BlockGrid {
         }
         // salto de profundidad: dos vecinos más separados que 2,5 pasos típicos (en diagonal)
         let lim = (2.5 * std::f32::consts::SQRT_2 * self.cam_step).powi(2);
-        let jump = vals.iter().any(|a| vals.iter().any(|b| (a.0[0] - b.0[0]).powi(2) + (a.0[1] - b.0[1]).powi(2) > lim));
+        let jump =
+            vals.iter().any(|a| vals.iter().any(|b| (a.0[0] - b.0[0]).powi(2) + (a.0[1] - b.0[1]).powi(2) > lim));
         let ws: f64 = vals.iter().map(|v| v.1).sum();
         if jump || ws < 0.25 {
             return Some([nearest.0[0] as f64, nearest.0[1] as f64]);
@@ -204,7 +219,8 @@ impl DenseLut {
 
     /// Bytes del `.npy` (v1.0, `<f4`, C-order, forma `(H, W, 2)`).
     pub fn npy_bytes(&self) -> Vec<u8> {
-        let dict = format!("{{'descr': '<f4', 'fortran_order': False, 'shape': ({}, {}, 2), }}", self.height, self.width);
+        let dict =
+            format!("{{'descr': '<f4', 'fortran_order': False, 'shape': ({}, {}, 2), }}", self.height, self.width);
         let mut header = dict.into_bytes();
         let total = 10 + header.len() + 1;
         let pad = (64 - total % 64) % 64;
@@ -289,10 +305,14 @@ impl Poly2 {
             let cx = svd.solve(&bx, 1e-12).ok()?;
             let cy = svd.solve(&by, 1e-12).ok()?;
             let m = Poly2 { center, scale, cx: cx.iter().copied().collect(), cy: cy.iter().copied().collect() };
-            let res: Vec<f64> = src.iter().zip(dst).map(|(s, d)| {
-                let e = m.eval(*s);
-                ((e[0] - d[0]).powi(2) + (e[1] - d[1]).powi(2)).sqrt()
-            }).collect();
+            let res: Vec<f64> = src
+                .iter()
+                .zip(dst)
+                .map(|(s, d)| {
+                    let e = m.eval(*s);
+                    ((e[0] - d[0]).powi(2) + (e[1] - d[1]).powi(2)).sqrt()
+                })
+                .collect();
             let kept: Vec<f32> = idx.iter().map(|&i| res[i] as f32).collect();
             let med = percentile(&kept, 50.0) as f64;
             let mad: Vec<f32> = kept.iter().map(|r| (*r as f64 - med).abs() as f32).collect();

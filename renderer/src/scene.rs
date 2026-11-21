@@ -39,7 +39,10 @@ pub struct SceneState {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Projection {
     /// LUT densa; `fallback` = `approx_matrix` o la mejor homografía, si la LUT no se puede usar.
-    Lut { lut: Box<LutTransform>, fallback: Option<[f64; 9]> },
+    Lut {
+        lut: Box<LutTransform>,
+        fallback: Option<[f64; 9]>,
+    },
     Homography([f64; 9]),
     /// Sin transform para este proyector: la superficie se centra en la salida.
     Fit,
@@ -92,11 +95,7 @@ impl SceneState {
             .widgets
             .into_iter()
             .map(|w| {
-                let born_s = self
-                    .entries
-                    .iter()
-                    .find(|e| e.widget == w)
-                    .map_or(now_s, |e| e.born_s);
+                let born_s = self.entries.iter().find(|e| e.widget == w).map_or(now_s, |e| e.born_s);
                 Entry { widget: w, born_s }
             })
             .collect();
@@ -152,11 +151,8 @@ impl SceneState {
 
     /// Widgets vigentes, ordenados por `z` (estable: a igual `z`, el orden de llegada).
     pub fn visible(&self, now_s: f64) -> Vec<&Widget> {
-        let mut v: Vec<&Entry> = self
-            .entries
-            .iter()
-            .filter(|e| e.widget.common().ttl_s.is_none_or(|ttl| now_s - e.born_s < ttl))
-            .collect();
+        let mut v: Vec<&Entry> =
+            self.entries.iter().filter(|e| e.widget.common().ttl_s.is_none_or(|ttl| now_s - e.born_s < ttl)).collect();
         v.sort_by_key(|e| e.widget.common().z);
         v.into_iter().map(|e| &e.widget).collect()
     }

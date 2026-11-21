@@ -69,7 +69,15 @@ impl Detector for GroundingDino {
             .get_offsets()
             .iter()
             .zip(enc.get_special_tokens_mask())
-            .map(|(&(a, b), &sp)| if sp == 1 || a == b { None } else { spans.iter().position(|&(s, e)| a >= s && b <= e) })
+            .map(
+                |(&(a, b), &sp)| {
+                    if sp == 1 || a == b {
+                        None
+                    } else {
+                        spans.iter().position(|&(s, e)| a >= s && b <= e)
+                    }
+                },
+            )
             .collect();
         let outputs = self.session.run(ort::inputs![
             "pixel_values" => Tensor::from_array(([1usize, 3, S as usize, S as usize], px))?,
@@ -130,7 +138,13 @@ impl MobileSam {
     pub fn load() -> Result<MobileSam, BoxErr> {
         let e = models::ensure(&catalog::SAM_ENCODER)?;
         let d = models::ensure(&catalog::SAM_DECODER)?;
-        Ok(MobileSam { encoder: session(&e, 4)?, decoder: session(&d, 4)?, embedding: None, shape: (0, 0), resized: (0, 0) })
+        Ok(MobileSam {
+            encoder: session(&e, 4)?,
+            decoder: session(&d, 4)?,
+            embedding: None,
+            shape: (0, 0),
+            resized: (0, 0),
+        })
     }
 }
 
@@ -141,7 +155,9 @@ impl Segmenter for MobileSam {
         let (rw, rh) = ((w as f64 * s).round() as u32, (h as f64 * s).round() as u32);
         let small = image::imageops::resize(img, rw, rh, image::imageops::FilterType::Triangle);
         let data: Vec<f32> = small.as_raw().iter().map(|&v| v as f32).collect();
-        let out = self.encoder.run(ort::inputs!["input_image" => Tensor::from_array(([rh as usize, rw as usize, 3], data))?])?;
+        let out = self
+            .encoder
+            .run(ort::inputs!["input_image" => Tensor::from_array(([rh as usize, rw as usize, 3], data))?])?;
         let (shape, emb) = out[0].try_extract_tensor::<f32>()?;
         self.embedding = Some((shape.iter().map(|&d| d as usize).collect(), emb.to_vec()));
         self.shape = (w, h);

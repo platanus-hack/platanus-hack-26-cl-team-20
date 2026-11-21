@@ -48,9 +48,12 @@ fn cid(tag: &str) -> String {
 #[tokio::test(flavor = "multi_thread")]
 async fn replay_folder_real_time_writes_bgr_to_ring() {
     let id = cid("rf");
-    let src = open_source(&SourceSpec::Replay(testdata("frames")), &SourceOpts { size: Some((640, 360)), fps: Some(30.0), ..Default::default() })
-        .await
-        .unwrap();
+    let src = open_source(
+        &SourceSpec::Replay(testdata("frames")),
+        &SourceOpts { size: Some((640, 360)), fps: Some(30.0), ..Default::default() },
+    )
+    .await
+    .unwrap();
     let (log, mut sinks) = collector();
     let id2 = id.clone();
     // Lector en paralelo: toma un cuadro del anillo y lo compara con el JPEG decodificado (RGB → BGR).
@@ -71,9 +74,16 @@ async fn replay_folder_real_time_writes_bgr_to_ring() {
     let seg = pcx_shm::segment_name(&id).unwrap();
     assert!(fm.iter().all(|f| f.segment.as_deref() == Some(seg.as_str()) && f.stride == Some(640 * 3)));
     let all = log.lock().unwrap();
-    assert!(matches!(&all[0].payload, Payload::Event(Event::DeviceChanged { device }) if device.status == pcx_capture::DeviceStatus::Online));
-    assert!(matches!(&all.last().unwrap().payload, Payload::Event(Event::DeviceChanged { device }) if device.status == pcx_capture::DeviceStatus::Offline));
-    assert!(all.windows(2).all(|w| w[1].seq == w[0].seq + 1) && all.iter().all(|e| e.v == 2 && e.source == format!("capture-{id}")));
+    assert!(
+        matches!(&all[0].payload, Payload::Event(Event::DeviceChanged { device }) if device.status == pcx_capture::DeviceStatus::Online)
+    );
+    assert!(
+        matches!(&all.last().unwrap().payload, Payload::Event(Event::DeviceChanged { device }) if device.status == pcx_capture::DeviceStatus::Offline)
+    );
+    assert!(
+        all.windows(2).all(|w| w[1].seq == w[0].seq + 1)
+            && all.iter().all(|e| e.v == 2 && e.source == format!("capture-{id}"))
+    );
 
     let (m, bgr) = reader.join().unwrap();
     assert_eq!((m.w, m.h, m.format), (640, 360, PixelFormat::Bgr8));
@@ -161,7 +171,8 @@ async fn phone_page_and_fake_ws_client() {
         }
     });
     let (log, mut sinks) = collector();
-    let stats = run(cfg(&id, (640, 360), 5), src, &mut sinks, tokio::time::sleep(Duration::from_secs(10))).await.unwrap();
+    let stats =
+        run(cfg(&id, (640, 360), 5), src, &mut sinks, tokio::time::sleep(Duration::from_secs(10))).await.unwrap();
     assert_eq!(stats.frames, 5);
     assert!(frame_metas(&log).iter().all(|f| (f.w, f.h) == (640, 360)));
     client.abort();
@@ -174,11 +185,17 @@ async fn zmq_push_reaches_pull_as_msgpack_envelope() {
     let mut pull = zeromq::PullSocket::new();
     pull.bind("tcp://127.0.0.1:9224").await.unwrap();
     let id = cid("zq");
-    let src = open_source(&SourceSpec::Replay(testdata("frames")), &SourceOpts { size: Some((320, 180)), fps: Some(60.0), ..Default::default() })
-        .await
-        .unwrap();
+    let src = open_source(
+        &SourceSpec::Replay(testdata("frames")),
+        &SourceOpts { size: Some((320, 180)), fps: Some(60.0), ..Default::default() },
+    )
+    .await
+    .unwrap();
     let mut sinks: Vec<Box<dyn MetaSink>> = vec![Box::new(pcx_capture::ZmqPush::spawn("tcp://127.0.0.1:9224"))];
-    let runner = tokio::spawn(async move { run(cfg(&id, (320, 180), 60), src, &mut sinks, std::future::pending()).await.unwrap() });
+    let runner =
+        tokio::spawn(
+            async move { run(cfg(&id, (320, 180), 60), src, &mut sinks, std::future::pending()).await.unwrap() },
+        );
     let msg = tokio::time::timeout(Duration::from_secs(5), async {
         loop {
             let m = pull.recv().await.unwrap();
@@ -203,7 +220,9 @@ async fn uvc_manual() {
     let src = open_source(&SourceSpec::Uvc(idx), &SourceOpts::default()).await.unwrap();
     let (log, mut sinks) = collector();
     let t0 = Instant::now();
-    let stats = run(cfg("uvctest", (1280, 720), 60), src, &mut sinks, tokio::time::sleep(Duration::from_secs(20))).await.unwrap();
+    let stats = run(cfg("uvctest", (1280, 720), 60), src, &mut sinks, tokio::time::sleep(Duration::from_secs(20)))
+        .await
+        .unwrap();
     eprintln!("uvc:{idx} {} cuadros en {:.1} s", stats.frames, t0.elapsed().as_secs_f64());
     assert_eq!(frame_metas(&log).len(), 60);
 }

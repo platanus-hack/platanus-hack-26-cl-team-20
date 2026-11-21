@@ -124,29 +124,28 @@ pub fn resolve(w: &Widget, objects: &Objects, surface: (f64, f64)) -> Result<Opt
                 let Some(o) = obj else {
                     return Err(WidgetError(format!("{id}: halo necesita polygon_mm o anchor.object_id")));
                 };
-                h.polygon_mm =
-                    Some(inflate(&o.polygon_mm, o.center_mm, 8.0).into_iter().map(|p| PointMM(p.0 + dx, p.1 + dy)).collect());
+                h.polygon_mm = Some(
+                    inflate(&o.polygon_mm, o.center_mm, 8.0).into_iter().map(|p| PointMM(p.0 + dx, p.1 + dy)).collect(),
+                );
             }
         }
         Widget::Arrow(ar) if ar.to_mm.is_none() || ar.from_mm.is_none() => {
-            {
-                let tip = if let Some(o) = obj {
-                    let bb = bbox_of(o);
-                    if bb.1 > 90.0 {
-                        PointMM(o.center_mm.0, bb.1 - 6.0)
-                    } else {
-                        PointMM(o.center_mm.0, bb.1 + bb.3 + 6.0)
-                    }
-                } else if let Some(b) = base {
-                    b
+            let tip = if let Some(o) = obj {
+                let bb = bbox_of(o);
+                if bb.1 > 90.0 {
+                    PointMM(o.center_mm.0, bb.1 - 6.0)
                 } else {
-                    return Err(WidgetError(format!("{id}: arrow necesita from_mm/to_mm o un ancla")));
-                };
-                let up = obj.map(|o| tip.1 < o.center_mm.1).unwrap_or(true);
-                let tail = PointMM(tip.0, if up { tip.1 - 70.0 } else { tip.1 + 70.0 });
-                ar.to_mm = Some(ar.to_mm.unwrap_or(PointMM(tip.0 + dx, tip.1 + dy)));
-                ar.from_mm = Some(ar.from_mm.unwrap_or(PointMM(tail.0 + dx, tail.1 + dy)));
-            }
+                    PointMM(o.center_mm.0, bb.1 + bb.3 + 6.0)
+                }
+            } else if let Some(b) = base {
+                b
+            } else {
+                return Err(WidgetError(format!("{id}: arrow necesita from_mm/to_mm o un ancla")));
+            };
+            let up = obj.map(|o| tip.1 < o.center_mm.1).unwrap_or(true);
+            let tail = PointMM(tip.0, if up { tip.1 - 70.0 } else { tip.1 + 70.0 });
+            ar.to_mm = Some(ar.to_mm.unwrap_or(PointMM(tip.0 + dx, tip.1 + dy)));
+            ar.from_mm = Some(ar.from_mm.unwrap_or(PointMM(tail.0 + dx, tail.1 + dy)));
         }
         _ => {}
     }
@@ -233,10 +232,7 @@ pub fn pressable(w: &Widget) -> bool {
 pub fn hit_test<'a>(widgets: impl IntoIterator<Item = &'a Widget>, x: f64, y: f64) -> Option<&'a Widget> {
     let cands: Vec<&Widget> = widgets.into_iter().filter(|w| hits(w, x, y)).collect();
     // empate: el primero de la lista (como el sort estable de Python)
-    cands
-        .into_iter()
-        .rev()
-        .max_by_key(|w| (pressable(w), w.common().z, matches!(w, Widget::Button(_))))
+    cands.into_iter().rev().max_by_key(|w| (pressable(w), w.common().z, matches!(w, Widget::Button(_))))
 }
 
 pub fn object_at(objects: &Objects, x: f64, y: f64) -> Option<String> {

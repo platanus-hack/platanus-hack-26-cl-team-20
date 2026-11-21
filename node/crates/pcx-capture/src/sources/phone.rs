@@ -81,7 +81,12 @@ pub fn lan_ip() -> String {
         .unwrap_or_else(|_| "127.0.0.1".into())
 }
 
-pub async fn spawn(bind: SocketAddr, size: Option<(u32, u32)>, fps: u32, tx: LatestTx) -> Result<PhoneServer, BoxError> {
+pub async fn spawn(
+    bind: SocketAddr,
+    size: Option<(u32, u32)>,
+    fps: u32,
+    tx: LatestTx,
+) -> Result<PhoneServer, BoxError> {
     let w = size.map(|s| s.0).unwrap_or(1280);
     let page = PAGE.replace("__W__", &w.to_string()).replace("__FPS__", &fps.to_string());
     let stats = Arc::new(PhoneStats::default());

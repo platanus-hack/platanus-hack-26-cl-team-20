@@ -95,12 +95,9 @@ impl HandsEvent {
             HandsEvent::TouchDown { touch, .. } => Some(Event::TouchDown { touch: touch.to_contract()? }),
             HandsEvent::TouchMove { touch, .. } => Some(Event::TouchMove { touch: touch.to_contract()? }),
             HandsEvent::TouchUp { touch, .. } => Some(Event::TouchUp { touch: touch.to_contract()? }),
-            HandsEvent::Dwell { point_mm, progress, .. } => Some(Event::Dwell {
-                point_mm: mm((*point_mm)?),
-                progress: *progress,
-                widget_id: None,
-                object_id: None,
-            }),
+            HandsEvent::Dwell { point_mm, progress, .. } => {
+                Some(Event::Dwell { point_mm: mm((*point_mm)?), progress: *progress, widget_id: None, object_id: None })
+            }
             HandsEvent::HandsGone { episode_start_ns, last_hand_ns, t_capture_ns } => {
                 Some(Event::HandsGone(HandsGone {
                     t_capture_ns: *t_capture_ns,
@@ -146,10 +143,9 @@ mod tests {
         assert_eq!(v["touch"]["phase"], "down");
         assert_eq!(v["touch"]["trigger"], "rest");
         assert_eq!(v["touch"]["point_mm"], serde_json::json!([1.0, 2.0]));
-        let m: FrameMeta = serde_json::from_str(
-            r#"{"type":"frame_meta","camera_id":"c","seq":1,"t_capture_ns":2,"w":640,"h":480}"#,
-        )
-        .unwrap();
+        let m: FrameMeta =
+            serde_json::from_str(r#"{"type":"frame_meta","camera_id":"c","seq":1,"t_capture_ns":2,"w":640,"h":480}"#)
+                .unwrap();
         assert_eq!(m.w, 640);
         let g = HandsEvent::HandsGone { episode_start_ns: 1, last_hand_ns: 2, t_capture_ns: 3 };
         assert_eq!(

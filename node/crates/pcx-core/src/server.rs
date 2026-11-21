@@ -45,7 +45,8 @@ async fn auth(State(st): State<AppState>, req: Request, next: Next) -> Response 
     let p = req.uri().path();
     let guarded = ["/mcp", "/debug", "/state", "/console", "/catalog"].iter().any(|g| p.starts_with(g));
     if let (true, Some(tok)) = (guarded, st.token.as_ref()) {
-        let ok = req.headers().get(header::AUTHORIZATION).and_then(|v| v.to_str().ok()) == Some(&format!("Bearer {tok}"));
+        let ok =
+            req.headers().get(header::AUTHORIZATION).and_then(|v| v.to_str().ok()) == Some(&format!("Bearer {tok}"));
         if !ok {
             return (
                 StatusCode::UNAUTHORIZED,
@@ -63,7 +64,11 @@ pub fn router(st: AppState, cancel: CancellationToken) -> Router {
     let cfg = StreamableHttpServerConfig::default()
         .with_sse_keep_alive(Some(Duration::from_secs(15)))
         .with_cancellation_token(cancel.child_token());
-    let mcp = StreamableHttpService::new(move || Ok(PcxMcp::local(tools.clone())), Arc::new(LocalSessionManager::default()), cfg);
+    let mcp = StreamableHttpService::new(
+        move || Ok(PcxMcp::local(tools.clone())),
+        Arc::new(LocalSessionManager::default()),
+        cfg,
+    );
     Router::new()
         .nest_service("/mcp", mcp)
         .route("/health", get(health))
@@ -115,8 +120,18 @@ async fn debug_touch(State(st): State<AppState>, AxJson(b): AxJson<Value>) -> Re
     let hold = b.get("hold_ms").and_then(Value::as_f64).unwrap_or(0.0);
     let tid = format!("dbg-{}", st.touch_n.fetch_add(1, Ordering::Relaxed) + 1);
     let trig = if hold > 0.0 { Trigger::Dwell } else { Trigger::Api };
-    let mut t = Touch { id: tid.clone(), phase: TouchPhase::Down, point_mm: PointMM(x, y), widget_id: None, object_id: None, trigger: trig };
-    let down = w.ingest(wrap(Payload::Event(Event::TouchDown { touch: t.clone() }), 0, "debug", &w.node_id, None)).await.map_err(bad)?;
+    let mut t = Touch {
+        id: tid.clone(),
+        phase: TouchPhase::Down,
+        point_mm: PointMM(x, y),
+        widget_id: None,
+        object_id: None,
+        trigger: trig,
+    };
+    let down = w
+        .ingest(wrap(Payload::Event(Event::TouchDown { touch: t.clone() }), 0, "debug", &w.node_id, None))
+        .await
+        .map_err(bad)?;
     if hold > 0.0 {
         tokio::time::sleep(Duration::from_secs_f64(hold / 1000.0)).await;
     }
@@ -131,18 +146,31 @@ async fn debug_object(State(st): State<AppState>, AxJson(b): AxJson<Value>) -> R
     let w = &st.world;
     let oid = b.get("id").and_then(Value::as_str).ok_or_else(|| bad("falta id"))?.to_string();
     if b.get("remove").and_then(Value::as_bool) == Some(true) {
-        w.ingest(wrap(Payload::Event(Event::ObjectRemoved { object_id: oid.clone(), label: None }), 0, "debug", &w.node_id, None)).await.map_err(bad)?;
+        w.ingest(wrap(
+            Payload::Event(Event::ObjectRemoved { object_id: oid.clone(), label: None }),
+            0,
+            "debug",
+            &w.node_id,
+            None,
+        ))
+        .await
+        .map_err(bad)?;
         return Ok(AxJson(json!({"removed": oid})));
     }
     let c: (f64, f64) = serde_json::from_value(b.get("center_mm").cloned().unwrap_or_default()).map_err(bad)?;
-    let size: (f64, f64) = b.get("size_mm").and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or((80.0, 80.0));
+    let size: (f64, f64) =
+        b.get("size_mm").and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or((80.0, 80.0));
     let label = b.get("label").and_then(Value::as_str).map(String::from);
     let (o2, nid) = (oid.clone(), w.node_id.clone());
     let obj = w
         .call(move |w| {
             let obj = w.make_object(&o2, label.as_deref(), c, size);
             let ev = if w.objects.contains_key(&o2) {
-                Event::ObjectMoved { object_id: o2.clone(), center_mm: obj.center_mm, polygon_mm: Some(obj.polygon_mm.clone()) }
+                Event::ObjectMoved {
+                    object_id: o2.clone(),
+                    center_mm: obj.center_mm,
+                    polygon_mm: Some(obj.polygon_mm.clone()),
+                }
             } else {
                 Event::ObjectAppeared { object: obj }
             };

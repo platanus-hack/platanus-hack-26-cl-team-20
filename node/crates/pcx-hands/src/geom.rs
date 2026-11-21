@@ -40,12 +40,7 @@ impl Roi {
         for c in [[-h, -h], [h, -h], [h, h], [-h, h]] {
             let r = rotate(c, self.angle);
             let p = [self.center[0] + r[0], self.center[1] + r[1]];
-            b = [
-                b[0].min(p[0]),
-                b[1].min(p[1]),
-                b[2].max(p[0]),
-                b[3].max(p[1]),
-            ];
+            b = [b[0].min(p[0]), b[1].min(p[1]), b[2].max(p[0]), b[3].max(p[1])];
         }
         b
     }
@@ -55,12 +50,7 @@ impl Roi {
 pub fn bounds(pts: impl IntoIterator<Item = Point2>) -> [f64; 4] {
     let mut b = [f64::MAX, f64::MAX, f64::MIN, f64::MIN];
     for p in pts {
-        b = [
-            b[0].min(p[0]),
-            b[1].min(p[1]),
-            b[2].max(p[0]),
-            b[3].max(p[1]),
-        ];
+        b = [b[0].min(p[0]), b[1].min(p[1]), b[2].max(p[0]), b[3].max(p[1])];
     }
     b
 }
@@ -82,22 +72,12 @@ pub fn iou(a: [f64; 4], b: [f64; 4]) -> f64 {
 /// corre 0,4 alto hacia los dedos y se agranda ×3 (cuadrado del lado mayor).
 pub fn roi_from_palm(palm_box: [f64; 4], kp: &[Point2; 7]) -> Roi {
     let angle = hand_angle(kp[0], kp[2]);
-    let cb = [
-        (palm_box[0] + palm_box[2]) / 2.0,
-        (palm_box[1] + palm_box[3]) / 2.0,
-    ];
-    let b = bounds(
-        kp.iter()
-            .map(|p| rotate([p[0] - cb[0], p[1] - cb[1]], -angle)),
-    );
+    let cb = [(palm_box[0] + palm_box[2]) / 2.0, (palm_box[1] + palm_box[3]) / 2.0];
+    let b = bounds(kp.iter().map(|p| rotate([p[0] - cb[0], p[1] - cb[1]], -angle)));
     let (w, h) = (b[2] - b[0], b[3] - b[1]);
     let c_rel = [(b[0] + b[2]) / 2.0, (b[1] + b[3]) / 2.0 - 0.4 * h];
     let c = rotate(c_rel, angle);
-    Roi {
-        center: [cb[0] + c[0], cb[1] + c[1]],
-        size: 3.0 * w.max(h),
-        angle,
-    }
+    Roi { center: [cb[0] + c[0], cb[1] + c[1]], size: 3.0 * w.max(h), angle }
 }
 
 /// Landmarks que usa MediaPipe para el ROI de seguimiento (sin las puntas de los dedos).
@@ -110,18 +90,11 @@ pub fn roi_from_landmarks(lm: &[Point2]) -> Roi {
     let sub: Vec<Point2> = TRACK_SUBSET.iter().map(|&i| lm[i]).collect();
     let ab = bounds(sub.iter().copied());
     let c0 = [(ab[0] + ab[2]) / 2.0, (ab[1] + ab[3]) / 2.0];
-    let b = bounds(
-        sub.iter()
-            .map(|p| rotate([p[0] - c0[0], p[1] - c0[1]], -angle)),
-    );
+    let b = bounds(sub.iter().map(|p| rotate([p[0] - c0[0], p[1] - c0[1]], -angle)));
     let (w, h) = (b[2] - b[0], b[3] - b[1]);
     let c_rel = [(b[0] + b[2]) / 2.0, (b[1] + b[3]) / 2.0 - 0.1 * h];
     let c = rotate(c_rel, angle);
-    Roi {
-        center: [c0[0] + c[0], c0[1] + c[1]],
-        size: 2.0 * w.max(h),
-        angle,
-    }
+    Roi { center: [c0[0] + c[0], c0[1] + c[1]], size: 2.0 * w.max(h), angle }
 }
 
 /// Aplica una homografía 3×3 (fila mayor) a un punto. `None` si cae al infinito.
@@ -130,10 +103,7 @@ pub fn apply_homography(m: &[f64; 9], p: Point2) -> Option<Point2> {
     if w.abs() < 1e-12 {
         return None;
     }
-    Some([
-        (m[0] * p[0] + m[1] * p[1] + m[2]) / w,
-        (m[3] * p[0] + m[4] * p[1] + m[5]) / w,
-    ])
+    Some([(m[0] * p[0] + m[1] * p[1] + m[2]) / w, (m[3] * p[0] + m[4] * p[1] + m[5]) / w])
 }
 
 /// Afín de salida → imagen: `src = [a·u + b·v + c, d·u + e·v + f]` con (u, v) centros de píxel de salida.
@@ -149,14 +119,7 @@ impl Affine {
         // src = center + R·((u+0.5 − h)·k, (v+0.5 − h)·k) − 0.5
         let (a, b, d, e) = (c * k, -s * k, s * k, c * k);
         let (u0, v0) = (0.5 - h, 0.5 - h);
-        Affine([
-            a,
-            b,
-            roi.center[0] + a * u0 + b * v0 - 0.5,
-            d,
-            e,
-            roi.center[1] + d * u0 + e * v0 - 0.5,
-        ])
+        Affine([a, b, roi.center[0] + a * u0 + b * v0 - 0.5, d, e, roi.center[1] + d * u0 + e * v0 - 0.5])
     }
 }
 
@@ -209,17 +172,10 @@ pub fn warp_to_tensor(
                         let o = yi as usize * frame.stride + xi as usize * 3;
                         let r0 = &frame.data[o..o + 6];
                         let r1 = &frame.data[o + frame.stride..o + frame.stride + 6];
-                        let g = |s: &[u8], k: usize| {
-                            [s[k + ri] as f32, s[k + 1] as f32, s[k + bi] as f32]
-                        };
+                        let g = |s: &[u8], k: usize| [s[k + ri] as f32, s[k + 1] as f32, s[k + bi] as f32];
                         (g(r0, 0), g(r0, 3), g(r1, 0), g(r1, 3))
                     } else {
-                        (
-                            px(xi, yi),
-                            px(xi + 1, yi),
-                            px(xi, yi + 1),
-                            px(xi + 1, yi + 1),
-                        )
+                        (px(xi, yi), px(xi + 1, yi), px(xi, yi + 1), px(xi + 1, yi + 1))
                     };
                     for k in 0..3 {
                         let top = p00[k] + (p10[k] - p00[k]) * fx;
@@ -250,11 +206,7 @@ mod tests {
 
     #[test]
     fn roi_roundtrip() {
-        let roi = Roi {
-            center: [100.0, 50.0],
-            size: 224.0,
-            angle: 0.3,
-        };
+        let roi = Roi { center: [100.0, 50.0], size: 224.0, angle: 0.3 };
         let p = roi.to_image([112.0, 112.0], 224.0);
         assert!((p[0] - 100.0).abs() < 1e-9 && (p[1] - 50.0).abs() < 1e-9);
     }

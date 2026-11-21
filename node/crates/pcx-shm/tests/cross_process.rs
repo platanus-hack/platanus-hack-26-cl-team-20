@@ -69,7 +69,8 @@ fn readers_in_other_processes_never_see_torn_frames() {
     w.close();
     for k in kids {
         let out = String::from_utf8(k.wait_with_output().unwrap().stdout).unwrap();
-        let line = out.lines().find_map(|l| l.find("RESULT").map(|i| &l[i..])).unwrap_or_else(|| panic!("sin RESULT: {out}"));
+        let line =
+            out.lines().find_map(|l| l.find("RESULT").map(|i| &l[i..])).unwrap_or_else(|| panic!("sin RESULT: {out}"));
         let field = |name: &str| -> u64 {
             line.split_whitespace().find_map(|kv| kv.strip_prefix(&format!("{name}="))).unwrap().parse().unwrap()
         };

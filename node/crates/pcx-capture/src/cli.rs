@@ -106,7 +106,8 @@ async fn stop_signal() {
 
 /// Corre la captura hasta Ctrl-C/SIGTERM (el anillo se libera al salir). Requiere runtime tokio.
 pub async fn run_cmd(a: RunArgs) -> Result<RunStats, BoxError> {
-    let opts = SourceOpts { size: Some(a.size), fps: a.fps, max_speed: a.max_speed, looped: !a.no_loop, bind_ip: a.bind };
+    let opts =
+        SourceOpts { size: Some(a.size), fps: a.fps, max_speed: a.max_speed, looped: !a.no_loop, bind_ip: a.bind };
     let src = open_source(&a.source, &opts).await?;
     let mut sinks: Vec<Box<dyn MetaSink>> = Vec::new();
     let ingest = a.ingest.clone().unwrap_or_else(default_ingest);
@@ -148,7 +149,13 @@ fn peek(id: &str, secs: f64) -> Result<(), BoxError> {
             let age_ms = (crate::contracts::now_ns().saturating_sub(m.t_capture_ns)) as f64 / 1e6;
             println!(
                 "{} · {fps:.1} fps · seq {} · {}x{} {} · edad {age_ms:.1} ms · pid {} · reintentos {}",
-                r.name(), m.seq, m.w, m.h, m.format.name(), r.writer_pid(), r.retries()
+                r.name(),
+                m.seq,
+                m.w,
+                m.h,
+                m.format.name(),
+                r.writer_pid(),
+                r.retries()
             );
         }
         None => println!("{} · sin cuadros aún", r.name()),

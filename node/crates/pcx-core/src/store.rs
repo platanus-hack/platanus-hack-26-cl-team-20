@@ -80,7 +80,10 @@ impl Store {
         for (i, m) in MIGRATIONS.iter().enumerate().skip(ver as usize) {
             conn.execute_batch(&format!("BEGIN; {m}; PRAGMA user_version = {}; COMMIT;", i + 1))?;
         }
-        let stream_id = match conn.query_row("SELECT value FROM meta WHERE key='stream_id'", [], |r| r.get::<_, String>(0)).optional()? {
+        let stream_id = match conn
+            .query_row("SELECT value FROM meta WHERE key='stream_id'", [], |r| r.get::<_, String>(0))
+            .optional()?
+        {
             Some(s) => s,
             None => {
                 let s = format!("st-{:016x}", rand::random::<u64>());
@@ -88,7 +91,12 @@ impl Store {
                 s
             }
         };
-        Ok(Store { conn: Mutex::new(conn), path, stream_id, retention: LogRetention { max_events: 100_000, max_age_s: 86_400.0 } })
+        Ok(Store {
+            conn: Mutex::new(conn),
+            path,
+            stream_id,
+            retention: LogRetention { max_events: 100_000, max_age_s: 86_400.0 },
+        })
     }
 
     fn meta_get(&self, key: &str) -> Option<String> {
@@ -119,7 +127,10 @@ impl Store {
         let json = serde_json::to_string(env)?;
         let mut c = lock(&self.conn);
         let tx = c.transaction()?;
-        tx.execute("INSERT INTO events(seq, type, t_pub_ns, json) VALUES (?1, ?2, ?3, ?4)", params![env.seq, env.type_, env.t_pub_ns, json])?;
+        tx.execute(
+            "INSERT INTO events(seq, type, t_pub_ns, json) VALUES (?1, ?2, ?3, ?4)",
+            params![env.seq, env.type_, env.t_pub_ns, json],
+        )?;
         tx.execute(
             "INSERT INTO meta(key, value) VALUES ('last_seq', ?1) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
             [env.seq.to_string()],
@@ -127,7 +138,10 @@ impl Store {
         tx.commit()?;
         if env.seq % 500 == 0 {
             let cut = now_ns() - (self.retention.max_age_s * 1e9) as i64;
-            let _ = c.execute("DELETE FROM events WHERE seq <= ?1 OR t_pub_ns < ?2", params![env.seq - self.retention.max_events, cut]);
+            let _ = c.execute(
+                "DELETE FROM events WHERE seq <= ?1 OR t_pub_ns < ?2",
+                params![env.seq - self.retention.max_events, cut],
+            );
         }
         Ok(())
     }
@@ -177,7 +191,8 @@ impl Store {
     }
 
     pub fn load_world(&self) -> Option<Value> {
-        let s: Option<String> = lock(&self.conn).query_row("SELECT json FROM world WHERE id=1", [], |r| r.get(0)).optional().ok().flatten();
+        let s: Option<String> =
+            lock(&self.conn).query_row("SELECT json FROM world WHERE id=1", [], |r| r.get(0)).optional().ok().flatten();
         s.and_then(|s| serde_json::from_str(&s).ok())
     }
 
@@ -197,7 +212,11 @@ impl Store {
         let Ok(mut st) = c.prepare("SELECT name, prompt, crops FROM catalog ORDER BY name") else { return vec![] };
         st.query_map([], |r| {
             let crops: String = r.get(2)?;
-            Ok(CatalogEntry { name: r.get(0)?, prompt: r.get(1)?, crops: serde_json::from_str(&crops).unwrap_or_default() })
+            Ok(CatalogEntry {
+                name: r.get(0)?,
+                prompt: r.get(1)?,
+                crops: serde_json::from_str(&crops).unwrap_or_default(),
+            })
         })
         .map(|it| it.filter_map(Result::ok).collect())
         .unwrap_or_default()
@@ -243,7 +262,9 @@ impl Store {
         let c = lock(&self.conn);
         let Ok(mut st) = c.prepare("SELECT id, json FROM flows ORDER BY id") else { return vec![] };
         st.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
-            .map(|it| it.filter_map(Result::ok).map(|(i, j)| (i, serde_json::from_str(&j).unwrap_or(Value::Null))).collect())
+            .map(|it| {
+                it.filter_map(Result::ok).map(|(i, j)| (i, serde_json::from_str(&j).unwrap_or(Value::Null))).collect()
+            })
             .unwrap_or_default()
     }
 
@@ -266,7 +287,17 @@ impl Store {
     // ------------------------------------------------------------ auditoría e idempotencia
 
     #[allow(clippy::too_many_arguments)]
-    pub fn audit(&self, origin: &str, tool: &str, call_id: Option<&str>, request_id: Option<&str>, args: &Value, ok: bool, ms: f64, result: &str) {
+    pub fn audit(
+        &self,
+        origin: &str,
+        tool: &str,
+        call_id: Option<&str>,
+        request_id: Option<&str>,
+        args: &Value,
+        ok: bool,
+        ms: f64,
+        result: &str,
+    ) {
         let _ = lock(&self.conn).execute(
             "INSERT INTO audit(t_ns, origin, tool, call_id, request_id, args, ok, ms, result) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
             params![now_ns(), origin, tool, call_id, request_id, args.to_string(), ok, ms, result],
@@ -275,11 +306,21 @@ impl Store {
 
     pub fn audit_tail(&self, n: i64) -> Vec<AuditRow> {
         let c = lock(&self.conn);
-        let Ok(mut st) = c.prepare("SELECT t_ns, origin, tool, call_id, request_id, ok, ms FROM audit ORDER BY id DESC LIMIT ?1") else {
+        let Ok(mut st) =
+            c.prepare("SELECT t_ns, origin, tool, call_id, request_id, ok, ms FROM audit ORDER BY id DESC LIMIT ?1")
+        else {
             return vec![];
         };
         st.query_map([n], |r| {
-            Ok(AuditRow { t_ns: r.get(0)?, origin: r.get(1)?, tool: r.get(2)?, call_id: r.get(3)?, request_id: r.get(4)?, ok: r.get(5)?, ms: r.get(6)? })
+            Ok(AuditRow {
+                t_ns: r.get(0)?,
+                origin: r.get(1)?,
+                tool: r.get(2)?,
+                call_id: r.get(3)?,
+                request_id: r.get(4)?,
+                ok: r.get(5)?,
+                ms: r.get(6)?,
+            })
         })
         .map(|it| it.filter_map(Result::ok).collect())
         .unwrap_or_default()
@@ -289,7 +330,11 @@ impl Store {
     pub fn request_get(&self, request_id: &str, window_s: i64) -> Option<Value> {
         let cut = now_ns() - window_s * 1_000_000_000;
         let s: Option<String> = lock(&self.conn)
-            .query_row("SELECT result FROM requests WHERE request_id=?1 AND t_ns >= ?2", params![request_id, cut], |r| r.get(0))
+            .query_row(
+                "SELECT result FROM requests WHERE request_id=?1 AND t_ns >= ?2",
+                params![request_id, cut],
+                |r| r.get(0),
+            )
             .optional()
             .ok()
             .flatten();
@@ -316,7 +361,15 @@ impl Store {
         self.meta_set("home_policy", &serde_json::to_string(p).unwrap_or_default());
     }
 
-    pub fn confirmation_put(&self, id: &str, request_id: &str, digest: &str, action: &Value, expires_ns: i64, status: &str) {
+    pub fn confirmation_put(
+        &self,
+        id: &str,
+        request_id: &str,
+        digest: &str,
+        action: &Value,
+        expires_ns: i64,
+        status: &str,
+    ) {
         let _ = lock(&self.conn).execute(
             "INSERT INTO confirmations(id, request_id, digest, action, expires_ns, status, t_ns) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
              ON CONFLICT(id) DO UPDATE SET status=excluded.status, t_ns=excluded.t_ns",
@@ -326,10 +379,14 @@ impl Store {
 
     pub fn confirmations_pending(&self) -> Vec<(String, String, String, i64)> {
         let c = lock(&self.conn);
-        let Ok(mut st) = c.prepare("SELECT id, request_id, digest, expires_ns FROM confirmations WHERE status='pending' ORDER BY t_ns") else {
+        let Ok(mut st) = c.prepare(
+            "SELECT id, request_id, digest, expires_ns FROM confirmations WHERE status='pending' ORDER BY t_ns",
+        ) else {
             return vec![];
         };
-        st.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))).map(|it| it.filter_map(Result::ok).collect()).unwrap_or_default()
+        st.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))
+            .map(|it| it.filter_map(Result::ok).collect())
+            .unwrap_or_default()
     }
 }
 
@@ -341,7 +398,9 @@ pub fn default_data_dir() -> PathBuf {
             return PathBuf::from(d);
         }
     }
-    directories::ProjectDirs::from("", "", "pcx").map(|p| p.data_dir().to_path_buf()).unwrap_or_else(|| std::env::temp_dir().join("pcx"))
+    directories::ProjectDirs::from("", "", "pcx")
+        .map(|p| p.data_dir().to_path_buf())
+        .unwrap_or_else(|| std::env::temp_dir().join("pcx"))
 }
 
 #[cfg(test)]
@@ -360,7 +419,12 @@ mod tests {
         }
         let (evs, cur) = st.after(1, &["object_removed".into()], 10);
         assert_eq!((evs.len(), cur), (2, 3));
-        st.catalog_upsert(&CatalogEntry { name: "taza".into(), prompt: "taza roja".into(), crops: vec!["crops/taza-1.png".into()] }).unwrap();
+        st.catalog_upsert(&CatalogEntry {
+            name: "taza".into(),
+            prompt: "taza roja".into(),
+            crops: vec!["crops/taza-1.png".into()],
+        })
+        .unwrap();
         st.request_put("r1", "project", &serde_json::json!({"ok": 1}));
         drop(st);
         let st = Store::open(Some(dir.path())).unwrap();
