@@ -383,6 +383,15 @@ impl Remap {
     }
 }
 
+/// Por qué no se pudo rectificar una foto.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum RectifyError {
+    /// La tabla de remapeo se precalculó para otra resolución (p. ej. la cámara negoció otro modo que el de la
+    /// calibración). Hay que recalibrar o reconstruir el `Rectifier` con el tamaño real.
+    #[error("la foto es de {got:?} px pero la tabla de rectificación se calculó para {expected:?} px")]
+    SizeMismatch { expected: (u32, u32), got: (u32, u32) },
+}
+
 /// Rectifica fotos de cámara al lienzo de la mesa. Tres modelos: homografía cámara→`table_mm` (`new`), homografía +
 /// distorsión radial k1/k2 (`with_radial`) y polinomio ajustado al escaneo (`from_poly`, el de Daniel). Los dos
 /// últimos (y `new` tras `precompute`) usan una **tabla de remapeo precalculada** para un tamaño de foto fijo.
@@ -436,17 +445,26 @@ impl Rectifier {
         self.remap.as_deref().map(|r| &r.valid)
     }
 
+    /// Tamaño de foto (ancho, alto) para el que se precalculó la tabla, si hay tabla. Para validar al arrancar.
+    pub fn cam_size(&self) -> Option<(u32, u32)> {
+        self.remap.as_deref().map(|r| r.cam)
+    }
+
     /// Remuestreo bilineal (equivale a `cv2.remap(..., INTER_LINEAR)`). Devuelve la imagen y la máscara de
-    /// píxeles válidos (los que caen dentro de la foto). Con tabla precalculada y foto del tamaño previsto usa la
-    /// tabla; si no, evalúa la homografía píxel a píxel (lento) o devuelve todo inválido si no hay homografía.
-    pub fn rectify(&self, cam: &RgbImage) -> (RgbImage, image::GrayImage) {
+    /// píxeles válidos (los que caen dentro de la foto). Con tabla precalculada la foto **debe** ser del tamaño de
+    /// la tabla: si no, `RectifyError::SizeMismatch` (nunca un cuadro negro ni un camino lento en silencio). Sin
+    /// tabla (`new` sin `precompute`) evalúa la homografía píxel a píxel para cualquier tamaño.
+    pub fn rectify(&self, cam: &RgbImage) -> Result<(RgbImage, image::GrayImage), RectifyError> {
         let c = &self.canvas;
-        if let Some(r) = self.remap.as_deref().filter(|r| r.cam == cam.dimensions()) {
-            return (r.apply(cam, c.width, c.height), r.valid.clone());
+        if let Some(r) = self.remap.as_deref() {
+            if r.cam != cam.dimensions() {
+                return Err(RectifyError::SizeMismatch { expected: r.cam, got: cam.dimensions() });
+            }
+            return Ok((r.apply(cam, c.width, c.height), r.valid.clone()));
         }
         let mut out = RgbImage::new(c.width, c.height);
         let mut valid = image::GrayImage::new(c.width, c.height);
-        let Some(table_to_cam) = self.table_to_cam else { return (out, valid) };
+        let table_to_cam = self.table_to_cam.expect("sin tabla siempre hay homografía");
         let (cw, ch) = (cam.width() as f64, cam.height() as f64);
         for v in 0..c.height {
             for u in 0..c.width {
@@ -460,7 +478,7 @@ impl Rectifier {
                 valid.put_pixel(u, v, image::Luma([255]));
             }
         }
-        (out, valid)
+        Ok((out, valid))
     }
 }
 
@@ -681,16 +699,17 @@ mod tests {
         println!("{linea}");
     }
 
-    #[test]
-    fn rectificar_con_tabla_es_rapido_y_exacto() {
+    /// Patrón suave definido en mm de mesa.
+    fn patron(x: f64, y: f64) -> f64 {
+        128.0 + 60.0 * (x / 90.0).sin() + 50.0 * (y / 70.0).cos()
+    }
+
+    /// Rectificador con lente (tabla para 1920×1080) + la foto sintética del patrón vista por esa cámara.
+    fn escena_rectificar() -> (Canvas, Rectifier, RgbImage) {
         let (canvas, cam_to_table, lens) = lente_simulada();
         let (cw, ch) = (1920u32, 1080u32);
-        // la foto: un patrón suave definido en mm de mesa, visto por la cámara con lente
-        let pat = |x: f64, y: f64| 128.0 + 60.0 * (x / 90.0).sin() + 50.0 * (y / 70.0).cos();
-        let t0 = std::time::Instant::now();
         let r = Rectifier::with_radial(cam_to_table, lens, canvas, (cw, ch)).unwrap();
-        let build_ms = t0.elapsed().as_secs_f64() * 1e3;
-        // foto sintética: invierte la distorsión por punto fijo para saber qué mm ve cada px de cámara
+        // invierte la distorsión por punto fijo para saber qué mm ve cada px de cámara
         let cam = RgbImage::from_fn(cw, ch, |px, py| {
             let (xd, yd) = ((px as f64 + 0.5 - 960.0) / 1400.0, (py as f64 + 0.5 - 540.0) / 1400.0);
             let (mut x, mut y) = (xd, yd);
@@ -699,19 +718,18 @@ mod tests {
                 (x, y) = (xd / k, yd / k);
             }
             let (mx, my) = cam_to_table.apply(960.0 + 1400.0 * x, 540.0 + 1400.0 * y).unwrap();
-            let v = pat(mx, my).round().clamp(0.0, 255.0) as u8;
+            let v = patron(mx, my).round().clamp(0.0, 255.0) as u8;
             Rgb([v, v, 255 - v])
         });
-        let mut ms: Vec<f64> = (0..9)
-            .map(|_| {
-                let t = std::time::Instant::now();
-                let (img, _) = r.rectify(&cam);
-                assert_eq!(img.dimensions(), (1280, 720));
-                t.elapsed().as_secs_f64() * 1e3
-            })
-            .collect();
-        ms.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        let (img, valid) = r.rectify(&cam);
+        (canvas, r, cam)
+    }
+
+    #[test]
+    fn rectificar_con_tabla_es_exacto() {
+        let (canvas, r, cam) = escena_rectificar();
+        assert_eq!(r.cam_size(), Some((1920, 1080)));
+        let (img, valid) = r.rectify(&cam).unwrap();
+        assert_eq!(img.dimensions(), (1280, 720));
         let (mut worst, mut n) = (0.0f64, 0u32);
         for v in (0..720).step_by(7) {
             for u in (0..1280).step_by(7) {
@@ -719,23 +737,60 @@ mod tests {
                     continue;
                 }
                 let (x, y) = canvas.px_to_mm(u as f64 + 0.5, v as f64 + 0.5);
-                worst = worst.max((img.get_pixel(u, v).0[0] as f64 - pat(x, y)).abs());
+                worst = worst.max((img.get_pixel(u, v).0[0] as f64 - patron(x, y)).abs());
                 n += 1;
             }
         }
-        println!(
-            "rectificar 1280x720 desde 1920x1080 (debug): mín {:.2} ms, mediana {:.2} ms · tabla {build_ms:.0} ms · error foto {worst:.1}/255",
-            ms[0], ms[4]
-        );
         assert!(n > 15_000 && worst <= 3.0, "{n} px, error {worst}");
-        assert!(ms[0] < 10.0, "rectificar tardó {ms:?} ms");
         // sin tabla (homografía sola) sigue funcionando como antes; con `precompute` da lo mismo
         let chico = Canvas::covering(0.0, 0.0, 64.0, 36.0, 64);
         let foto = RgbImage::from_pixel(64, 36, Rgb([9, 8, 7]));
         let lento = Rectifier::new(Homography::IDENTITY, chico).unwrap();
-        let (a, va) = lento.rectify(&foto);
+        let (a, va) = lento.rectify(&foto).unwrap();
         assert_eq!(a.get_pixel(10, 10).0, [9, 8, 7]);
         assert!(va.get_pixel(10, 10).0[0] > 0);
-        assert_eq!(lento.precompute((64, 36)).rectify(&foto).0.get_pixel(10, 10).0, [9, 8, 7]);
+        assert_eq!(lento.precompute((64, 36)).rectify(&foto).unwrap().0.get_pixel(10, 10).0, [9, 8, 7]);
+    }
+
+    #[test]
+    fn rectificar_otro_tamano_es_error() {
+        // la cámara negoció 1280×720 pero la calibración (tabla) es de 1920×1080: error claro, no un cuadro negro
+        let (canvas, cam_to_table, lens) = lente_simulada();
+        let foto = RgbImage::from_pixel(1280, 720, Rgb([200, 200, 200]));
+        let esperado = RectifyError::SizeMismatch { expected: (1920, 1080), got: (1280, 720) };
+        let chico = Canvas::covering(0.0, 0.0, 1280.0, 720.0, 64);
+        let radial = Rectifier::with_radial(cam_to_table, lens, chico, (1920, 1080)).unwrap();
+        assert_eq!(radial.rectify(&foto).unwrap_err(), esperado);
+        let msg = esperado.to_string();
+        assert!(msg.contains("1920") && msg.contains("1280"), "{msg}");
+        // con homografía + `precompute` tampoco cae al camino lento en silencio
+        let pre = Rectifier::new(cam_to_table, chico).unwrap().precompute((1920, 1080));
+        assert_eq!(pre.rectify(&foto).unwrap_err(), esperado);
+        // con polinomio igual
+        let poly =
+            Poly2 { degree: 1, cx: vec![960.0, 900.0, 0.0], cy: vec![540.0, 0.0, 900.0], norm: (32.0, 18.0, 32.0) };
+        assert_eq!(Rectifier::from_poly(&poly, chico, (1920, 1080)).rectify(&foto).unwrap_err(), esperado);
+        // sin tabla la homografía sirve para cualquier tamaño, como siempre
+        let _ = canvas;
+        let (_, valid) = Rectifier::new(cam_to_table, chico).unwrap().rectify(&foto).unwrap();
+        assert!(valid.as_raw().iter().any(|&v| v > 0));
+    }
+
+    /// Cronómetro (presupuesto R5: < 10 ms). `#[ignore]`: depende de la carga de la máquina; correr a mano con
+    /// `cargo test -p pcx-objects -- --ignored --nocapture cronometro` (y en release para la cifra de la mesa).
+    #[test]
+    #[ignore]
+    fn cronometro_rectificar() {
+        let (_, r, cam) = escena_rectificar();
+        let mut ms: Vec<f64> = (0..9)
+            .map(|_| {
+                let t = std::time::Instant::now();
+                let _ = r.rectify(&cam).unwrap();
+                t.elapsed().as_secs_f64() * 1e3
+            })
+            .collect();
+        ms.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        println!("rectificar 1280x720 desde 1920x1080: mín {:.2} ms, mediana {:.2} ms", ms[0], ms[4]);
+        assert!(ms[0] < 10.0, "rectificar tardó {ms:?} ms");
     }
 }

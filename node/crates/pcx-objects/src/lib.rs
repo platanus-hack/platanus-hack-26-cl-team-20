@@ -11,7 +11,7 @@
 //! let rect = Rectifier::new(Homography::IDENTITY, canvas).unwrap();         // homografía cámara → table_mm
 //! let mut tracker = Tracker::new(canvas, Params::default());
 //! # let foto_camara = image::RgbImage::new(1280, 720);
-//! let (rgb, valid) = rect.rectify(&foto_camara);                           // foto limpia (proyector apagado)
+//! let (rgb, valid) = rect.rectify(&foto_camara).unwrap();                          // foto limpia (proyector apagado)
 //! let tracker_area = tracker.area.clone();
 //! let report = tracker.update(&CleanFrame { rgb, t_ns: 0 });              // → report.events (ObjectEvent)
 //! # let _ = (valid, report, tracker_area);

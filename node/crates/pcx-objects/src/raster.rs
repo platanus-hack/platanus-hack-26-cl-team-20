@@ -486,7 +486,33 @@ pub fn open_sq_fast(m: &Mask, k: u8) -> Mask {
     Mask::from_raw(w as u32, h as u32, a).expect("mismo tamaño")
 }
 
-/// Casillero HSV por color cuantizado a 5 bits por canal, calculado a demanda. Evita la conversión a HSV por píxel
+/// Casilleros del descriptor de color del nivel 2b: los 18×8 de tono × saturación más 4 **acromáticos** por valor
+/// (negro, gris oscuro, gris medio, blanco). El histograma tono × saturación solo no distingue negro, gris y blanco
+/// (todos saturación ≈ 0) entre sí ni de una mesa gris: un objeto negro retirado «se parecía» a la mesa vacía.
+pub const COLOR_BINS: usize = HSV_BINS + 4;
+
+/// Casillero de `COLOR_BINS`. Acromático si es oscuro (V < 50: ahí la saturación es puro ruido) o poco saturado
+/// (S < 40 de 255); si no, el casillero HSV de siempre.
+pub fn color_bin(p: &Rgb<u8>) -> usize {
+    let [r, g, b] = p.0;
+    let (mx, mn) = (r.max(g).max(b) as u32, r.min(g).min(b) as u32);
+    if mx < 50 {
+        HSV_BINS
+    } else if (mx - mn) * 255 < 40 * mx {
+        HSV_BINS
+            + if mx < 120 {
+                1
+            } else if mx < 190 {
+                2
+            } else {
+                3
+            }
+    } else {
+        hsv_bin(p)
+    }
+}
+
+/// `color_bin` por color cuantizado a 5 bits por canal, calculado a demanda. Evita la conversión a HSV por píxel
 /// (lo caro del nivel 2b); referencia y candidato deben usar la misma tabla para que los histogramas sean comparables.
 pub struct BinLut(Vec<u8>);
 
@@ -501,7 +527,7 @@ impl BinLut {
     pub fn bin(&mut self, rgb: &[u8]) -> usize {
         let key = ((rgb[0] as usize >> 3) << 10) | ((rgb[1] as usize >> 3) << 5) | (rgb[2] as usize >> 3);
         if self.0[key] == u8::MAX {
-            self.0[key] = hsv_bin(&Rgb([rgb[0] & 0xF8 | 4, rgb[1] & 0xF8 | 4, rgb[2] & 0xF8 | 4])) as u8;
+            self.0[key] = color_bin(&Rgb([rgb[0] & 0xF8 | 4, rgb[1] & 0xF8 | 4, rgb[2] & 0xF8 | 4])) as u8;
         }
         self.0[key] as usize
     }
@@ -680,6 +706,26 @@ mod tests {
         let (p, q, r) = ([4.0f32, 0.0, 1.0], [8.0f32, 0.0, 2.0], [0.0f32, 3.0, 0.0]);
         assert!((bhattacharyya(&p, &q) - 1.0).abs() < 1e-6);
         assert_eq!(bhattacharyya(&p, &r), 0.0);
+    }
+
+    #[test]
+    fn color_bin_separa_acromaticos() {
+        let bin = |c: [u8; 3]| color_bin(&Rgb(c));
+        let (negro, oscuro, mesa, blanco) =
+            (bin([28, 28, 30]), bin([90, 90, 92]), bin([145, 145, 145]), bin([240, 240, 236]));
+        let todos = [negro, oscuro, mesa, blanco];
+        for (i, a) in todos.iter().enumerate() {
+            assert!(*a >= HSV_BINS && *a < COLOR_BINS);
+            assert!(todos.iter().skip(i + 1).all(|b| b != a), "{todos:?}");
+        }
+        // el negro con ruido de croma (saturación alta por ser oscuro) sigue siendo negro
+        assert_eq!(bin([26, 30, 32]), negro);
+        assert_eq!(bin([147, 143, 146]), mesa);
+        // un color de verdad conserva su casillero HSV
+        assert_eq!(bin([160, 84, 30]), hsv_bin(&Rgb([160, 84, 30])));
+        let mut lut = BinLut::default();
+        assert_eq!(lut.bin(&[28, 28, 30]), negro);
+        assert_eq!(lut.bin(&[240, 240, 236]), blanco);
     }
 
     #[test]

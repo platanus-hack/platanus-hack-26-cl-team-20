@@ -48,6 +48,10 @@ pub struct Params {
     pub n2b_backproj: f32,
     /// Distancia máxima al lugar anterior (mm). `None`: cualquier lugar de la mesa es plausible.
     pub n2b_max_dist_mm: Option<f64>,
+    /// Evidencia de que el candidato es un objeto y no mesa vacía: fracción mínima de sus píxeles que difieren (en
+    /// algún canal, más que `n2b_contrast`) de la mediana de la mesa que lo rodea. Sin eso no se asigna.
+    pub n2b_min_contrast_frac: f64,
+    pub n2b_contrast: u8,
     pub n3_box_threshold: f32,
     pub n3_sim_ok: f64,
     pub n3_ratio: (f64, f64),
@@ -78,6 +82,8 @@ impl Default for Params {
             n2b_min_inside: 0.9,
             n2b_backproj: 0.05,
             n2b_max_dist_mm: None,
+            n2b_min_contrast_frac: 0.5,
+            n2b_contrast: 20,
             n3_box_threshold: 0.22,
             n3_sim_ok: 0.6,
             n3_ratio: (0.5, 2.0),
@@ -582,7 +588,7 @@ impl Tracker {
         // histograma de referencia con la misma tabla cuantizada que los candidatos
         let mut lut = raster::BinLut::default();
         let (rm, rc, rw) = (r.mask.as_raw(), r.color.as_raw(), r.mask.width());
-        let mut ref_hist = vec![0f32; raster::HSV_BINS];
+        let mut ref_hist = vec![0f32; raster::COLOR_BINS];
         let mut ref_area = 0u64;
         for (i, &v) in rm.iter().enumerate() {
             if v > 0 {
@@ -667,15 +673,52 @@ impl Tracker {
             }
             let m = Mask::from_raw(cw as u32, ch as u32, m).expect("recorte");
             let m = raster::fill_largest_fast(&raster::open_sq_fast(&m, 5));
-            let mut hist = vec![0f32; raster::HSV_BINS];
-            let (mut n, mut inside) = (0u64, 0u64);
+            // la mesa alrededor: píxeles del recorte ampliado que no son candidato ni zona cambiada (mediana por canal)
+            let ring = pad(bb, 12, w, h);
+            let mut med = [[0u32; 256]; 3];
+            let mut n_ring = 0u32;
+            let lib = libre.as_raw();
+            for y in ring.1..ring.3 {
+                let in_y = y >= bb.1 && y < bb.3;
+                for x in ring.0..ring.2 {
+                    let i = y as usize * wz + x as usize;
+                    let en_cand =
+                        in_y && x >= bb.0 && x < bb.2 && m.as_raw()[(y - bb.1) as usize * cw + (x - bb.0) as usize] > 0;
+                    if en_cand || lib[i] > 0 || area[i] == 0 {
+                        continue;
+                    }
+                    for c in 0..3 {
+                        med[c][px[i * 3 + c] as usize] += 1;
+                    }
+                    n_ring += 1;
+                }
+            }
+            let mesa = med.map(|hc| {
+                let (mut acc, mut v) = (0u32, 0usize);
+                while v < 255 && acc + hc[v] <= n_ring / 2 {
+                    acc += hc[v];
+                    v += 1;
+                }
+                v as u8
+            });
+            let mut hist = vec![0f32; raster::COLOR_BINS];
+            let (mut n, mut inside, mut distinto) = (0u64, 0u64, 0u64);
             for (k, &v) in m.as_raw().iter().enumerate() {
                 if v > 0 {
                     let i = (bb.1 as usize + k / cw) * wz + bb.0 as usize + k % cw;
+                    let q = &px[i * 3..i * 3 + 3];
                     n += 1;
                     inside += (area[i] > 0) as u64;
-                    hist[lut.bin(&px[i * 3..i * 3 + 3])] += 1.0;
+                    hist[lut.bin(q)] += 1.0;
+                    distinto += (q[0].abs_diff(mesa[0]) > p.n2b_contrast
+                        || q[1].abs_diff(mesa[1]) > p.n2b_contrast
+                        || q[2].abs_diff(mesa[2]) > p.n2b_contrast) as u64;
                 }
+            }
+            // un lugar que ahora se ve igual que la mesa que lo rodea es un retiro, no el objeto (y sin mesa
+            // alrededor con qué comparar no hay evidencia: tampoco se asigna)
+            if n < 80 || n_ring < 50 || (distinto as f64) < p.n2b_min_contrast_frac * n as f64 {
+                continue;
             }
             let ratio = n as f64 / ref_area;
             if n < 80
