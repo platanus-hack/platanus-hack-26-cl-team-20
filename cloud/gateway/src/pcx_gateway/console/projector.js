@@ -8,6 +8,7 @@ const ctx = canvas.getContext("2d");
 let world = null;
 let pattern = true;
 let calib = null;
+let textScale = 1;
 let hands = null; // {hands, hover, progress, fired, opts} + at
 const trails = [];
 let bounds = new Map();
@@ -34,6 +35,7 @@ bus.onmessage = ({ data }) => {
     world = data.world;
     pattern = data.pattern;
     calib = data.calib;
+    textScale = data.textScale;
   } else if (data.t === "hands") {
     hands = { ...data, at: performance.now() };
     trackTrails(trails, hands, hands.at);
@@ -42,7 +44,7 @@ bus.onmessage = ({ data }) => {
 
 function frame(t) {
   if (world) {
-    bounds = drawScene(ctx, canvas.width, canvas.height, world, t, { pattern, calib });
+    bounds = drawScene(ctx, canvas.width, canvas.height, world, t, { pattern, calib, textScale });
     const now = performance.now();
     if (hands && !calib && now - hands.at < 300) drawHands(ctx, canvas.width, world, hands, trails, bounds, now);
   }

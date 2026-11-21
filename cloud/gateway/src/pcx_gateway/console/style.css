@@ -413,3 +413,12 @@ main {
 .manual code {
   font: 400 0.72rem var(--mono);
 }
+
+.check select {
+  background: var(--mesa-2);
+  color: var(--luz);
+  border: 1px solid var(--linea);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font: inherit;
+}

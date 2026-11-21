@@ -55,11 +55,12 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 const SANS = '"Archivo", system-ui, sans-serif';
+let K = 1; // escala de texto elegida en la consola
 
 const draw = {
   label(ctx, w, world, s) {
     const p = anchorPoint(w, world) || [world.surface.width_mm / 2, world.surface.height_mm / 2];
-    const size = (w.size_mm ?? 12) * s;
+    const size = (w.size_mm ?? 28) * s * K; // por defecto 28 mm: 12 no se lee desde la cámara
     ctx.font = `600 ${size}px ${SANS}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -147,7 +148,7 @@ const draw = {
     ctx.textBaseline = "top";
     let cy = y + pad;
     if (w.title) {
-      const size = 18 * s;
+      const size = 24 * s * K;
       ctx.font = `700 ${size}px ${SANS}`;
       for (const l of wrap(ctx, w.title, rw - pad * 2)) {
         ctx.fillText(l, x + pad, cy);
@@ -156,7 +157,7 @@ const draw = {
       cy += 6 * s;
     }
     if (w.body) {
-      const size = 13 * s;
+      const size = 18 * s * K;
       ctx.font = `400 ${size}px ${SANS}`;
       for (const l of wrap(ctx, w.body, rw - pad * 2)) {
         if (cy + size > y + rh - pad / 2) break;
@@ -177,7 +178,7 @@ const draw = {
     roundRect(ctx, x, y, rw, rh, rh / 2);
     ctx.fill();
     ctx.stroke();
-    const size = Math.min(rh * 0.38, 26 * s);
+    const size = Math.min(rh * 0.5, 30 * s * K);
     ctx.font = `700 ${size}px ${SANS}`;
     ctx.fillStyle = "#FFFFFF";
     ctx.textAlign = "center";
@@ -266,6 +267,7 @@ export function drawScene(ctx, W, H, world, tMs, opts = {}) {
   ctx.fillRect(0, 0, W, H);
   const s = W / world.surface.width_mm;
   const bounds = new Map();
+  K = opts.textScale || 1;
   if (opts.calib) {
     // Calibrando: solo las marcas, sobre negro, para que la cámara las encuentre por diferencia.
     ctx.fillStyle = "#fff";

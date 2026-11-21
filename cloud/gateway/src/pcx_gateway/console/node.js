@@ -391,6 +391,9 @@ export class BrowserNode extends EventTarget {
           ids: args.widgets.map((w) => w.id),
           surface_mm: [this.world.surface.width_mm, this.world.surface.height_mm],
           projector_open: open,
+          ...(args.widgets.some((w) => ["label", "panel", "button"].includes(w.type))
+            ? { text: `label.size_mm fija la altura del texto (por defecto 28 mm; para leerlo desde la cámara usa 30 o más). Escala de la consola: ×${this.hooks.textScale()}.` }
+            : {}),
           ...(open ? {} : { warning: "La ventana del proyector está cerrada: solo se ve en la vista previa de la consola." }),
         },
       };

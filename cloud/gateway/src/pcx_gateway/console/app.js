@@ -133,6 +133,7 @@ async function refreshCams() {
 const SIM = new URLSearchParams(location.search).has("sim");
 const simCam = { id: "cam-sim", kind: "camera", adapter: "sim", caps: ["frames"], status: "online", meta: { label: "Cámara simulada", main: true } };
 let calibDots = null;
+let textScale = store.get("textScale") || 1;
 
 function simFrame() {
   const { width_mm, height_mm } = node.world.surface;
@@ -187,6 +188,7 @@ const device = (c) => ({
 const node = new BrowserNode(ses, {
   frame: camFrame,
   projectorOpen: () => SIM || projectorOpen(),
+  textScale: () => textScale,
   showCalib(dots) {
     calibDots = dots;
     pushWorld();
@@ -292,6 +294,12 @@ $("lanzar").onclick = async () => {
 };
 $("cerrar").onclick = () => bus.postMessage({ t: "close" });
 $("patron").onchange = pushWorld;
+$("texto").value = String(textScale);
+$("texto").onchange = () => {
+  textScale = Number($("texto").value);
+  store.set("textScale", textScale);
+  pushWorld();
+};
 $("calibrar").onclick = async () => {
   $("calibrar").disabled = true;
   $("calib-estado").textContent = "Calibrando: proyectando marcas y buscándolas con la cámara…";
@@ -305,7 +313,7 @@ $("calibrar").onclick = async () => {
 };
 
 function pushWorld() {
-  bus.postMessage({ t: "world", world: node.world, pattern: $("patron").checked, calib: calibDots });
+  bus.postMessage({ t: "world", world: node.world, pattern: $("patron").checked, calib: calibDots, textScale });
 }
 
 function paintProjector() {
@@ -362,7 +370,7 @@ function frame(t) {
   const { width_mm, height_mm } = node.world.surface;
   const h = Math.round((previa.width * height_mm) / width_mm);
   if (previa.height !== h) previa.height = h;
-  bounds = drawScene(pctx, previa.width, previa.height, node.world, t, { pattern: $("patron").checked, calib: calibDots });
+  bounds = drawScene(pctx, previa.width, previa.height, node.world, t, { pattern: $("patron").checked, calib: calibDots, textScale });
   if (!calibDots && performance.now() - handView.at < 300)
     drawHands(pctx, previa.width, node.world, handView, handTrails, bounds, performance.now());
   requestAnimationFrame(frame);
