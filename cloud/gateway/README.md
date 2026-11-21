@@ -22,8 +22,8 @@ Solo consola: `POST /api/confirmations/{id}` `{approve, action_digest, operator}
 Solo nodo (token de nodo): `PUT /api/node/objects/{id}/thumbnail?label=` con PNG/JPEG/WebP ≤ 512 KiB.
 JSON hacia la consola: `*_ns` como cadena (`ns_to_str`). Ver `REVISION.md`.
 
-Render: Blueprint `render.yaml` en la raíz del repositorio.
-Carga ambos tokens secretos en Render; incluye Postgres y Key Value en Virginia, web Starter.
+Render: Blueprint `render.yaml` en la raíz del repositorio; pasos, costos y smoke en [DEPLOY.md](../../docs/DEPLOY.md).
+Carga los tres tokens secretos en Render; incluye Postgres Basic 256 MB (1 GB de disco), Key Value 256 MB y web Starter en Virginia.
 **Una instancia y un worker**; los sockets y llamadas pendientes viven en ese proceso. No se desplegó automáticamente.
 Referencia del Blueprint: https://render.com/docs/blueprint-spec
 
@@ -32,9 +32,9 @@ Clientes (define `PCX_USER_TOKEN` y reemplaza `HOST`):
 claude mcp add --transport http pcx https://HOST/mcp --header "Authorization: Bearer $PCX_USER_TOKEN"
 codex mcp add pcx --url https://HOST/mcp --bearer-token-env-var PCX_USER_TOKEN
 ```
-OpenCode, en `opencode.json`:
+OpenCode v2, en `opencode.json` (v1: `pcx` directamente bajo `mcp`):
 ```json
-{"mcp":{"pcx":{"type":"remote","url":"https://HOST/mcp","headers":{"Authorization":"Bearer {env:PCX_USER_TOKEN}"},"oauth":false}}}
+{"mcp":{"servers":{"pcx":{"type":"remote","url":"https://HOST/mcp","headers":{"Authorization":"Bearer {env:PCX_USER_TOKEN}"},"oauth":false}}}}
 ```
 Nodo (v2): `hello{contract_versions, stream_id, …}` → `welcome{contract_version, last_stream_id, last_cursor}` o
 `hello_rejected` → `state_snapshot` → `history_gap`* → `event_batch{replay}` → `replay_done`. Replay idempotente.

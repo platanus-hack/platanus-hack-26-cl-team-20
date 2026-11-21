@@ -4,20 +4,20 @@
 services:
   - type: web
     name: pcx-gateway
-    runtime: python
+    runtime: docker
+    branch: codex/deploy
+    autoDeployTrigger: checksPass # espera los checks de CI de la rama
     region: virginia
-    plan: starter            # pago: no se duerme (free cerraría los WSS de los nodos)
+    plan: starter            # alias válido de 0.5c-512mb: pago, no se duerme
     numInstances: 1          # sin autoscaling: el estado de conexiones es local al proceso
     healthCheckPath: /health # 503 si la DB no responde
     maxShutdownDelaySeconds: 30
     buildFilter:
-      paths: [cloud/gateway/**, contracts/src/**, contracts/pyproject.toml, render.yaml]
-    buildCommand: pip install uv && uv sync --directory cloud/gateway --frozen --no-dev
+      paths: [cloud/gateway/**, contracts/src/**, contracts/pyproject.toml, .dockerignore, render.yaml]
+    dockerContext: .
+    dockerfilePath: cloud/gateway/Dockerfile
     # __main__ fija PORT, ws_max_size (8 MiB), un worker y cierre gracioso de 20 s (WSS → 1012, el nodo reconecta).
-    startCommand: cd cloud/gateway && exec .venv/bin/python -m pcx_gateway
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.12.13"
       - key: DATABASE_URL
         fromDatabase:
           name: pcx-db
@@ -44,13 +44,16 @@ services:
   - type: keyvalue
     name: pcx-events
     region: virginia
-    plan: starter
+    plan: 256mb
     ipAllowList: []          # solo red privada de Render
     maxmemoryPolicy: noeviction
 databases:
   - name: pcx-db
     region: virginia
-    plan: basic-256mb
+    plan: basic-256mb        # alias válido de 0.1c-256mb
+    postgresMajorVersion: "16"
+    diskSizeGB: 1
+    storageAutoscalingEnabled: false
     databaseName: pcx
     user: pcx
     ipAllowList: []          # solo red privada de Render
