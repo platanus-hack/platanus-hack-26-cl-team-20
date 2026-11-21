@@ -55,7 +55,7 @@ Postura del equipo en la conversación: ambición pesa 20 % y el factor wow mand
 
 Repo privado del equipo: `github.com/satelerd/platanus-hack-26` (local: `~/code/platanus-hack-26/repo/`). Carpetas `engine/ agent/ experiences/ hardware/ docs/`.
 
-Créditos disponibles según Daniel: Vercel, Render, Anthropic. Montos y activación sin verificar.
+Créditos disponibles según Daniel: Vercel, Render, Anthropic. Anthropic se canjea en `hack.platan.us/26-cl/hacker/anthropic` (Matilda, sáb 00:36). Montos sin verificar.
 
 ## Demo y pitch
 - **La demo de 5 minutos es lo que más pesa:** nadie revisa el código; se busca factor wow en cada paso. La categoría importa menos que la presentación.
