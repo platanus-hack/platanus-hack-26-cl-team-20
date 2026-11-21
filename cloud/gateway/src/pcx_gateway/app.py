@@ -307,6 +307,7 @@ def create_app(settings: Settings | None = None):
                 if viewer.frame is not None:
                     frame, viewer.frame = viewer.frame, None
                     await ws.send_bytes(frame)
+                    viewer.sent += 1
 
         sender = asyncio.create_task(pump())
         try:
@@ -326,6 +327,7 @@ def create_app(settings: Settings | None = None):
             viewers.discard(viewer)
             if not viewers:
                 gateway.viewers.pop(node_id, None)
+                gateway.slow_checked.pop(node_id, None)
             await gateway.tell_viewers(node_id)
 
     async def api_confirmations(request):

@@ -342,7 +342,26 @@ let streaming = null;
 let encoding = false;
 const shareCanvas = document.createElement("canvas");
 
-const viewState = () => ({ world: node.world, pattern: $("patron").checked, textScale, calib: calibDots });
+const viewState = () => ({
+  world: node.world,
+  pattern: $("patron").checked,
+  textScale,
+  calib: calibDots,
+  // Para rectificar el video en el visor; solo si la calibración es de la cámara que se está mandando.
+  homography: node.calib && (SIM || node.calib.camera_id === cams.get(mainCam)?.id) ? { matrix: node.calib.matrix, image_px: node.calib.image_px } : null,
+});
+
+// Calidad del video: parte en la mejor y baja un escalón solo si quien mira (o la subida) no da abasto.
+const LEVELS = [[1280, 0.8], [960, 0.72], [640, 0.6]];
+let level = 0;
+let lastSlow = 0;
+const floor = () => (node.viewers > 1 ? 1 : 0); // con varias personas mirando no se parte en 1280
+function slower() {
+  if (performance.now() - lastSlow < 3000) return;
+  lastSlow = performance.now();
+  level = Math.min(LEVELS.length - 1, level + 1);
+}
+node.addEventListener("slow", slower);
 
 /** Video para quienes miran: la cenital a 640 px y ~9 cuadros/s, solo mientras haya alguien. */
 function streamFrame() {
@@ -350,10 +369,16 @@ function streamFrame() {
   const src = SIM ? simFrame().canvas : mainVideo();
   const [vw, vh] = [src?.videoWidth ?? src?.width, src?.videoHeight ?? src?.height];
   if (!vw) return;
-  Object.assign(shareCanvas, { width: 640, height: Math.round((640 * vh) / vw) });
+  if (level > floor() && performance.now() - lastSlow > 15000) {
+    level--; // 15 s sin atrasos: prueba un escalón mejor
+    lastSlow = performance.now();
+  }
+  const [maxW, quality] = LEVELS[level];
+  const w = Math.min(maxW, vw);
+  Object.assign(shareCanvas, { width: w, height: Math.round((w * vh) / vw) });
   shareCanvas.getContext("2d").drawImage(src, 0, 0, shareCanvas.width, shareCanvas.height);
   encoding = true;
-  shareCanvas.toBlob((blob) => ((encoding = false), blob && node.sendFrame(blob)), "image/jpeg", 0.6);
+  shareCanvas.toBlob((blob) => ((encoding = false), blob && !node.sendFrame(blob) && slower()), "image/jpeg", quality);
 }
 
 node.addEventListener("viewers", ({ detail: n }) => {
@@ -362,6 +387,8 @@ node.addEventListener("viewers", ({ detail: n }) => {
     : "Con el enlace para ver, otra persona mira en vivo la cámara, la proyección y lo que hace el agente. Solo mirar: no puede operar nada.";
   clearInterval(streaming);
   streaming = n ? setInterval(streamFrame, 110) : null;
+  level = Math.max(level, floor());
+  if (!n) level = 0;
   if (n) {
     node.sendView("world", viewState()); // quien llega recibe el estado completo
     node.sendView("activity", { all: activityLog });

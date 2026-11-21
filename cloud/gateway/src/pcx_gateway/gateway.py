@@ -132,7 +132,7 @@ def result(call_id, data, *, ok=True, request_id=None, images=()):
 
 
 MAX_VIEWERS = 6
-MAX_VIEW_FRAME = 256 * 1024
+MAX_VIEW_FRAME = 700 * 1024  # un JPEG de 1280 px; se guarda uno solo por nodo, compartido entre quienes miran
 VIEW_KIND = re.compile(r'^\{"type":"view","kind":"([a-z]+)"')
 
 
@@ -142,6 +142,8 @@ class Viewer:
     lento, simplemente se salta cuadros (el plan chico de Render tiene 512 MB)."""
 
     frame: bytes | None = None
+    sent: int = 0
+    dropped: int = 0
     state: dict[str, str] = field(default_factory=dict)
     log: deque = field(default_factory=lambda: deque(maxlen=40))
     wake: asyncio.Event = field(default_factory=asyncio.Event)
@@ -152,6 +154,8 @@ class Gateway:
         self.store, self.bus, self.settings = store, bus, settings
         self.connections: dict[str, Connection] = {}
         self.viewers: dict[str, set[Viewer]] = {}
+        self.slow_checked: dict[str, float] = {}
+        self.tasks: set[asyncio.Task] = set()
 
     # ------------------------------------------------------------------ mirar en vivo
     def relay(self, node_id, message: bytes | str):
@@ -163,8 +167,11 @@ class Gateway:
             if len(message) > MAX_VIEW_FRAME:
                 return
             for v in viewers:
+                if v.frame is not None:
+                    v.dropped += 1  # no alcanzó a salir el anterior: este lo reemplaza
                 v.frame = message
                 v.wake.set()
+            self.watch_slow(node_id, viewers)
             return
         kind = VIEW_KIND.match(message)
         for v in viewers:
@@ -173,6 +180,22 @@ class Gateway:
             else:
                 v.state[kind[1] if kind else "?"] = message
             v.wake.set()
+
+    def watch_slow(self, node_id, viewers):
+        """Cada 2 s: si alguien pierde más de un tercio de los cuadros, se le pide al nodo bajar la calidad."""
+        now = time.monotonic()
+        if now - self.slow_checked.get(node_id, 0) < 2:
+            return
+        self.slow_checked[node_id] = now
+        slow = any(v.dropped > 3 and v.dropped > (v.dropped + v.sent) / 3 for v in viewers)
+        for v in viewers:
+            v.sent = v.dropped = 0
+        if slow:
+            task = asyncio.create_task(
+                self.to_browser(node_id, {"type": "viewers", "count": len(viewers), "slow": True})
+            )
+            self.tasks.add(task)
+            task.add_done_callback(self.tasks.discard)
 
     def view_status(self, node_id):
         connected = self.connected(node_id) is not None

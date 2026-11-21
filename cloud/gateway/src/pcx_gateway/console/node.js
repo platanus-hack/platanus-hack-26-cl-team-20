@@ -93,6 +93,7 @@ export class BrowserNode extends EventTarget {
     if (msg.type === "photo") this.dispatchEvent(new CustomEvent("photo"));
     if (msg.type === "viewers") {
       this.viewers = msg.count;
+      if (msg.slow) this.dispatchEvent(new CustomEvent("slow")); // alguien que mira está perdiendo cuadros
       this.dispatchEvent(new CustomEvent("viewers", { detail: msg.count }));
     }
   }
@@ -123,7 +124,10 @@ export class BrowserNode extends EventTarget {
 
   /** Cuadro JPEG de la cenital. Si la subida va atrasada, se salta el cuadro en vez de encolarlo. */
   sendFrame(blob) {
-    if (this.viewers && this.ready && this.ws.bufferedAmount < 300_000) this.ws.send(blob);
+    if (!this.viewers || !this.ready) return true;
+    if (this.ws.bufferedAmount > 400_000) return false; // la subida va atrasada
+    this.ws.send(blob);
+    return true;
   }
 
   snapshot() {

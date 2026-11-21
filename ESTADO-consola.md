@@ -95,6 +95,12 @@ porque el contrato no prohíbe campos extra, pero no salen en el esquema de `too
   sin decodificar ni guardar.
 - Memoria: por cada persona se guarda **un** cuadro (el último) y el último mensaje de cada tipo; si va lenta, se salta
   cuadros. Máximo 6 mirando por mesa y 256 KiB por cuadro.
+- **Vista combinada**: el visor deforma el video a la superficie proyectable con la homografía (WebGL, en el visor) y
+  dibuja encima lo proyectado; deslizador de opacidad (100 % solo proyección, 0 % solo cámara) e interruptor para ver la
+  cámara sin rectificar. Sin calibración muestra cámara y proyección por separado. Botón «Descargar foto» (resolución
+  nativa de la cámara).
+- **Calidad**: parte en 1280 px y JPEG 0,8 con una persona mirando; baja a 960 y 640 si el gateway ve que alguien pierde
+  más de un tercio de los cuadros o si la subida del nodo se atrasa, y vuelve a subir tras 15 s sin atrasos.
 - Pendiente: WebRTC directo entre navegadores (el gateway solo de señalización) para video fluido y sin pasar por Render.
 
 ## Diseño (no implementado): elegir dónde corre el procesamiento pesado

@@ -6,6 +6,59 @@
     <meta name="referrer" content="no-referrer" />
     <title>pcx · en vivo</title>
     <link rel="stylesheet" href="/style.css" />
+    <style>
+      .mesa {
+        isolation: isolate;
+        background: #000;
+        border: 1px solid var(--linea);
+      }
+      .mesa > * {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .mesa #rect {
+        position: static;
+        display: block;
+        height: auto;
+        border: 0;
+        border-radius: 0;
+        cursor: default;
+      }
+      #proy {
+        mix-blend-mode: screen; /* lo proyectado es luz: se suma a la imagen real */
+      }
+      #proy canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: 0;
+        cursor: default;
+      }
+      #proy #previa {
+        background: none;
+      }
+      .controles {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 24px;
+        margin-top: 14px;
+      }
+      .controles .desliza {
+        flex: 1 1 240px;
+      }
+      .controles input[type="range"] {
+        flex: 1;
+        accent-color: var(--senal);
+      }
+      #cruda {
+        max-width: 100%;
+      }
+    </style>
   </head>
   <body>
     <header class="top">
@@ -14,21 +67,27 @@
     </header>
     <main>
       <section class="paso">
-        <div class="dos">
-          <figure class="previa">
-            <div class="lienzo"><canvas id="camara" width="640" height="360"></canvas></div>
-            <figcaption>Cámara cenital <span id="camara-nota"></span></figcaption>
-            <button class="btn" id="foto">Descargar foto</button>
-          </figure>
-          <figure class="previa">
-            <div class="lienzo">
-              <canvas id="previa" width="960" height="540"></canvas>
+        <figure class="previa" id="fig-mesa">
+          <div class="lienzo mesa">
+            <canvas id="rect" width="1280" height="720"></canvas>
+            <div id="proy">
+              <canvas id="previa" width="1280" height="720"></canvas>
               <div id="previa-html"></div>
-              <canvas id="previa-top" width="960" height="540"></canvas>
+              <canvas id="previa-top" width="1280" height="720"></canvas>
             </div>
-            <figcaption>Lo que sale por el proyector <span id="previa-mm"></span></figcaption>
-          </figure>
+          </div>
+          <figcaption id="mesa-nota">La mesa</figcaption>
+        </figure>
+        <figure class="previa" id="fig-cruda" hidden>
+          <div class="lienzo"><canvas id="cruda" width="640" height="360"></canvas></div>
+          <figcaption>Cámara cenital, sin rectificar</figcaption>
+        </figure>
+        <div class="controles">
+          <label class="check desliza">Proyección <input type="range" id="mezcla" min="0" max="100" value="50" /> <span id="mezcla-valor">50 %</span></label>
+          <label class="check"><input type="checkbox" id="rectificar" checked /> Rectificar la cámara a la mesa</label>
+          <button class="btn" id="foto">Descargar foto</button>
         </div>
+        <p class="chico" id="video-nota">Sin video todavía.</p>
       </section>
       <section class="paso">
         <div class="actividad">
