@@ -271,5 +271,7 @@ fn captura_con_camara_inexistente_sale_con_error() {
         .unwrap();
     assert!(!out.status.success());
     let err = String::from_utf8_lossy(&out.stderr);
-    assert!(err.contains("no-existe-pcx-xyz"), "{err}");
+    // En macOS (AVFoundation nativo) el error nombra la cámara; en Linux/Windows sin la feature `uvc`
+    // no hay backend y el error lo dice explícitamente. Ambos son fallos claros con código ≠ 0.
+    assert!(err.contains("no-existe-pcx-xyz") || err.contains("sin backend de cámara"), "{err}");
 }
