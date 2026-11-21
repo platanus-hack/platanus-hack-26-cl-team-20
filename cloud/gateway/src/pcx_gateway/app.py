@@ -312,8 +312,12 @@ def create_app(settings: Settings | None = None):
         try:
             gateway.view_status(node_id)
             await gateway.tell_viewers(node_id)
-            while (await ws.receive())["type"] != "websocket.disconnect":
-                pass
+            last_photo = 0.0
+            while (frame := await ws.receive())["type"] != "websocket.disconnect":
+                # Lo único que puede pedir quien mira: una foto de la cenital (a lo más una cada 2 s).
+                if '"photo"' in (frame.get("text") or "")[:40] and time.monotonic() - last_photo > 2:
+                    last_photo = time.monotonic()
+                    await gateway.to_browser(node_id, {"type": "photo"})
         except (WebSocketDisconnect, RuntimeError, OSError):
             pass
         finally:

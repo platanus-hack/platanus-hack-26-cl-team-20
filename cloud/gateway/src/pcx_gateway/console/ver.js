@@ -71,9 +71,34 @@ async function showFrame(blob) {
   frames++;
 }
 
+// Descargar foto: se le pide al nodo el cuadro actual a resolución completa y llega como mensaje `photo`.
+let socket = null;
+let wantPhoto = false;
+const fotoText = (t) => (($("foto").textContent = t), setTimeout(() => ($("foto").textContent = "Descargar foto"), 2500));
+$("foto").onclick = () => {
+  if (socket?.readyState !== WebSocket.OPEN) return fotoText("Sin conexión");
+  wantPhoto = true;
+  socket.send(JSON.stringify({ type: "photo" }));
+  $("foto").textContent = "Pidiendo foto…";
+  setTimeout(() => wantPhoto && ((wantPhoto = false), fotoText("La mesa no respondió")), 8000);
+};
+on.photo = async (m) => {
+  if (!wantPhoto) return; // la pidió otra persona
+  wantPhoto = false;
+  if (m.error) return fotoText(m.error);
+  const blob = await (await fetch(m.data)).blob();
+  const stamp = new Date().toLocaleString("sv").replace(/[-: ]/g, "").replace(/(\d{8})(\d{6})/, "$1-$2");
+  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `pcx-${stamp}.jpg` });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  fotoText(`Foto ${m.size.join("×")} descargada`);
+};
+
 let delay = 500;
 function connect() {
-  const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/view`);
+  const ws = (socket = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/view`));
   ws.binaryType = "blob";
   ws.onopen = () => (ws.send(JSON.stringify({ token })), (delay = 500));
   ws.onmessage = ({ data }) => {

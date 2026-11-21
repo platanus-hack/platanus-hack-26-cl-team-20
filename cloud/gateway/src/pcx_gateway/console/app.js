@@ -171,7 +171,7 @@ function simFrame() {
 }
 
 /** Cuadro actual de una cámara como canvas (máx. 1280 px de ancho): es el marco de píxeles que ve el agente. */
-async function camFrame(cameraId) {
+async function camFrame(cameraId, maxWidth = 1280) {
   if (SIM && (!cameraId || cameraId === simCam.id)) return simFrame();
   const list = [...cams.values()];
   const cam = cameraId ? list.find((c) => c.id === cameraId) : cams.get(mainCam) || list[0];
@@ -190,7 +190,7 @@ async function camFrame(cameraId) {
   }
   const [vw, vh] = [src.videoWidth ?? src.width, src.videoHeight ?? src.height];
   if (!vw) throw new Error(`La cámara ${cam.id} todavía no entrega imagen; reintenta en un momento.`);
-  const k = Math.min(1, 1280 / vw);
+  const k = Math.min(1, maxWidth / vw);
   const c = Object.assign(document.createElement("canvas"), { width: Math.round(vw * k), height: Math.round(vh * k) });
   c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
   return { canvas: c, camera: device(cam) };
@@ -213,6 +213,7 @@ const node = new BrowserNode(ses, {
   showCalib(dots) {
     calibDots = dots;
     pushWorld();
+    syncHtml(); // durante la calibración el html se esconde también en la vista previa
   },
   progress: (text) => ($("calib-estado").textContent = `Calibrando. ${text}`),
   saveCalib: (calib) => store.set("calib", { session_id: ses.session_id, calib }),
@@ -364,6 +365,16 @@ node.addEventListener("viewers", ({ detail: n }) => {
   if (n) {
     node.sendView("world", viewState()); // quien llega recibe el estado completo
     node.sendView("activity", { all: activityLog });
+  }
+});
+
+// Quien mira pide una foto: cuadro actual de la cenital a resolución completa, sin anotar.
+node.addEventListener("photo", async () => {
+  try {
+    const { canvas } = SIM ? simFrame() : await camFrame(undefined, 4096);
+    node.sendView("photo", { data: canvas.toDataURL("image/jpeg", 0.92), size: [canvas.width, canvas.height] });
+  } catch (err) {
+    node.sendView("photo", { error: err.message });
   }
 });
 

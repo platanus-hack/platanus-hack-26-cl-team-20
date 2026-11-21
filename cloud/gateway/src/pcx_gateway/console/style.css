@@ -450,3 +450,11 @@ main {
   font-size: 0.95rem;
   font-weight: 600;
 }
+
+/* Los iframes html llevan el z del widget: sin su propio contexto, un z negativo quedaba detrás del canvas. */
+#previa-html {
+  isolation: isolate;
+}
+.previa .btn {
+  margin-top: 10px;
+}

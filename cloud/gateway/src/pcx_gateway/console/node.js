@@ -90,6 +90,7 @@ export class BrowserNode extends EventTarget {
     if (msg.type === "welcome") return this.resume(msg);
     if (msg.type === "hello_rejected") return this.status(msg.reason === "auth" ? "invalid" : "offline");
     if (msg.type === "tool_call") return this.call(msg);
+    if (msg.type === "photo") this.dispatchEvent(new CustomEvent("photo"));
     if (msg.type === "viewers") {
       this.viewers = msg.count;
       this.dispatchEvent(new CustomEvent("viewers", { detail: msg.count }));

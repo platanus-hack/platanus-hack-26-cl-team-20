@@ -178,18 +178,20 @@ class Gateway:
         connected = self.connected(node_id) is not None
         self.relay(node_id, json.dumps({"type": "view", "kind": "status", "connected": connected}))
 
-    async def tell_viewers(self, node_id):
-        """Avisa al nodo cuántos miran: solo manda video y estado mientras haya alguien."""
+    async def to_browser(self, node_id, message: dict):
+        """Mensaje fuera del contrato hacia un nodo navegador (los demás nodos no lo reciben)."""
         conn = self.connected(node_id)
         if conn is None or not conn.browser:
             return
         try:
             async with conn.lock:
-                await conn.websocket.send_text(
-                    json.dumps({"type": "viewers", "count": len(self.viewers.get(node_id, ()))})
-                )
+                await conn.websocket.send_text(json.dumps(message))
         except Exception:
-            log.debug("no se pudo avisar viewers a %s", node_id, exc_info=True)
+            log.debug("no se pudo avisar a %s", node_id, exc_info=True)
+
+    async def tell_viewers(self, node_id):
+        """Avisa al nodo cuántos miran: solo manda video y estado mientras haya alguien."""
+        await self.to_browser(node_id, {"type": "viewers", "count": len(self.viewers.get(node_id, ()))})
 
     async def wake(self, node_id):
         """Despierta a events_wait. Los datos ya son durables: si el bus falla, se registra y el WSS sigue."""
