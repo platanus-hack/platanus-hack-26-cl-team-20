@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>pcx · en vivo</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="marca" href="/">pcx<span>en vivo</span></a>
+      <div class="estado" id="estado" data-state="connecting"><i></i><span id="estado-texto">Conectando…</span></div>
+    </header>
+    <main>
+      <section class="paso">
+        <div class="dos">
+          <figure class="previa">
+            <div class="lienzo"><canvas id="camara" width="640" height="360"></canvas></div>
+            <figcaption>Cámara cenital <span id="camara-nota"></span></figcaption>
+          </figure>
+          <figure class="previa">
+            <div class="lienzo">
+              <canvas id="previa" width="960" height="540"></canvas>
+              <div id="previa-html"></div>
+              <canvas id="previa-top" width="960" height="540"></canvas>
+            </div>
+            <figcaption>Lo que sale por el proyector <span id="previa-mm"></span></figcaption>
+          </figure>
+        </div>
+      </section>
+      <section class="paso">
+        <div class="actividad">
+          <h3 id="agente-estado">Esperando al agente…</h3>
+          <ol id="actividad"></ol>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/ver.js"></script>
+  </body>
+</html>

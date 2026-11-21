@@ -282,6 +282,17 @@ class Store:
             )
         return out
 
+    async def create_view_token(self, identity: "Identity") -> str:
+        """Token de solo lectura para mirar un espacio en vivo (scope `view`): no sirve para MCP, /api ni /node."""
+        token = secrets.token_urlsafe(24)
+        async with self.engine.begin() as db:
+            await db.execute(
+                insert(tokens).values(
+                    hash=digest(token), user_id=identity.user_id, space_id=identity.space_id, scope="view"
+                )
+            )
+        return token
+
     async def identity(self, token: str) -> Identity | None:
         async with self.engine.connect() as db:
             row = (

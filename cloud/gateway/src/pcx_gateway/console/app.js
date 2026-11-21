@@ -335,7 +335,56 @@ $("calibrar").onclick = async () => {
   paintProjector();
 };
 
+// ------------------------------------------------------------------ mirar en vivo
+const activityLog = []; // lo que hizo el agente, para quien llega a mirar
+let streaming = null;
+let encoding = false;
+const shareCanvas = document.createElement("canvas");
+
+const viewState = () => ({ world: node.world, pattern: $("patron").checked, textScale, calib: calibDots });
+
+/** Video para quienes miran: la cenital a 640 px y ~9 cuadros/s, solo mientras haya alguien. */
+function streamFrame() {
+  if (encoding) return;
+  const src = SIM ? simFrame().canvas : mainVideo();
+  const [vw, vh] = [src?.videoWidth ?? src?.width, src?.videoHeight ?? src?.height];
+  if (!vw) return;
+  Object.assign(shareCanvas, { width: 640, height: Math.round((640 * vh) / vw) });
+  shareCanvas.getContext("2d").drawImage(src, 0, 0, shareCanvas.width, shareCanvas.height);
+  encoding = true;
+  shareCanvas.toBlob((blob) => ((encoding = false), blob && node.sendFrame(blob)), "image/jpeg", 0.6);
+}
+
+node.addEventListener("viewers", ({ detail: n }) => {
+  $("mirando").textContent = n
+    ? `${n} ${n === 1 ? "persona está" : "personas están"} mirando en vivo.`
+    : "Con el enlace para ver, otra persona mira en vivo la cámara, la proyección y lo que hace el agente. Solo mirar: no puede operar nada.";
+  clearInterval(streaming);
+  streaming = n ? setInterval(streamFrame, 110) : null;
+  if (n) {
+    node.sendView("world", viewState()); // quien llega recibe el estado completo
+    node.sendView("activity", { all: activityLog });
+  }
+});
+
+$("compartir").onclick = async () => {
+  try {
+    if (!ses.view_token) {
+      const res = await fetch("/api/view-token", { method: "POST", headers: { Authorization: `Bearer ${ses.user_token}` } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      ses.view_token = (await res.json()).view_token;
+      store.set("session", ses);
+    }
+    await navigator.clipboard.writeText(`${location.origin}/ver/${ses.view_token}`);
+    $("compartir").textContent = "Enlace copiado";
+  } catch (err) {
+    $("compartir").textContent = `No se pudo: ${err.message}`;
+  }
+  setTimeout(() => ($("compartir").textContent = "Copiar enlace para ver"), 1800);
+};
+
 function pushWorld() {
+  node.sendView("world", viewState());
   bus.postMessage({ t: "world", world: node.world, pattern: $("patron").checked, calib: calibDots, textScale });
 }
 
@@ -471,6 +520,7 @@ const smooth = [];
 let handView = { hands: [], at: 0 };
 let dwell = null;
 let lastHandSnap = 0;
+let lastHandView = 0;
 const handsWidget = () => node.world.widgets.find((w) => w.type === "effect" && w.shader === "hands");
 const mainVideo = () => cams.get(mainCam)?.video;
 
@@ -517,6 +567,10 @@ function onHands(found) {
     at: now,
   };
   trackTrails(handTrails, handView, now);
+  if (now - lastHandView > 66) {
+    lastHandView = now; // a quienes miran, las manos les llegan a ~15 Hz
+    node.sendView("hands", { hands: handView.hands.map((h) => h.map((p) => p.map(Math.round))), hover: handView.hover, progress: handView.progress, fired: handView.fired, opts: handView.opts });
+  }
   layer.hover(handView.hover, handView.progress, handView.fired);
   bus.postMessage({ t: "hands", ...handView });
   // scene (include_hands) se actualiza a 2 Hz: el dibujo va directo a la ventana del proyector, sin pasar por la nube.
@@ -621,6 +675,10 @@ node.addEventListener("call", ({ detail: d }) => {
     $("patron").checked = false; // el agente ya está proyectando: fuera el patrón
     pushWorld();
   }
+  const entry = { time: new Date().toLocaleTimeString("es-CL", { hour12: false }), tool: d.tool, brief: brief(d.tool, d.args, d.data), ok: d.ok, ms: d.ms };
+  activityLog.unshift(entry);
+  activityLog.length = Math.min(activityLog.length, 40);
+  node.sendView("activity", { entry });
   const li = document.createElement("li");
   li.className = d.ok ? "" : "mal";
   li.innerHTML = `<time></time><b></b><span></span>`;

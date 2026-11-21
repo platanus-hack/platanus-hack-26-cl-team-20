@@ -24,6 +24,7 @@ export class BrowserNode extends EventTarget {
     this.delay = 500;
     this.asks = new Map(); // request_id → {resolve, options, ids}
     this.ttl = new Map();
+    this.viewers = 0;
     this.calib = null; // {camera_id, matrix (px de look → mm), image_px, residual_mm, points, version}
     this.world = {
       rev: 1,
@@ -60,6 +61,8 @@ export class BrowserNode extends EventTarget {
     ws.onclose = (e) => {
       clearInterval(this.beat);
       this.ready = false;
+      this.viewers = 0;
+      this.dispatchEvent(new CustomEvent("viewers", { detail: 0 }));
       if (ws !== this.ws) return;
       if (e.code === 4401) return this.status("invalid"); // la sesión ya no existe en el gateway
       if (e.code === 4001) return this.status("replaced"); // otra pestaña tomó la sesión
@@ -87,6 +90,10 @@ export class BrowserNode extends EventTarget {
     if (msg.type === "welcome") return this.resume(msg);
     if (msg.type === "hello_rejected") return this.status(msg.reason === "auth" ? "invalid" : "offline");
     if (msg.type === "tool_call") return this.call(msg);
+    if (msg.type === "viewers") {
+      this.viewers = msg.count;
+      this.dispatchEvent(new CustomEvent("viewers", { detail: msg.count }));
+    }
   }
 
   resume(welcome) {
@@ -106,6 +113,16 @@ export class BrowserNode extends EventTarget {
     this.ready = true;
     this.delay = 500;
     this.status("online");
+  }
+
+  // Para quienes miran en vivo (fuera del contrato; el gateway lo reenvía tal cual y solo si hay alguien mirando).
+  sendView(kind, data) {
+    if (this.viewers && this.ready) this.ws.send(JSON.stringify({ type: "view", kind, ...data }));
+  }
+
+  /** Cuadro JPEG de la cenital. Si la subida va atrasada, se salta el cuadro en vez de encolarlo. */
+  sendFrame(blob) {
+    if (this.viewers && this.ready && this.ws.bufferedAmount < 300_000) this.ws.send(blob);
   }
 
   snapshot() {

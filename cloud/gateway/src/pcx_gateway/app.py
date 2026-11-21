@@ -28,13 +28,13 @@ from pcx_contracts.envelope import SUPPORTED_VERSIONS
 from pcx_contracts.tools import mcp_tools
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from .config import Settings
-from .gateway import HISTORY_TOOL, Connection, Gateway, Rejected, iso, parse_time
+from .gateway import HISTORY_TOOL, MAX_VIEWERS, Connection, Gateway, Rejected, Viewer, iso, parse_time
 from .pubsub import MemoryBus, RedisBus
 from .store import Store
 
@@ -64,6 +64,11 @@ async def receive_cloud(ws, timeout, max_size):
         raise ValueError("Se requiere JSON en un frame text o binary")
     if len(raw) > max_size:
         raise ValueError("Frame demasiado grande")
+    # Fuera del contrato: lo que el nodo navegador manda para quienes miran en vivo se reenvía sin decodificar.
+    if isinstance(raw, bytes) and raw.startswith(b"\xff\xd8"):
+        return raw
+    if isinstance(raw, str) and raw.startswith('{"type":"view"'):
+        return raw
     return msgspec.json.decode(raw, type=CloudMessage)
 
 
@@ -95,7 +100,11 @@ class Guard:
         if path.startswith(("/mcp", "/api/")) and not path.startswith(("/api/node/", "/api/sessions")):
             token = bearer(scope)
             identity = await self.store.identity(token) if token else None
-            if identity is None or (path.startswith("/mcp") and identity.scope != "mcp"):
+            if (
+                identity is None
+                or identity.scope == "view"  # el token de mirar solo sirve en el WebSocket /view
+                or (path.startswith("/mcp") and identity.scope != "mcp")
+            ):
                 return await JSONResponse(
                     {"error": "Bearer inválido para esta ruta"},
                     status_code=401,
@@ -240,6 +249,7 @@ def create_app(settings: Settings | None = None):
         await store.put_thumbnail(node["space_id"], request.path_params["object_id"], body, mime, label)
         return Response(status_code=204)
 
+    console_dir = Path(__file__).parent / "console"
     recent_sessions: dict[str, deque] = defaultdict(deque)
 
     async def api_sessions(request):
@@ -256,6 +266,63 @@ def create_app(settings: Settings | None = None):
             return JSONResponse({"error": "Demasiadas sesiones nuevas; prueba en un rato"}, status_code=429)
         stamps.append(now)
         return JSONResponse(await store.create_session(), status_code=201)
+
+    async def api_view_token(request):
+        """Consola → enlace para mirar: crea un token de solo lectura del espacio (lo pide el token de usuario)."""
+        identity = request.state.identity
+        if identity.scope != "mcp":
+            return JSONResponse({"error": "Se necesita el token de usuario de la sesión"}, status_code=403)
+        return JSONResponse({"view_token": await store.create_view_token(identity)}, status_code=201)
+
+    async def view_page(request):
+        return FileResponse(console_dir / "ver.html", headers={"Referrer-Policy": "no-referrer"})
+
+    async def view_socket(ws: WebSocket):
+        """Quien mira: manda {token} y recibe el estado y los cuadros que reenvía el nodo. Solo lectura."""
+        await ws.accept()
+        try:
+            hello = msgspec.json.decode(await asyncio.wait_for(ws.receive_text(), 10))
+            identity = await store.identity(str(hello["token"]))
+        except (msgspec.DecodeError, KeyError, TypeError, TimeoutError, WebSocketDisconnect, RuntimeError):
+            identity = None
+        if identity is None or identity.scope != "view":
+            await ws.close(code=4401, reason="Enlace inválido")
+            return
+        node_id = identity.node_id
+        viewers = gateway.viewers.setdefault(node_id, set())
+        if len(viewers) >= MAX_VIEWERS:
+            await ws.close(code=4429, reason="Demasiada gente mirando")
+            return
+        viewer = Viewer()
+        viewers.add(viewer)
+
+        async def pump():
+            while True:
+                await viewer.wake.wait()
+                viewer.wake.clear()
+                for kind in list(viewer.state):
+                    await ws.send_text(viewer.state.pop(kind))
+                while viewer.log:
+                    await ws.send_text(viewer.log.popleft())
+                if viewer.frame is not None:
+                    frame, viewer.frame = viewer.frame, None
+                    await ws.send_bytes(frame)
+
+        sender = asyncio.create_task(pump())
+        try:
+            gateway.view_status(node_id)
+            await gateway.tell_viewers(node_id)
+            while (await ws.receive())["type"] != "websocket.disconnect":
+                pass
+        except (WebSocketDisconnect, RuntimeError, OSError):
+            pass
+        finally:
+            sender.cancel()
+            await asyncio.gather(sender, return_exceptions=True)
+            viewers.discard(viewer)
+            if not viewers:
+                gateway.viewers.pop(node_id, None)
+            await gateway.tell_viewers(node_id)
 
     async def api_confirmations(request):
         identity = request.state.identity
@@ -301,7 +368,12 @@ def create_app(settings: Settings | None = None):
                 await ws.close(code=4401, reason="Token de nodo inválido")
                 return
             node_id = hello.node_id
-            conn = Connection(ws, contract_version=version, stream_id=hello.stream_id)
+            conn = Connection(
+                ws,
+                contract_version=version,
+                stream_id=hello.stream_id,
+                browser="browser" in hello.capabilities,
+            )
             old = gateway.connections.get(node_id)
             gateway.connections[node_id] = conn
             if old:
@@ -329,8 +401,14 @@ def create_app(settings: Settings | None = None):
                 message = await receive_cloud(ws, settings.node_idle_s, settings.max_ws_frame)
                 if gateway.connections.get(node_id) is not conn:
                     break
-                if isinstance(message, StateSnapshot):
+                if isinstance(message, (bytes, str)):
+                    gateway.relay(node_id, message)
+                elif isinstance(message, StateSnapshot):
                     await gateway.accept_snapshot(conn, node_id, message)
+                    if not conn.ready and gateway.viewers.get(node_id):
+                        conn.ready = True
+                        gateway.view_status(node_id)
+                        await gateway.tell_viewers(node_id)
                     conn.ready = True
                 elif isinstance(message, Heartbeat):
                     await store.seen(node_id)
@@ -367,6 +445,7 @@ def create_app(settings: Settings | None = None):
                 conn.fail_pending()
             if node_id and gateway.connections.get(node_id) is conn:
                 del gateway.connections[node_id]
+                gateway.view_status(node_id)
                 with suppress(Exception):
                     await bus.publish(node_id)
 
@@ -379,13 +458,16 @@ def create_app(settings: Settings | None = None):
             Route("/api/objects/{object_id}/thumbnail", api_thumbnail),
             Route("/api/node/objects/{object_id}/thumbnail", api_node_thumbnail, methods=["PUT"]),
             Route("/api/sessions", api_sessions, methods=["POST"]),
+            Route("/api/view-token", api_view_token, methods=["POST"]),
+            Route("/ver/{token}", view_page),
+            WebSocketRoute("/view", view_socket),
             Route("/api/confirmations", api_confirmations),
             Route("/api/confirmations/{cid}", api_confirm, methods=["POST"]),
             WebSocketRoute("/node", node_socket),
             Route("/mcp", MCPRoute(manager), methods=["GET", "POST", "DELETE"]),
             Route("/mcp/", MCPRoute(manager), methods=["GET", "POST", "DELETE"]),
             # Consola web (estática, sin build): mismo origen que /node y /mcp.
-            Mount("/", StaticFiles(directory=Path(__file__).parent / "console", html=True)),
+            Mount("/", StaticFiles(directory=console_dir, html=True)),
         ],
     )
     app.state.gateway = gateway

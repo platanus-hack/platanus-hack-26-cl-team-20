@@ -5,6 +5,7 @@ import json
 import logging
 import re
 import time
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
@@ -100,6 +101,8 @@ class Connection:
     stream_id: str | None = None
     ready: bool = False
     replaying: bool = True
+    browser: bool = False
+    """Nodo navegador (capability `browser`): entiende el aviso `viewers`, que está fuera del contrato."""
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     pending: dict[str, asyncio.Future] = field(default_factory=dict)
 
@@ -128,10 +131,65 @@ def result(call_id, data, *, ok=True, request_id=None, images=()):
     )
 
 
+MAX_VIEWERS = 6
+MAX_VIEW_FRAME = 256 * 1024
+VIEW_KIND = re.compile(r'^\{"type":"view","kind":"([a-z]+)"')
+
+
+@dataclass(eq=False)
+class Viewer:
+    """Alguien mirando en vivo. No acumula: guarda el último cuadro y el último mensaje de cada tipo; si va
+    lento, simplemente se salta cuadros (el plan chico de Render tiene 512 MB)."""
+
+    frame: bytes | None = None
+    state: dict[str, str] = field(default_factory=dict)
+    log: deque = field(default_factory=lambda: deque(maxlen=40))
+    wake: asyncio.Event = field(default_factory=asyncio.Event)
+
+
 class Gateway:
     def __init__(self, store: Store, bus: Bus, settings: Settings):
         self.store, self.bus, self.settings = store, bus, settings
         self.connections: dict[str, Connection] = {}
+        self.viewers: dict[str, set[Viewer]] = {}
+
+    # ------------------------------------------------------------------ mirar en vivo
+    def relay(self, node_id, message: bytes | str):
+        """Nodo → los que miran. `bytes` = cuadro JPEG; `str` = mensaje `{"type":"view","kind":...}` tal cual."""
+        viewers = self.viewers.get(node_id)
+        if not viewers:
+            return
+        if isinstance(message, bytes):
+            if len(message) > MAX_VIEW_FRAME:
+                return
+            for v in viewers:
+                v.frame = message
+                v.wake.set()
+            return
+        kind = VIEW_KIND.match(message)
+        for v in viewers:
+            if kind and kind[1] == "activity":
+                v.log.append(message)
+            else:
+                v.state[kind[1] if kind else "?"] = message
+            v.wake.set()
+
+    def view_status(self, node_id):
+        connected = self.connected(node_id) is not None
+        self.relay(node_id, json.dumps({"type": "view", "kind": "status", "connected": connected}))
+
+    async def tell_viewers(self, node_id):
+        """Avisa al nodo cuántos miran: solo manda video y estado mientras haya alguien."""
+        conn = self.connected(node_id)
+        if conn is None or not conn.browser:
+            return
+        try:
+            async with conn.lock:
+                await conn.websocket.send_text(
+                    json.dumps({"type": "viewers", "count": len(self.viewers.get(node_id, ()))})
+                )
+        except Exception:
+            log.debug("no se pudo avisar viewers a %s", node_id, exc_info=True)
 
     async def wake(self, node_id):
         """Despierta a events_wait. Los datos ya son durables: si el bus falla, se registra y el WSS sigue."""

@@ -54,3 +54,6 @@ El gateway sirve la consola estática de `src/pcx_gateway/console/` (sin build).
 navegador entra como nodo por `/node`: `look` devuelve un cuadro de la cámara, `project`/`remove`/`ask` dibujan en la
 ventana del proyector. Local: `PORT=9215 PCX_OPEN_SESSIONS=1 uv run python -m pcx_gateway` y abrir
 `http://localhost:9215/` en Chrome. Detalle y pendientes: `ESTADO-consola.md` en la raíz.
+Mirar en vivo: `POST /api/view-token` (Bearer de usuario) → token de solo lectura; página `/ver/<token>` y WebSocket
+`/view` (primer mensaje `{token}`). El nodo navegador manda JPEG y mensajes `{"type":"view",…}` que el gateway reenvía
+sin decodificar; guarda un solo cuadro por persona mirando. Máximo 6 por nodo.

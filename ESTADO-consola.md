@@ -83,6 +83,47 @@ Probado con cámara simulada, manos sintéticas y cliente MCP real. **No probado
 Los campos nuevos (`point_px`, `radius_mm`, shaders `hands`/`html`) no están en `contracts/`: el gateway los deja pasar
 porque el contrato no prohíbe campos extra, pero no salen en el esquema de `tools/list` ni los entiende el nodo Rust.
 
+## Enlace para ver en vivo
+
+«Copiar enlace para ver» (paso Agente) entrega `/ver/<token>`. Quien lo abre ve la cámara cenital, lo proyectado
+(widgets, html y manos, con el mismo `render.js`) y el registro del agente. Solo mirar.
+
+- El token es de scope `view` (`POST /api/view-token` con el token de usuario): solo abre el WebSocket `/view`; da 401
+  en `/mcp` y `/api`, y no sirve en `/node`.
+- El gateway le avisa al nodo navegador cuánta gente mira (`viewers`); solo entonces el nodo manda JPEG de la cenital
+  (640 px, ~9 por segundo) y mensajes `view` (mundo, manos a 15 Hz, registro) por su mismo WSS. El gateway los reenvía
+  sin decodificar ni guardar.
+- Memoria: por cada persona se guarda **un** cuadro (el último) y el último mensaje de cada tipo; si va lenta, se salta
+  cuadros. Máximo 6 mirando por mesa y 256 KiB por cuadro.
+- Pendiente: WebRTC directo entre navegadores (el gateway solo de señalización) para video fluido y sin pasar por Render.
+
+## Diseño (no implementado): elegir dónde corre el procesamiento pesado
+
+Pedido de Max: que SAM, DINO y lo demás puedan correr en el computador de la mesa o en otro (un PC con GPU en la casa),
+dejando en la mesa un cliente liviano tipo Raspberry Pi.
+
+**Idea: separar el nodo en dos roles que comparten un espacio.** Hoy un espacio tiene un solo nodo que hace todo. Pasaría a
+tener un nodo de **mesa** (cámara, proyector, manos, toques: lo que exige baja latencia) y, opcional, uno o más nodos de
+**cómputo** (sin cámara ni proyector) que anuncian en su `hello` las capacidades que ofrecen: `segment`, `detect`, `embed`.
+
+- **Gateway**: `nodes.space_id` deja de ser único y cada nodo guarda sus `capabilities`. Al llegar una tool, el gateway
+  elige el nodo por capacidad: `look`, `project`, `calibrate` → mesa; `segment`, `detect` → cómputo si hay uno conectado,
+  si no la mesa (si puede), si no un error claro. La preferencia se guarda por espacio y se cambia desde la consola
+  («Procesar en: esta máquina / PC de la casa / automático»).
+- **Cuadros**: el nodo de cómputo necesita la imagen. Camino simple: el gateway le pide un cuadro a la mesa (un `look`
+  interno, sin anotar) y se lo pasa al de cómputo dentro del `tool_call`; sirve para tools sueltas (segmentar una foto
+  tarda 1–2 s igual). Para tracking continuo conviene un canal directo mesa→cómputo (WebRTC o WSS dentro de la tailnet),
+  con el gateway solo de señalización: es el mismo mecanismo que el WebRTC del enlace para ver.
+- **Resultados**: el nodo de cómputo devuelve geometría en píxeles de la foto (polígonos, cajas, etiquetas); el nodo de
+  mesa, que tiene la homografía, la pasa a mm y actualiza `objects` del mundo. El agente no nota la diferencia.
+- **Mesa liviana**: una Raspberry Pi con Chromium en modo kiosco abriendo esta consola ya hace de nodo de mesa (cámara,
+  ventana del proyector, enlace). MediaPipe Hands en una Pi 5 anda lento (5–10 cuadros/s): las manos también se podrían
+  declarar como capacidad y mandarse al nodo de cómputo, pagando ~50–100 ms de red local.
+- **Nodo de cómputo**: el mismo binario `pcx` con `pcx serve --role compute` (los modelos ONNX de `pcx-objects`) o un
+  script Python con el protocolo de `/node`; se enlaza a la sesión pegando un comando desde la consola, igual que el agente.
+- **Orden sugerido**: 1) capacidades por nodo y ruteo en el gateway; 2) tool `segment` con cuadro reenviado por el
+  gateway; 3) canal directo para tracking; 4) selector en la consola.
+
 ## Falta
 
 - **Probar con cámara y proyector reales** y con Claude Code de verdad (acá se probó con cámara simulada y cliente MCP).
