@@ -40,6 +40,12 @@ impl Pattern {
     pub fn new(label: impl Into<String>, image: GrayImage) -> Self {
         Self { label: label.into(), image: Arc::new(image) }
     }
+
+    /// Mensaje `pattern` del contrato v2.1 (`pattern_id` = `label`) para una imagen ya escrita en `image`
+    /// (archivo o data URI; este crate no codifica PNG).
+    pub fn to_render(&self, image: pcx_contracts::PatternImage, until_ms: Option<f64>) -> pcx_contracts::Pattern {
+        pcx_contracts::Pattern { pattern_id: self.label.clone(), image, until_ms }
+    }
 }
 
 /// Salida del proyector. Tiempos en ns de época, mismo reloj que `Frame::t_capture_ns`.

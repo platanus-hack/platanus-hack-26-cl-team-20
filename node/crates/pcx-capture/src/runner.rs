@@ -1,6 +1,6 @@
 //! Bomba: fuente → anillo `pcx.cam.<id>` (bgr8, igual que Python) → `FrameMeta` a cada `MetaSink`.
 
-use crate::contracts::{CaptureEvent, Device, DeviceChanged, DeviceStatus, Envelope, FrameMeta};
+use crate::contracts::{wrap, CaptureEvent, Device, DeviceStatus, Envelope, Event, FrameMeta, Payload};
 use crate::frame::{fit, rgb_to_bgr, BoxError};
 use crate::sink::MetaSink;
 use crate::sources::RunningSource;
@@ -42,25 +42,43 @@ pub fn default_node_id() -> String {
         .unwrap_or_else(|| "pcx-node".into())
 }
 
-/// Numera los envelopes de este proceso (`seq` monótono; el core puede re-sellarlo al ingerir).
+/// Numera los envelopes de este proceso (`seq` monótono; el core lo renumera al ingerir).
 pub struct Publisher {
     pub camera_id: String,
     pub source: String,
     pub node_id: String,
-    seq: u64,
+    /// Segmento de memoria compartida que va en `FrameMeta.segment` (`pcx.cam.<id>`).
+    pub segment: Option<String>,
+    seq: i64,
 }
 
 impl Publisher {
     pub fn new(camera_id: &str, node_id: &str) -> Self {
-        Self { camera_id: camera_id.into(), source: format!("capture-{camera_id}"), node_id: node_id.into(), seq: 0 }
+        Self {
+            camera_id: camera_id.into(),
+            source: format!("capture-{camera_id}"),
+            node_id: node_id.into(),
+            segment: pcx_shm::segment_name(camera_id).ok(),
+            seq: 0,
+        }
     }
     pub fn envelope(&mut self, ev: CaptureEvent, t_capture_ns: Option<u64>) -> Envelope {
         self.seq += 1;
-        Envelope::wrap(ev, self.seq, &self.source, &self.node_id, t_capture_ns)
+        wrap(Payload::Event(ev), self.seq, &self.source, &self.node_id, t_capture_ns.map(|t| t as i64))
     }
+    /// `frame_meta` de un cuadro bgr8 empaquetado (`stride = w * 3`) en `segment`.
     pub fn frame_meta(&mut self, seq: u64, t: u64, w: u32, h: u32) -> Envelope {
-        let fm = FrameMeta { camera_id: self.camera_id.clone(), seq, t_capture_ns: t, w, h };
-        self.envelope(CaptureEvent::FrameMeta(fm), Some(t))
+        let fm = FrameMeta {
+            camera_id: self.camera_id.clone(),
+            seq: seq as i64,
+            t_capture_ns: t as i64,
+            w: w as i64,
+            h: h as i64,
+            segment: self.segment.clone(),
+            format: pcx_contracts::PixelFormat::Bgr8,
+            stride: Some(w * 3),
+        };
+        self.envelope(Event::FrameMeta(fm), Some(t))
     }
 }
 
@@ -70,13 +88,13 @@ pub struct RunStats {
 }
 
 fn device_event(cfg: &RunConfig, src: &RunningSource, ring: &str, status: DeviceStatus) -> CaptureEvent {
-    let mut meta = std::collections::BTreeMap::new();
+    let mut meta = pcx_contracts::Json::new();
     meta.insert("shm".into(), serde_json::json!(ring));
     meta.insert("format".into(), serde_json::json!("bgr8"));
     meta.insert("w".into(), serde_json::json!(cfg.size.0));
     meta.insert("h".into(), serde_json::json!(cfg.size.1));
     meta.insert("source".into(), serde_json::json!(src.name));
-    CaptureEvent::DeviceChanged(DeviceChanged {
+    Event::DeviceChanged {
         device: Device {
             id: cfg.camera_id.clone(),
             kind: src.spec.device_kind(),
@@ -85,7 +103,7 @@ fn device_event(cfg: &RunConfig, src: &RunningSource, ring: &str, status: Device
             status,
             meta,
         },
-    })
+    }
 }
 
 /// Corre hasta que la fuente se acabe, `max_frames` o `stop`. Emite `device_changed` (online/offline) al
@@ -100,6 +118,7 @@ pub async fn run(
     let mut writer = RingWriter::create(&cfg.camera_id, w as usize, h as usize, 3, cfg.slots)?;
     let mut publ = Publisher::new(&cfg.camera_id, &cfg.node_id);
     let ring = writer.name().to_string();
+    publ.segment = Some(ring.clone());
     let send = |sinks: &mut [Box<dyn MetaSink>], env: Envelope| sinks.iter_mut().for_each(|s| s.publish(&env));
     send(sinks, publ.envelope(device_event(&cfg, &src, &ring, DeviceStatus::Online), None));
     if cfg.verbose {

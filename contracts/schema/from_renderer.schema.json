@@ -8,6 +8,12 @@
     },
     {
       "$ref": "#/$defs/RenderBlanked"
+    },
+    {
+      "$ref": "#/$defs/PatternShown"
+    },
+    {
+      "$ref": "#/$defs/Resync"
     }
   ],
   "discriminator": {
@@ -15,7 +21,9 @@
     "mapping": {
       "presented": "#/$defs/Presented",
       "stats": "#/$defs/Stats",
-      "blanked": "#/$defs/RenderBlanked"
+      "blanked": "#/$defs/RenderBlanked",
+      "pattern_shown": "#/$defs/PatternShown",
+      "resync": "#/$defs/Resync"
     }
   },
   "$defs": {
@@ -98,6 +106,55 @@
         "request_id",
         "t_start_ms",
         "t_end_ms"
+      ]
+    },
+    "PatternShown": {
+      "title": "PatternShown",
+      "description": "Presentación del primer cuadro con el patrón `pattern_id` (ms de época, como `presented`).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "pattern_shown"
+          ]
+        },
+        "pattern_id": {
+          "type": "string"
+        },
+        "t_present_ms": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "pattern_id",
+        "t_present_ms"
+      ]
+    },
+    "Resync": {
+      "title": "Resync",
+      "description": "El renderer pide un `scene` completo (p. ej. `base_rev` de un diff no calza). `have_rev` = la última que aplicó.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "resync"
+          ]
+        },
+        "have_rev": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type"
       ]
     }
   }

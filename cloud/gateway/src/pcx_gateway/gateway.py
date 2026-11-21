@@ -382,8 +382,8 @@ class Gateway:
         conn = self.connected(row["node_id"])
         if conn is None:
             raise Rejected(503, "Nodo desconectado; confirma con un toque en la mesa o reintenta")
-        message = ConfirmAction(
-            confirmation_id=cid, action_digest=digest_, approve=approve, operator=operator
+        message = ConfirmAction(  # v2.1: viaja como CloudMessage
+            confirmation_id=cid, approved=approve, by="console", action_digest=digest_, operator=operator
         )
         await conn.send(message)
         await self.store.confirmation_update(row["node_id"], cid, status="sent", operator=operator)

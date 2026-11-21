@@ -13,7 +13,8 @@ Conexión y reconexión:
      del nuevo `{stream_id, from: 1, to: log_first_cursor - 1}`.
    Cierra con `replay_done{stream_id, cursor, history_complete}`; `history_complete=false` si hubo algún hueco.
 5. Después, `event_batch{replay: false}` en vivo. La nube reenvía tools MCP como `tool_call`; el nodo responde
-   `tool_result`. Ambos lados mandan `heartbeat` cada ~10 s.
+   `tool_result`. Ambos lados mandan `heartbeat` cada ~10 s. La consola de la nube resuelve confirmaciones con
+   `confirm_action` (v2.1).
 
 `stream_id` identifica el log de eventos del nodo: cambia si el nodo pierde su log y `seq` vuelve a empezar.
 El estado físico manda en el nodo (reported); la nube solo pide cambios (desired) vía `tool_call`.
@@ -26,6 +27,7 @@ from typing import Annotated, Any, Literal, Union
 from msgspec import Meta, Struct, field
 
 from .envelope import Envelope
+from .home import ConfirmAction
 from .world import WorldState
 
 
@@ -150,4 +152,5 @@ class EventsWaitResult(Struct, kw_only=True):
 
 
 CloudMessage = Union[Hello, Welcome, HelloRejected, StateSnapshot, HistoryGap, EventBatch, ReplayDone, ToolCall,
-                     ToolResult, Heartbeat]
+                     ToolResult, Heartbeat, ConfirmAction]
+"""v2.1: `confirm_action` (nube → nodo) lo manda solo la consola de personas (token `console`), nunca un agente."""

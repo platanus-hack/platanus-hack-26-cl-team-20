@@ -67,8 +67,9 @@ impl SceneState {
                 Outcome::Applied
             }
             ToRenderer::SceneDiff(d) => self.apply_diff(d, now_s),
-            // `blank` no toca la escena: lo maneja `Runtime`.
-            ToRenderer::Blank(_) => Outcome::Stale,
+            // `blank` no toca la escena: lo maneja `Runtime`. `pattern`/`pattern_clear` (v2.1) tampoco: los
+            // dibuja aparte, sin warp ni widgets (TODO renderer: aún no implementado).
+            ToRenderer::Blank(_) | ToRenderer::Pattern(_) | ToRenderer::PatternClear(_) => Outcome::Stale,
         }
     }
 

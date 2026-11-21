@@ -56,6 +56,9 @@ fn main() -> Result<(), HandsError> {
             t_capture_ns: 0,
             w: w as i64,
             h: h as i64,
+            segment: None,
+            format: Default::default(),
+            stride: None,
         };
         // calentamiento
         for _ in 0..10 {

@@ -3,7 +3,7 @@
   "$defs": {
     "ConfirmAction": {
       "title": "ConfirmAction",
-      "description": "Consola local → nodo. Aprueba o rechaza una confirmación pendiente; debe repetir el `action_digest`.",
+      "description": "Consola (local o en la nube, como `CloudMessage`) → nodo. Aprueba o rechaza una confirmación pendiente;\n    debe repetir el `action_digest`. v2.1: `approve` → `approved`, nuevo `by`, `operator` opcional.",
       "type": "object",
       "properties": {
         "type": {
@@ -14,23 +14,37 @@
         "confirmation_id": {
           "type": "string"
         },
+        "approved": {
+          "type": "boolean"
+        },
+        "by": {
+          "enum": [
+            "console",
+            "touch"
+          ],
+          "default": "console"
+        },
         "action_digest": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         },
-        "approve": {
-          "type": "boolean"
-        },
         "operator": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
         "type",
         "confirmation_id",
-        "action_digest",
-        "approve",
-        "operator"
+        "approved",
+        "action_digest"
       ]
     }
   }

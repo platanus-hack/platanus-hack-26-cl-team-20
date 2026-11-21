@@ -102,8 +102,8 @@ impl HandsEngine {
                 id: i.id.clone(),
                 camera_id: meta.camera_id.clone(),
                 handedness: h.handedness,
-                landmarks_px: i.landmarks_px.to_vec(),
-                tip_mm: self.touch.to_mm(i.landmarks_px[touch::INDEX_TIP]),
+                landmarks_px: i.landmarks_px.iter().map(|p| PointPX(p[0], p[1])).collect(),
+                tip_mm: self.touch.to_mm(i.landmarks_px[touch::INDEX_TIP]).map(|p| PointMM(p[0], p[1])),
                 pinch: self.touch.pinch(&i.id),
                 t_capture_ns: meta.t_capture_ns,
             })

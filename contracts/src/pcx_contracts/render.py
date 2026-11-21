@@ -13,6 +13,10 @@ Cambios respecto de v0:
 Cambios v2: `Transform` es unión por `kind` (ver `geometry`); el renderer elige con
 `select_projector_transform(transforms, projector_id)` (LUT > homografía). Nuevos `blank` (core → renderer) y
 `blanked` (renderer → core) para «fotos limpias».
+
+Cambios v2.1: `pattern`/`pattern_clear` (core → renderer) muestran una imagen a pantalla completa en px nativos del
+proyector, sin warp ni widgets (patrones de calibración); el renderer responde `pattern_shown`. `resync{have_rev}`
+(renderer → core) pide un `scene` completo.
 """
 
 from __future__ import annotations
@@ -79,8 +83,46 @@ class RenderBlanked(Struct, kw_only=True, tag_field="type", tag="blanked"):
     t_end_ms: float
 
 
-ToRenderer = Union[SceneSnapshot, SceneDiff, RenderBlank]
-FromRenderer = Union[Presented, Stats, RenderBlanked]
+class PatternImage(Struct, kw_only=True):
+    """Exactamente uno: `path` (archivo local legible por el renderer) o `data_uri` (`data:image/png;base64,...`)."""
+
+    path: str | None = None
+    data_uri: str | None = None
+
+    def __post_init__(self) -> None:
+        if (self.path is None) == (self.data_uri is None):
+            raise ValueError("image: exactamente uno de `path` o `data_uri`")
+
+
+class Pattern(Struct, kw_only=True, tag_field="type", tag="pattern"):
+    """Imagen a pantalla completa en px nativos del proyector, **sin warp y sin widgets** (calibración).
+    Reemplaza a cualquier `pattern` previo y tapa la escena (que sigue viva) hasta `pattern_clear` o `until_ms`."""
+
+    pattern_id: str
+    image: PatternImage
+    until_ms: float | None = None
+    """ms de época en que se quita solo (None = hasta `pattern_clear`)."""
+
+
+class PatternClear(Struct, kw_only=True, tag_field="type", tag="pattern_clear"):
+    """Quita el patrón activo y vuelve a la escena."""
+
+
+class PatternShown(Struct, kw_only=True, tag_field="type", tag="pattern_shown"):
+    """Presentación del primer cuadro con el patrón `pattern_id` (ms de época, como `presented`)."""
+
+    pattern_id: str
+    t_present_ms: float
+
+
+class Resync(Struct, kw_only=True, tag_field="type", tag="resync"):
+    """El renderer pide un `scene` completo (p. ej. `base_rev` de un diff no calza). `have_rev` = la última que aplicó."""
+
+    have_rev: int | None = None
+
+
+ToRenderer = Union[SceneSnapshot, SceneDiff, RenderBlank, Pattern, PatternClear]
+FromRenderer = Union[Presented, Stats, RenderBlanked, PatternShown, Resync]
 
 
 def to_legacy(snap: SceneSnapshot, projector_id: str = "main") -> dict[str, Any]:

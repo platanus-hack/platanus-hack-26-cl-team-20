@@ -274,9 +274,9 @@ async fn home_confirmacion_fisica() {
     assert!(!w.snapshot().widgets.iter().any(|x| x.id() == bid));
     // digest equivocado por consola → rechazado
     let r = w.command(cmd(json!({"type": "home_call", "request_id": "h3", "domain": "lock", "service": "lock"}))).await.unwrap();
-    let c = ConfirmAction { confirmation_id: r["confirmation_id"].as_str().unwrap().into(), action_digest: "0".repeat(64), approve: true, operator: "t".into() };
+    let c = ConfirmAction { confirmation_id: r["confirmation_id"].as_str().unwrap().into(), approved: true, by: ConfirmVia::Console, action_digest: "0".repeat(64), operator: Some("t".into()) };
     assert!(w.confirm(c.clone()).await.is_err());
-    w.confirm(ConfirmAction { action_digest: r["action_digest"].as_str().unwrap().into(), approve: false, ..c }).await.unwrap();
+    w.confirm(ConfirmAction { action_digest: r["action_digest"].as_str().unwrap().into(), approved: false, ..c }).await.unwrap();
     assert_eq!(events(&w, "confirmation_resolved").len(), 2);
 }
 

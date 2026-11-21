@@ -8,8 +8,8 @@ Python (`msgspec.Struct`) define todo; de ahí salen JSON Schema, tools MCP, tip
 | `home` | `HomePolicy` (en el nodo), `decide()`, `action_digest()`, `HomeCallResult`, `ConfirmAction` (consola → nodo) |
 | `widgets` | Unión por `type`: label, halo, arrow, panel, button, image, effect (+ `anchor`, `z`, `ttl_s`, `on_press`) |
 | `commands` · `events` · `envelope` | Comandos (incl. `RunFlow` con `Flow`, `check_flow()`) · eventos · sobre `{type,v,seq,t_capture_ns,t_pub_ns,source,node_id,payload}` |
-| `render` | core ↔ renderer: `scene`, `scene_diff`, `blank` → ; ← `presented`, `stats`, `blanked`; `to_legacy()` → v0 |
-| `cloud` | nodo ↔ Render (WSS): `hello`, `welcome`, `hello_rejected`, `state_snapshot`, `history_gap`, `event_batch`, `replay_done`, `tool_call`, `tool_result`, `heartbeat` |
+| `render` | core ↔ renderer: `scene`, `scene_diff`, `blank`, `pattern`, `pattern_clear` → ; ← `presented`, `stats`, `blanked`, `pattern_shown`, `resync`; `to_legacy()` → v0 |
+| `cloud` | nodo ↔ Render (WSS): `hello`, `welcome`, `hello_rejected`, `state_snapshot`, `history_gap`, `event_batch`, `replay_done`, `tool_call`, `tool_result`, `heartbeat`, `confirm_action` (nube → nodo) |
 | `tools` | 10 tools MCP con `inputSchema` plano (sin `$ref`), `mcp_tools()` y `parse_args(tool, args)` |
 
 ## Uso y regeneración
@@ -18,11 +18,12 @@ cd contracts
 uv run pytest                                # ida y vuelta json/msgpack, schema, canónicos, flujo, tools
 uv run python -m pcx_contracts.export        # schema/*.json, schema/tools/*.input.json, fixtures/canonical/
 ./ts/generate.sh                             # ts/pcx.d.ts vía npx json-schema-to-typescript (sin instalar global)
-cd rust/pcx-contracts && cargo test          # Rust re-serializa los fixtures == fixtures/canonical/
+cargo test -p pcx-contracts                 # Rust re-serializa los fixtures == fixtures/canonical/ (tests/fixtures.rs, tests/proto.rs)
 ```
 Python: `msgspec.json.decode(raw, type=ToRenderer)`; otros proyectos: `uv add --editable ../contracts`.
-Rust: `pcx-contracts = { path = "../contracts/rust/pcx-contracts" }` (serde a mano: geometry, widgets, render).
-Al cambiar un contrato: edita Python → `export` → `generate.sh` → ajusta Rust si toca render/widgets → tests.
+Rust: `pcx-contracts = { path = "../contracts/rust/pcx-contracts" }` (serde a mano: geometry, widgets, render, world, events,
+commands, envelope, home, cloud; `pcx-core::proto` solo re-exporta y agrega msgpack y args de tools).
+Al cambiar un contrato: edita Python → `export` → `generate.sh` → ajusta Rust (`contracts/rust/pcx-contracts`) → tests.
 
 ## Convenciones
 - **Marco canónico `table_mm`**: x a la derecha, y hacia abajo, origen arriba a la izquierda, en mm. Otros marcos:
@@ -37,7 +38,7 @@ Al cambiar un contrato: edita Python → `export` → `generate.sh` → ajusta R
 - Uniones discriminadas por `type` (snake_case). Opcionales viajan como `null`; los defaults son iguales en Python y Rust.
 - Versión: `Envelope.v` = `CONTRACT_VERSION` (2), obligatorio; se rechaza si no está en `SUPPORTED_VERSIONS` o si
   `type` ≠ `payload.type`. Se negocia en `hello.contract_versions` → `welcome.contract_version` (o `hello_rejected`).
-- Reconexión: `seq` es monótono por `stream_id`. `state_snapshot` = estado recuperado; el historial se reenvía como
+- Reconexión: `seq` es monótono por `stream_id` y **lo renumera el core** (el `seq` de captura/manos/objetos solo vale en su proceso). `state_snapshot` = estado recuperado; el historial se reenvía como
   `event_batch{replay:true}` desde `last_cursor`, con `history_gap{from,to}` si falta algo y `replay_done{history_complete}`.
   Retención del log: `hello.retention{max_events, max_age_s}` (por defecto 10 000 eventos / 1 h).
 - Idempotencia: todo comando lleva `request_id` (estable entre reintentos; el nodo deduplica 10 min). `ToolCall.call_id`
@@ -68,3 +69,13 @@ Todos rompen compatibilidad salvo los marcados (+).
 - `ObjectState.since/last_seen` → `since_ns/last_seen_ns`. TS: todo `*_ns` es `string`.
 - (+) Nuevos: `blank`/`blanked` (comando, render y evento), `history_gap`, `replay_done`, `hello_rejected`, `confirmation_requested/resolved`,
   `home_call_done`, `HomePolicy`, `ConfirmAction`, `EventsWaitResult`, `ToolResult.request_id`. inputSchema MCP conserva `null`.
+
+## Cambios v2→v2.1
+Aditivos (`Envelope.v` sigue en 2) salvo el marcado (!). Rust: todos los tipos viven ya en `pcx-contracts`.
+- Render: `pattern{pattern_id, image:{path|data_uri}, until_ms?}` (pantalla completa, px nativos, sin warp ni widgets) y
+  `pattern_clear{}` →; ← `pattern_shown{pattern_id, t_present_ms}` y `resync{have_rev}` (el core responde con `scene`).
+- Eventos: `hands_gone{t_capture_ns, episode_start_ns?, last_hand_ns?}`; `Trigger` suma `rest` (apoyo).
+- `FrameMeta` suma `segment` (anillo `pcx-shm`), `format` (`bgr8`|`rgb8`|`gray8`, def. `bgr8`) y `stride` (def. `w*canales`).
+- (!) `ConfirmAction` es `CloudMessage` (nube → nodo): `{confirmation_id, approved, by: console|touch, action_digest, operator?}`;
+  `approve` → `approved`. El digest sigue obligatorio. El API HTTP de consola del gateway no cambia.
+- `Envelope.seq`: documentado que el core lo renumera al ingerir.

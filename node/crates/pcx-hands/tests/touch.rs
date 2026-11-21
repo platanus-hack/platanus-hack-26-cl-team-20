@@ -239,7 +239,7 @@ fn rest_by_palm_size_with_reference() {
         ));
     }
     assert!(
-        matches!(&ev[0], HandsEvent::TouchDown { touch, .. } if touch.trigger == TouchTrigger::Shadow)
+        matches!(&ev[0], HandsEvent::TouchDown { touch, .. } if touch.trigger == TouchTrigger::Rest)
     );
     // 1,09 está entre ratio_down y ratio_up: no suelta (histéresis)
     for i in 6..10 {

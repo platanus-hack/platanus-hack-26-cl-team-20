@@ -8,9 +8,9 @@ toque (pinch con histéresis, apoyo por tamaño de palma, dwell, zonas excluidas
 `.run(&mut impl FrameSource, |out| …)` (el core implementa `FrameSource` con su lector de memoria compartida) ·
 `set_homography(cam→table_mm)`. Piezas sueltas: `HandDetector` (`detect_palms`, `landmarks(roi)`), `HandTracker`,
 `TouchTracker::update(&[TouchHand], t_ns)`. Eventos `HandsEvent`: `TouchDown/Move/Up`, `Dwell{progress}`, `HandsGone`
-(sin manos `calm_s`=0,4 s → foto limpia); `.to_contract()` da `ContractEvent` v2 (requiere `point_mm`).
-- Contrato: `HandState`, `Touch`, `Dwell`, `FrameMeta` calzan con `contracts/schema/`. **No existen en v2**: `HandsGone`
-  y el trigger «apoyo» (se emite `shadow`). Propuesta: agregar `hands_gone` y `rest`.
+(sin manos `calm_s`=0,4 s → foto limpia); `.to_contract()` da `pcx_contracts::Event` v2.1 (toques y dwell requieren `point_mm`).
+- Contrato: `HandState`, `Touch`, `Trigger`, `FrameMeta`, `Event` vienen de `pcx-contracts` (v2.1). `HandsGone` →
+  `hands_gone` y el «apoyo» se emite con `trigger: rest`.
 
 **Modelos** (Apache-2.0, no se commitean): `cargo run -p pcx-hands --example fetch_models` → caché del SO
 (`~/Library/Caches/ai.pcx.pcx/models`, o `$PCX_MODELS_DIR`) con sha256. Features: `download` (def.), `coreml`.

@@ -193,12 +193,11 @@ class FakeNode:
         return await self.resolve(cid, True, "touch")
 
     async def on_frame(self, raw):
-        kind = msgspec.json.decode(raw).get("type")
-        if kind == "confirm_action":  # Consola vía nube (no es CloudMessage: ver REVISION.md).
-            action = msgspec.json.decode(raw, type=ConfirmAction)
-            await self.resolve(action.confirmation_id, action.approve, "console", action.action_digest)
+        msg = msgspec.json.decode(raw, type=CloudMessage)
+        if isinstance(msg, ConfirmAction):  # v2.1: consola vía nube, es un CloudMessage
+            await self.resolve(msg.confirmation_id, msg.approved, msg.by, msg.action_digest)
             return None
-        return msgspec.json.decode(raw, type=CloudMessage)
+        return msg
 
     async def resume(self):
         """Reconexión v2: snapshot → history_gap(s) → replay → replay_done."""

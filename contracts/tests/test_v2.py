@@ -217,3 +217,42 @@ def test_blank_command_and_render_messages() -> None:
     msgspec.convert({"type": "blanked", "request_id": "r", "projector_id": "main", "t_start_ms": 1.0,
                      "t_end_ms": 301.0}, Event)
     assert "transform" in ROOTS
+
+
+# ---------------------------------------------------------------- 12. v2.1
+
+def test_v21_pattern_resync_and_shown() -> None:
+    from pcx_contracts.render import Pattern, PatternClear, PatternShown, Resync
+
+    p = msgspec.convert({"type": "pattern", "pattern_id": "g0", "image": {"data_uri": "data:image/png;base64,AA=="}},
+                        ToRenderer)
+    assert isinstance(p, Pattern) and p.until_ms is None
+    assert isinstance(msgspec.convert({"type": "pattern_clear"}, ToRenderer), PatternClear)
+    for bad in ({}, {"path": "/a.png", "data_uri": "data:,"}):
+        with pytest.raises(msgspec.ValidationError):
+            msgspec.convert({"type": "pattern", "pattern_id": "g0", "image": bad}, ToRenderer)
+    assert isinstance(msgspec.convert({"type": "pattern_shown", "pattern_id": "g0", "t_present_ms": 1.0},
+                                      FromRenderer), PatternShown)
+    r = msgspec.convert({"type": "resync", "have_rev": None}, FromRenderer)
+    assert isinstance(r, Resync) and r.have_rev is None
+
+
+def test_v21_events_and_confirm_action() -> None:
+    from pcx_contracts.events import FrameMeta, HandsGone
+    from pcx_contracts.home import ConfirmAction
+
+    assert isinstance(msgspec.convert({"type": "hands_gone", "t_capture_ns": 5}, Event), HandsGone)
+    fm = msgspec.convert({"type": "frame_meta", "camera_id": "c", "seq": 1, "t_capture_ns": 2, "w": 4, "h": 2}, Event)
+    assert isinstance(fm, FrameMeta) and (fm.segment, fm.format, fm.stride) == (None, "bgr8", None)
+    with pytest.raises(msgspec.ValidationError):
+        msgspec.convert({"type": "frame_meta", "camera_id": "c", "seq": 1, "t_capture_ns": 2, "w": 4, "h": 2,
+                         "format": "yuyv"}, Event)
+    t = msgspec.convert({"type": "touch_down", "touch": {"id": "t", "phase": "down", "point_mm": [1, 2],
+                                                        "trigger": "rest"}}, Event)
+    assert t.touch.trigger == "rest"
+    ca = msgspec.convert({"type": "confirm_action", "confirmation_id": "c", "approved": False,
+                          "action_digest": "a" * 64}, CloudMessage)
+    assert isinstance(ca, ConfirmAction) and ca.by == "console" and ca.operator is None
+    with pytest.raises(msgspec.ValidationError):  # el nombre v2 `approve` ya no vale
+        msgspec.convert({"type": "confirm_action", "confirmation_id": "c", "approve": True,
+                         "action_digest": "a" * 64}, CloudMessage)

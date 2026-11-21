@@ -44,7 +44,7 @@ Reportar de `/tmp/mesa/pcx-calib/report_*.json`:
 
 ## Propuestas de cambio de contrato (definidas aquí, sin tocar `contracts/`)
 1. **Patrón de calibración**: render `pattern{request_id, width, height, path|shm, format: "gray8"}`, a pantalla completa en px nativos encima de la escena, con respuesta `pattern_presented{request_id, t_present_ms}` y `pattern_end{}`. Hoy son `io::Pattern` y `PatternSink`.
-2. **Eventos en Rust**: `pcx-contracts` no tiene `events`. `calib::CalibrationDrift` serializa igual que `events.CalibrationDrift` (`type: calibration_drift`).
+2. **Eventos en Rust** (hecho en v2.1): `calib::CalibrationDrift::to_event()` da `pcx_contracts::Event::CalibrationDrift`; `Pattern::to_render()` da el `pattern` v2.1.
 3. **`calibration_done{mode, versions, residual_mm_p50, residual_mm_p95, coverage, acquisition_ms, compute_ms}`**: hoy no hay evento de fin.
 4. **Semántica de la LUT**: precise publica `Lut proj:<id> → cam:<id>` para la percepción (POV sin paralaje); el renderer sigue con `table_mm → proj` (homografía). Proponer un marco `plane:<proj>` para el lienzo (plano de la mesa sin bultos) y residuos p50/p95 en vez de un solo `residual_mm`.
 5. **`Calibrate`**: agregar `metric_ref` opcional (marcadores impresos con esquinas en mm) en vez de solo configuración del nodo.

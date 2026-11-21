@@ -56,10 +56,11 @@ export interface Pcx {
     | ConfirmationRequested
     | ConfirmationResolved
     | HomeCallDone
-    | Blanked;
+    | Blanked
+    | HandsGone;
   envelope?: Envelope;
-  to_renderer?: SceneSnapshot | SceneDiff | RenderBlank;
-  from_renderer?: Presented | Stats | RenderBlanked;
+  to_renderer?: SceneSnapshot | SceneDiff | RenderBlank | Pattern | PatternClear;
+  from_renderer?: Presented | Stats | RenderBlanked | PatternShown | Resync;
   cloud?:
     | Hello
     | Welcome
@@ -70,7 +71,8 @@ export interface Pcx {
     | ReplayDone
     | ToolCall
     | ToolResult
-    | Heartbeat;
+    | Heartbeat
+    | ConfirmAction;
   world?: WorldState;
   flow?: Flow;
   transform?: HomographyTransform | LutTransform;
@@ -115,7 +117,7 @@ export interface Anchor {
  */
 export interface OnPress {
   value?: string | null;
-  triggers?: ("api" | "dwell" | "pinch" | "shadow")[];
+  triggers?: ("api" | "dwell" | "pinch" | "rest" | "shadow")[];
   dwell_ms?: number;
 }
 /**
@@ -648,7 +650,7 @@ export interface Touch {
   point_mm: PointMM;
   widget_id?: string | null;
   object_id?: string | null;
-  trigger?: "api" | "dwell" | "pinch" | "shadow";
+  trigger?: "api" | "dwell" | "pinch" | "rest" | "shadow";
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -674,7 +676,7 @@ export interface WidgetPressed {
   type: "widget_pressed";
   widget_id: string;
   value?: string | null;
-  trigger?: "api" | "dwell" | "pinch" | "shadow";
+  trigger?: "api" | "dwell" | "pinch" | "rest" | "shadow";
   point_mm?: PointMM | null;
 }
 /**
@@ -738,6 +740,8 @@ export interface FlowEmitted {
   };
 }
 /**
+ * Cuadro nuevo en el anillo de memoria compartida `segment` (v2.1: `segment`, `format`, `stride`).
+ *
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "FrameMeta".
  */
@@ -751,6 +755,9 @@ export interface FrameMeta {
   t_capture_ns: string;
   w: number;
   h: number;
+  segment?: string | null;
+  format?: "bgr8" | "gray8" | "rgb8";
+  stride?: number | null;
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -832,6 +839,21 @@ export interface Blanked {
   t_end_ms: number;
 }
 /**
+ * Fin de un episodio de manos: hubo manos y ya no hay (la mesa está libre para una foto limpia).
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "HandsGone".
+ */
+export interface HandsGone {
+  type: "hands_gone";
+  /**
+   * (ns como cadena decimal; usar BigInt)
+   */
+  t_capture_ns: string;
+  episode_start_ns?: string | null;
+  last_hand_ns?: string | null;
+}
+/**
  * This interface was referenced by `Pcx`'s JSON-Schema
  * via the `definition` "Envelope".
  */
@@ -876,7 +898,8 @@ export interface Envelope {
     | ConfirmationRequested
     | ConfirmationResolved
     | HomeCallDone
-    | Blanked;
+    | Blanked
+    | HandsGone;
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -928,6 +951,38 @@ export interface RenderBlank {
   reason: string;
 }
 /**
+ * Imagen a pantalla completa en px nativos del proyector, **sin warp y sin widgets** (calibración).
+ *     Reemplaza a cualquier `pattern` previo y tapa la escena (que sigue viva) hasta `pattern_clear` o `until_ms`.
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "Pattern".
+ */
+export interface Pattern {
+  type: "pattern";
+  pattern_id: string;
+  image: PatternImage;
+  until_ms?: number | null;
+}
+/**
+ * Exactamente uno: `path` (archivo local legible por el renderer) o `data_uri` (`data:image/png;base64,...`).
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "PatternImage".
+ */
+export interface PatternImage {
+  path?: string | null;
+  data_uri?: string | null;
+}
+/**
+ * Quita el patrón activo y vuelve a la escena.
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "PatternClear".
+ */
+export interface PatternClear {
+  type: "pattern_clear";
+}
+/**
  * Una vez por `rev`, en el primer cuadro presentado que la contiene.
  *
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -963,6 +1018,27 @@ export interface RenderBlanked {
   request_id: string;
   t_start_ms: number;
   t_end_ms: number;
+}
+/**
+ * Presentación del primer cuadro con el patrón `pattern_id` (ms de época, como `presented`).
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "PatternShown".
+ */
+export interface PatternShown {
+  type: "pattern_shown";
+  pattern_id: string;
+  t_present_ms: number;
+}
+/**
+ * El renderer pide un `scene` completo (p. ej. `base_rev` de un diff no calza). `have_rev` = la última que aplicó.
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "Resync".
+ */
+export interface Resync {
+  type: "resync";
+  have_rev?: number | null;
 }
 /**
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -1147,6 +1223,21 @@ export interface Heartbeat {
   cursor?: number | null;
 }
 /**
+ * Consola (local o en la nube, como `CloudMessage`) → nodo. Aprueba o rechaza una confirmación pendiente;
+ *     debe repetir el `action_digest`. v2.1: `approve` → `approved`, nuevo `by`, `operator` opcional.
+ *
+ * This interface was referenced by `Pcx`'s JSON-Schema
+ * via the `definition` "ConfirmAction".
+ */
+export interface ConfirmAction {
+  type: "confirm_action";
+  confirmation_id: string;
+  approved: boolean;
+  by?: "console" | "touch";
+  action_digest: string;
+  operator?: string | null;
+}
+/**
  * Política del nodo. Patrones `domain.service` con comodines (`light.*`, `*`).
  *
  * This interface was referenced by `Pcx`'s JSON-Schema
@@ -1171,17 +1262,4 @@ export interface HomeCallResult {
   action_digest?: string | null;
   expires_ns?: string | null;
   error?: string | null;
-}
-/**
- * Consola local → nodo. Aprueba o rechaza una confirmación pendiente; debe repetir el `action_digest`.
- *
- * This interface was referenced by `Pcx`'s JSON-Schema
- * via the `definition` "ConfirmAction".
- */
-export interface ConfirmAction {
-  type: "confirm_action";
-  confirmation_id: string;
-  action_digest: string;
-  approve: boolean;
-  operator: string;
 }

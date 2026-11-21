@@ -1,7 +1,7 @@
 //! Fuentes con datos y pares falsos (sin cámaras): replay, mjpeg (servidor falso), phone (cliente WS falso) y
 //! ZeroMQ PUSH → PULL. Puertos 9221–9224.
 
-use pcx_capture::{open_source, run, CaptureEvent, Envelope, MetaSink, RunConfig, SourceOpts, SourceSpec};
+use pcx_capture::{open_source, run, Envelope, Event, MetaSink, Payload, RunConfig, SourceOpts, SourceSpec};
 use pcx_shm::{PixelFormat, RingReader};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -31,7 +31,7 @@ fn frame_metas(log: &Log) -> Vec<pcx_capture::FrameMeta> {
         .unwrap()
         .iter()
         .filter_map(|e| match &e.payload {
-            CaptureEvent::FrameMeta(f) => Some(f.clone()),
+            Payload::Event(Event::FrameMeta(f)) => Some(f.clone()),
             _ => None,
         })
         .collect()
@@ -68,9 +68,11 @@ async fn replay_folder_real_time_writes_bgr_to_ring() {
     let fm = frame_metas(&log);
     assert_eq!(fm.iter().map(|f| f.seq).collect::<Vec<_>>(), (1..=8).collect::<Vec<_>>());
     assert!(fm.iter().all(|f| (f.w, f.h, f.camera_id.as_str()) == (640, 360, id.as_str())));
+    let seg = pcx_shm::segment_name(&id).unwrap();
+    assert!(fm.iter().all(|f| f.segment.as_deref() == Some(seg.as_str()) && f.stride == Some(640 * 3)));
     let all = log.lock().unwrap();
-    assert!(matches!(&all[0].payload, CaptureEvent::DeviceChanged(d) if d.device.status == pcx_capture::DeviceStatus::Online));
-    assert!(matches!(&all.last().unwrap().payload, CaptureEvent::DeviceChanged(d) if d.device.status == pcx_capture::DeviceStatus::Offline));
+    assert!(matches!(&all[0].payload, Payload::Event(Event::DeviceChanged { device }) if device.status == pcx_capture::DeviceStatus::Online));
+    assert!(matches!(&all.last().unwrap().payload, Payload::Event(Event::DeviceChanged { device }) if device.status == pcx_capture::DeviceStatus::Offline));
     assert!(all.windows(2).all(|w| w[1].seq == w[0].seq + 1) && all.iter().all(|e| e.v == 2 && e.source == format!("capture-{id}")));
 
     let (m, bgr) = reader.join().unwrap();

@@ -47,7 +47,7 @@ pub use zmq_push::ZmqPush;
 #[cfg(feature = "zmq")]
 mod zmq_push {
     use super::MetaSink;
-    use crate::contracts::Envelope;
+    use crate::contracts::{Envelope, ToMsgpack};
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::Arc;
     use std::time::Duration;

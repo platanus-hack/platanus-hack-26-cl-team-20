@@ -136,7 +136,7 @@ pub struct TouchHand {
     pub landmarks_px: [Point2; 21],
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct HandSt {
     smooth: Option<Point2>,
     emitted: Point2,
@@ -153,6 +153,28 @@ struct HandSt {
     still_since: f64,
     dwell_steps: u32,
     dwell_latched: bool,
+}
+
+impl Default for HandSt {
+    fn default() -> Self {
+        HandSt {
+            smooth: None,
+            emitted: [0.0; 2],
+            touching: false,
+            blocked: false,
+            pinch: false,
+            rest: false,
+            cnt_on: 0,
+            cnt_off: 0,
+            last_seen: 0.0,
+            trigger: TouchTrigger::Dwell,
+            touch_id: String::new(),
+            dwell_anchor: None,
+            still_since: 0.0,
+            dwell_steps: 0,
+            dwell_latched: false,
+        }
+    }
 }
 
 pub struct TouchTracker {
@@ -328,7 +350,7 @@ impl TouchTracker {
             let (contact, trigger) = if self.cfg.use_pinch && st.pinch {
                 (true, TouchTrigger::Pinch)
             } else if self.cfg.use_rest && st.rest {
-                (true, TouchTrigger::Shadow)
+                (true, TouchTrigger::Rest)
             } else if self.cfg.use_dwell && st.dwell_latched {
                 (true, TouchTrigger::Dwell)
             } else {

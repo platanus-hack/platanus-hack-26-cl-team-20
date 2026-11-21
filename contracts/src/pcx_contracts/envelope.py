@@ -28,7 +28,9 @@ class Envelope(Struct, kw_only=True):
     v: int
     """Versión del contrato (obligatoria). Versiones desconocidas se rechazan."""
     seq: int
-    """Monótono por `stream_id` del nodo; es el cursor de `events_wait` y de la reconexión."""
+    """Monótono por `stream_id` del nodo; es el cursor de `events_wait` y de la reconexión. **El core lo renumera**:
+    el `seq` que traen los productores locales (captura, manos, objetos) solo vale en su proceso; al ingerir, el
+    core asigna el suyo antes de guardar y publicar."""
     t_capture_ns: int | None = None
     """ns de época del cuadro que originó el evento (None si no viene de una cámara)."""
     t_pub_ns: int

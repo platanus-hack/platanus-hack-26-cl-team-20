@@ -29,6 +29,9 @@
     },
     {
       "$ref": "#/$defs/Heartbeat"
+    },
+    {
+      "$ref": "#/$defs/ConfirmAction"
     }
   ],
   "discriminator": {
@@ -43,7 +46,8 @@
       "replay_done": "#/$defs/ReplayDone",
       "tool_call": "#/$defs/ToolCall",
       "tool_result": "#/$defs/ToolResult",
-      "heartbeat": "#/$defs/Heartbeat"
+      "heartbeat": "#/$defs/Heartbeat",
+      "confirm_action": "#/$defs/ConfirmAction"
     }
   },
   "$defs": {
@@ -560,6 +564,7 @@
             "api",
             "dwell",
             "pinch",
+            "rest",
             "shadow"
           ],
           "default": "dwell"
@@ -716,6 +721,7 @@
               "api",
               "dwell",
               "pinch",
+              "rest",
               "shadow"
             ]
           }
@@ -1630,6 +1636,9 @@
             },
             {
               "$ref": "#/$defs/Blanked"
+            },
+            {
+              "$ref": "#/$defs/HandsGone"
             }
           ],
           "discriminator": {
@@ -1664,7 +1673,8 @@
               "confirmation_requested": "#/$defs/ConfirmationRequested",
               "confirmation_resolved": "#/$defs/ConfirmationResolved",
               "home_call_done": "#/$defs/HomeCallDone",
-              "blanked": "#/$defs/Blanked"
+              "blanked": "#/$defs/Blanked",
+              "hands_gone": "#/$defs/HandsGone"
             }
           }
         }
@@ -2645,6 +2655,7 @@
             "api",
             "dwell",
             "pinch",
+            "rest",
             "shadow"
           ],
           "default": "dwell"
@@ -2888,6 +2899,7 @@
     },
     "FrameMeta": {
       "title": "FrameMeta",
+      "description": "Cuadro nuevo en el anillo de memoria compartida `segment` (v2.1: `segment`, `format`, `stride`).",
       "type": "object",
       "properties": {
         "type": {
@@ -2909,6 +2921,37 @@
         },
         "h": {
           "type": "integer"
+        },
+        "segment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "format": {
+          "enum": [
+            "bgr8",
+            "gray8",
+            "rgb8"
+          ],
+          "default": "bgr8"
+        },
+        "stride": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -3103,6 +3146,47 @@
         "projector_id",
         "t_start_ms",
         "t_end_ms"
+      ]
+    },
+    "HandsGone": {
+      "title": "HandsGone",
+      "description": "Fin de un episodio de manos: hubo manos y ya no hay (la mesa está libre para una foto limpia).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "hands_gone"
+          ]
+        },
+        "t_capture_ns": {
+          "type": "integer"
+        },
+        "episode_start_ns": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "last_hand_ns": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "t_capture_ns"
       ]
     },
     "ReplayDone": {
@@ -3300,6 +3384,52 @@
       "required": [
         "type",
         "t_ms"
+      ]
+    },
+    "ConfirmAction": {
+      "title": "ConfirmAction",
+      "description": "Consola (local o en la nube, como `CloudMessage`) → nodo. Aprueba o rechaza una confirmación pendiente;\n    debe repetir el `action_digest`. v2.1: `approve` → `approved`, nuevo `by`, `operator` opcional.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "confirm_action"
+          ]
+        },
+        "confirmation_id": {
+          "type": "string"
+        },
+        "approved": {
+          "type": "boolean"
+        },
+        "by": {
+          "enum": [
+            "console",
+            "touch"
+          ],
+          "default": "console"
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "operator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "confirmation_id",
+        "approved",
+        "action_digest"
       ]
     }
   }

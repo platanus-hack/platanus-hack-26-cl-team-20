@@ -329,6 +329,7 @@
             "api",
             "dwell",
             "pinch",
+            "rest",
             "shadow"
           ],
           "default": "dwell"
@@ -485,6 +486,7 @@
               "api",
               "dwell",
               "pinch",
+              "rest",
               "shadow"
             ]
           }

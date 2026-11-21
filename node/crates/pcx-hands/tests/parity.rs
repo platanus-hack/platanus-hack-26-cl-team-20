@@ -122,6 +122,9 @@ fn engine_tracks_with_stable_ids_and_no_redetection() {
             t_capture_ns: t,
             w: w as i64,
             h: h as i64,
+            segment: None,
+            format: Default::default(),
+            stride: None,
         };
         let out = eng.process(&frame, &meta).unwrap();
         assert_eq!(out.hands.len(), 2, "cuadro {i}");
@@ -141,7 +144,7 @@ fn engine_tracks_with_stable_ids_and_no_redetection() {
         assert_eq!(hs.landmarks_px.len(), 21);
         let tip = hs.landmarks_px[8];
         let mm = hs.tip_mm.unwrap();
-        assert!((mm[0] - tip[0] * 0.5).abs() < 1e-9 && (mm[1] - tip[1] * 0.5).abs() < 1e-9);
+        assert!((mm.0 - tip.0 * 0.5).abs() < 1e-9 && (mm.1 - tip.1 * 0.5).abs() < 1e-9);
         assert_eq!(serde_json::to_value(hs).unwrap()["camera_id"], "cam0");
     }
 }

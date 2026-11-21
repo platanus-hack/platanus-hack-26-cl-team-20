@@ -72,6 +72,61 @@ pub struct Blanked {
     pub t_end_ms: f64,
 }
 
+/// Imagen de un `pattern`: exactamente uno de `path` (archivo local) o `data_uri` (`data:image/png;base64,...`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "RawPatternImage")]
+pub struct PatternImage {
+    pub path: Option<String>,
+    pub data_uri: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct RawPatternImage {
+    #[serde(default)]
+    path: Option<String>,
+    #[serde(default)]
+    data_uri: Option<String>,
+}
+
+impl TryFrom<RawPatternImage> for PatternImage {
+    type Error = String;
+    fn try_from(r: RawPatternImage) -> Result<Self, String> {
+        if r.path.is_some() == r.data_uri.is_some() {
+            return Err("image: exactamente uno de `path` o `data_uri`".into());
+        }
+        Ok(PatternImage { path: r.path, data_uri: r.data_uri })
+    }
+}
+
+/// v2.1 (`type: "pattern"`): imagen a pantalla completa en px nativos del proyector, **sin warp ni widgets**
+/// (calibración). Reemplaza al patrón previo y tapa la escena (que sigue viva) hasta `pattern_clear` o `until_ms`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Pattern {
+    pub pattern_id: String,
+    pub image: PatternImage,
+    /// ms de época en que se quita solo (`None` = hasta `pattern_clear`).
+    #[serde(default)]
+    pub until_ms: Option<f64>,
+}
+
+/// v2.1 (`type: "pattern_clear"`): quita el patrón activo.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct PatternClear {}
+
+/// v2.1 (`type: "pattern_shown"`): presentación del primer cuadro con el patrón (ms de época).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PatternShown {
+    pub pattern_id: String,
+    pub t_present_ms: f64,
+}
+
+/// v2.1 (`type: "resync"`): el renderer pide un `scene` completo; `have_rev` = la última que aplicó.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct Resync {
+    #[serde(default)]
+    pub have_rev: Option<i64>,
+}
+
 /// core → renderer.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -79,6 +134,8 @@ pub enum ToRenderer {
     Scene(SceneSnapshot),
     SceneDiff(SceneDiff),
     Blank(Blank),
+    Pattern(Pattern),
+    PatternClear(PatternClear),
 }
 
 /// renderer → core.
@@ -88,4 +145,6 @@ pub enum FromRenderer {
     Presented(Presented),
     Stats(Stats),
     Blanked(Blanked),
+    PatternShown(PatternShown),
+    Resync(Resync),
 }

@@ -169,6 +169,7 @@
               "api",
               "dwell",
               "pinch",
+              "rest",
               "shadow"
             ]
           }
@@ -1902,6 +1903,7 @@
             "api",
             "dwell",
             "pinch",
+            "rest",
             "shadow"
           ],
           "default": "dwell"
@@ -1979,6 +1981,7 @@
             "api",
             "dwell",
             "pinch",
+            "rest",
             "shadow"
           ],
           "default": "dwell"
@@ -2223,6 +2226,7 @@
     },
     "FrameMeta": {
       "title": "FrameMeta",
+      "description": "Cuadro nuevo en el anillo de memoria compartida `segment` (v2.1: `segment`, `format`, `stride`).",
       "type": "object",
       "required": [
         "type",
@@ -2255,6 +2259,37 @@
         },
         "h": {
           "type": "integer"
+        },
+        "segment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "format": {
+          "enum": [
+            "bgr8",
+            "gray8",
+            "rgb8"
+          ],
+          "default": "bgr8"
+        },
+        "stride": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       }
     },
@@ -2497,6 +2532,54 @@
         }
       }
     },
+    "HandsGone": {
+      "title": "HandsGone",
+      "description": "Fin de un episodio de manos: hubo manos y ya no hay (la mesa está libre para una foto limpia).",
+      "type": "object",
+      "required": [
+        "type",
+        "t_capture_ns"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "hands_gone"
+          ]
+        },
+        "t_capture_ns": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$",
+          "description": "(ns como cadena decimal; usar BigInt)"
+        },
+        "episode_start_ns": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+$",
+              "description": "(ns como cadena decimal; usar BigInt)"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "last_hand_ns": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+$",
+              "description": "(ns como cadena decimal; usar BigInt)"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      }
+    },
     "Envelope": {
       "title": "Envelope",
       "type": "object",
@@ -2635,6 +2718,9 @@
             },
             {
               "$ref": "#/definitions/Blanked"
+            },
+            {
+              "$ref": "#/definitions/HandsGone"
             }
           ],
           "discriminator": {
@@ -2669,7 +2755,8 @@
               "confirmation_requested": "#/$defs/ConfirmationRequested",
               "confirmation_resolved": "#/$defs/ConfirmationResolved",
               "home_call_done": "#/$defs/HomeCallDone",
-              "blanked": "#/$defs/Blanked"
+              "blanked": "#/$defs/Blanked",
+              "hands_gone": "#/$defs/HandsGone"
             }
           }
         }
@@ -2946,6 +3033,88 @@
         }
       }
     },
+    "Pattern": {
+      "title": "Pattern",
+      "description": "Imagen a pantalla completa en px nativos del proyector, **sin warp y sin widgets** (calibración).\n    Reemplaza a cualquier `pattern` previo y tapa la escena (que sigue viva) hasta `pattern_clear` o `until_ms`.",
+      "type": "object",
+      "required": [
+        "type",
+        "pattern_id",
+        "image"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "pattern"
+          ]
+        },
+        "pattern_id": {
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/definitions/PatternImage"
+        },
+        "until_ms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      }
+    },
+    "PatternImage": {
+      "title": "PatternImage",
+      "description": "Exactamente uno: `path` (archivo local legible por el renderer) o `data_uri` (`data:image/png;base64,...`).",
+      "type": "object",
+      "required": [],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "data_uri": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      }
+    },
+    "PatternClear": {
+      "title": "PatternClear",
+      "description": "Quita el patrón activo y vuelve a la escena.",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "pattern_clear"
+          ]
+        }
+      }
+    },
     "Presented": {
       "title": "Presented",
       "description": "Una vez por `rev`, en el primer cuadro presentado que la contiene.",
@@ -3027,6 +3196,57 @@
         },
         "t_end_ms": {
           "type": "number"
+        }
+      }
+    },
+    "PatternShown": {
+      "title": "PatternShown",
+      "description": "Presentación del primer cuadro con el patrón `pattern_id` (ms de época, como `presented`).",
+      "type": "object",
+      "required": [
+        "type",
+        "pattern_id",
+        "t_present_ms"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "pattern_shown"
+          ]
+        },
+        "pattern_id": {
+          "type": "string"
+        },
+        "t_present_ms": {
+          "type": "number"
+        }
+      }
+    },
+    "Resync": {
+      "title": "Resync",
+      "description": "El renderer pide un `scene` completo (p. ej. `base_rev` de un diff no calza). `have_rev` = la última que aplicó.",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "resync"
+          ]
+        },
+        "have_rev": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       }
     },
@@ -3683,6 +3903,53 @@
         }
       }
     },
+    "ConfirmAction": {
+      "title": "ConfirmAction",
+      "description": "Consola (local o en la nube, como `CloudMessage`) → nodo. Aprueba o rechaza una confirmación pendiente;\n    debe repetir el `action_digest`. v2.1: `approve` → `approved`, nuevo `by`, `operator` opcional.",
+      "type": "object",
+      "required": [
+        "type",
+        "confirmation_id",
+        "approved",
+        "action_digest"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "confirm_action"
+          ]
+        },
+        "confirmation_id": {
+          "type": "string"
+        },
+        "approved": {
+          "type": "boolean"
+        },
+        "by": {
+          "enum": [
+            "console",
+            "touch"
+          ],
+          "default": "console"
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "operator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      }
+    },
     "HomePolicy": {
       "title": "HomePolicy",
       "description": "Política del nodo. Patrones `domain.service` con comodines (`light.*`, `*`).",
@@ -3787,39 +4054,6 @@
             }
           ],
           "default": null
-        }
-      }
-    },
-    "ConfirmAction": {
-      "title": "ConfirmAction",
-      "description": "Consola local → nodo. Aprueba o rechaza una confirmación pendiente; debe repetir el `action_digest`.",
-      "type": "object",
-      "required": [
-        "type",
-        "confirmation_id",
-        "action_digest",
-        "approve",
-        "operator"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "enum": [
-            "confirm_action"
-          ]
-        },
-        "confirmation_id": {
-          "type": "string"
-        },
-        "action_digest": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        },
-        "approve": {
-          "type": "boolean"
-        },
-        "operator": {
-          "type": "string"
         }
       }
     }
@@ -3975,6 +4209,9 @@
         },
         {
           "$ref": "#/definitions/Blanked"
+        },
+        {
+          "$ref": "#/definitions/HandsGone"
         }
       ],
       "discriminator": {
@@ -3997,7 +4234,8 @@
           "confirmation_requested": "#/$defs/ConfirmationRequested",
           "confirmation_resolved": "#/$defs/ConfirmationResolved",
           "home_call_done": "#/$defs/HomeCallDone",
-          "blanked": "#/$defs/Blanked"
+          "blanked": "#/$defs/Blanked",
+          "hands_gone": "#/$defs/HandsGone"
         }
       }
     },
@@ -4014,6 +4252,12 @@
         },
         {
           "$ref": "#/definitions/RenderBlank"
+        },
+        {
+          "$ref": "#/definitions/Pattern"
+        },
+        {
+          "$ref": "#/definitions/PatternClear"
         }
       ],
       "discriminator": {
@@ -4021,7 +4265,9 @@
         "mapping": {
           "scene": "#/$defs/SceneSnapshot",
           "scene_diff": "#/$defs/SceneDiff",
-          "blank": "#/$defs/RenderBlank"
+          "blank": "#/$defs/RenderBlank",
+          "pattern": "#/$defs/Pattern",
+          "pattern_clear": "#/$defs/PatternClear"
         }
       }
     },
@@ -4035,6 +4281,12 @@
         },
         {
           "$ref": "#/definitions/RenderBlanked"
+        },
+        {
+          "$ref": "#/definitions/PatternShown"
+        },
+        {
+          "$ref": "#/definitions/Resync"
         }
       ],
       "discriminator": {
@@ -4042,7 +4294,9 @@
         "mapping": {
           "presented": "#/$defs/Presented",
           "stats": "#/$defs/Stats",
-          "blanked": "#/$defs/RenderBlanked"
+          "blanked": "#/$defs/RenderBlanked",
+          "pattern_shown": "#/$defs/PatternShown",
+          "resync": "#/$defs/Resync"
         }
       }
     },
@@ -4077,6 +4331,9 @@
         },
         {
           "$ref": "#/definitions/Heartbeat"
+        },
+        {
+          "$ref": "#/definitions/ConfirmAction"
         }
       ],
       "discriminator": {
@@ -4091,7 +4348,8 @@
           "replay_done": "#/$defs/ReplayDone",
           "tool_call": "#/$defs/ToolCall",
           "tool_result": "#/$defs/ToolResult",
-          "heartbeat": "#/$defs/Heartbeat"
+          "heartbeat": "#/$defs/Heartbeat",
+          "confirm_action": "#/$defs/ConfirmAction"
         }
       }
     },

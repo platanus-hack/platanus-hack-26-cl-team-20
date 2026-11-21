@@ -1,103 +1,21 @@
-//! Tipos de salida compatibles con `contracts/schema/` (v2): `HandState`, `Touch`, `TouchDown/Move/Up`, `Dwell`,
-//! `FrameMeta`. `HandsGone` NO está en contracts v2: es propio de este crate (propuesta para v3).
+//! Tipos de salida. Los del contrato (`HandState`, `Handedness`, `Touch`, `TouchPhase`, `Trigger`, `Event`,
+//! `FrameMeta`, `HandsGone`) vienen de `pcx-contracts` (v2.1); aquí solo quedan los internos del crate
+//! (`TouchInfo`, `HandsEvent`, con px de cámara) y su conversión al contrato.
 use serde::{Deserialize, Serialize};
+
+pub use pcx_contracts::{Event, FrameMeta, HandState, Handedness, HandsGone, PointMM, PointPX, Touch, TouchPhase};
 
 /// Punto `[x, y]` (px o mm según el campo).
 pub type Point2 = [f64; 2];
 
-/// `world.schema.json#/$defs/HandState`.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct HandState {
-    pub id: String,
-    pub camera_id: String,
-    #[serde(default)]
-    pub handedness: Handedness,
-    /// 21 landmarks en px de cámara (orden MediaPipe).
-    #[serde(default)]
-    pub landmarks_px: Vec<Point2>,
-    /// Punta del índice en `table_mm` (solo si hay homografía cámara→mesa).
-    #[serde(default)]
-    pub tip_mm: Option<Point2>,
-    #[serde(default)]
-    pub pinch: bool,
-    pub t_capture_ns: i64,
-}
+/// `Touch.trigger` del contrato. El «apoyo» (palma apoyada, `touch.py`) se emite como `rest` (v2.1).
+pub type TouchTrigger = pcx_contracts::Trigger;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Handedness {
-    Left,
-    Right,
-    #[default]
-    Unknown,
-}
+/// Evento del contrato (alias del de `pcx-contracts`).
+pub type ContractEvent = Event;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TouchPhase {
-    Down,
-    Move,
-    Up,
-}
-
-/// `Touch.trigger` del contrato. El «apoyo» (palma apoyada, `touch.py`) no existe en v2: se emite como `shadow`
-/// (contacto físico inferido por visión). Propuesta: agregar `rest` al contrato.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TouchTrigger {
-    Api,
-    #[default]
-    Dwell,
-    Pinch,
-    Shadow,
-}
-
-/// `event.schema.json#/$defs/Touch`.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Touch {
-    pub id: String,
-    pub phase: TouchPhase,
-    pub point_mm: Point2,
-    #[serde(default)]
-    pub widget_id: Option<String>,
-    #[serde(default)]
-    pub object_id: Option<String>,
-    #[serde(default)]
-    pub trigger: TouchTrigger,
-}
-
-/// Eventos del contrato que produce este crate (unión por `type`, como `Event` en `event.schema.json`).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum ContractEvent {
-    TouchDown {
-        touch: Touch,
-    },
-    TouchMove {
-        touch: Touch,
-    },
-    TouchUp {
-        touch: Touch,
-    },
-    Dwell {
-        point_mm: Point2,
-        progress: f64,
-        #[serde(default)]
-        widget_id: Option<String>,
-        #[serde(default)]
-        object_id: Option<String>,
-    },
-}
-
-/// `event.schema.json#/$defs/FrameMeta`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "frame_meta")]
-pub struct FrameMeta {
-    pub camera_id: String,
-    pub seq: i64,
-    pub t_capture_ns: i64,
-    pub w: i64,
-    pub h: i64,
+fn mm(p: Point2) -> PointMM {
+    PointMM(p[0], p[1])
 }
 
 /// Datos del toque en el marco de la cámara y (si hay homografía) de la mesa.
@@ -120,7 +38,7 @@ impl TouchInfo {
         Some(Touch {
             id: self.id.clone(),
             phase: self.phase,
-            point_mm: self.point_mm?,
+            point_mm: mm(self.point_mm?),
             widget_id: None,
             object_id: None,
             trigger: self.trigger,
@@ -152,7 +70,7 @@ pub enum HandsEvent {
         progress: f64,
         t_capture_ns: i64,
     },
-    /// Fin de episodio: hubo manos y lleva `calm_s` sin manos → foto limpia de la mesa. No está en contracts v2.
+    /// Fin de episodio: hubo manos y lleva `calm_s` sin manos → foto limpia de la mesa (`hands_gone`, v2.1).
     HandsGone {
         episode_start_ns: i64,
         last_hand_ns: i64,
@@ -171,27 +89,25 @@ impl HandsEvent {
         }
     }
 
-    /// Evento del contrato v2 (`None` para `HandsGone` o si falta `point_mm`).
-    pub fn to_contract(&self) -> Option<ContractEvent> {
+    /// Evento del contrato (`None` si falta `point_mm`, es decir, sin homografía cámara→mesa).
+    pub fn to_contract(&self) -> Option<Event> {
         match self {
-            HandsEvent::TouchDown { touch, .. } => Some(ContractEvent::TouchDown {
-                touch: touch.to_contract()?,
-            }),
-            HandsEvent::TouchMove { touch, .. } => Some(ContractEvent::TouchMove {
-                touch: touch.to_contract()?,
-            }),
-            HandsEvent::TouchUp { touch, .. } => Some(ContractEvent::TouchUp {
-                touch: touch.to_contract()?,
-            }),
-            HandsEvent::Dwell {
-                point_mm, progress, ..
-            } => Some(ContractEvent::Dwell {
-                point_mm: (*point_mm)?,
+            HandsEvent::TouchDown { touch, .. } => Some(Event::TouchDown { touch: touch.to_contract()? }),
+            HandsEvent::TouchMove { touch, .. } => Some(Event::TouchMove { touch: touch.to_contract()? }),
+            HandsEvent::TouchUp { touch, .. } => Some(Event::TouchUp { touch: touch.to_contract()? }),
+            HandsEvent::Dwell { point_mm, progress, .. } => Some(Event::Dwell {
+                point_mm: mm((*point_mm)?),
                 progress: *progress,
                 widget_id: None,
                 object_id: None,
             }),
-            HandsEvent::HandsGone { .. } => None,
+            HandsEvent::HandsGone { episode_start_ns, last_hand_ns, t_capture_ns } => {
+                Some(Event::HandsGone(HandsGone {
+                    t_capture_ns: *t_capture_ns,
+                    episode_start_ns: Some(*episode_start_ns),
+                    last_hand_ns: Some(*last_hand_ns),
+                }))
+            }
         }
     }
 }
@@ -206,33 +122,39 @@ mod tests {
             id: "h1".into(),
             camera_id: "cam0".into(),
             handedness: Handedness::Right,
-            landmarks_px: vec![[1.0, 2.0]],
+            landmarks_px: vec![PointPX(1.0, 2.0)],
             tip_mm: None,
             pinch: false,
             t_capture_ns: 5,
         };
         let v = serde_json::to_value(&h).unwrap();
         assert_eq!(v["handedness"], "right");
+        assert_eq!(v["landmarks_px"][0], serde_json::json!([1.0, 2.0]));
         assert!(v["tip_mm"].is_null());
-        let e = ContractEvent::TouchDown {
-            touch: Touch {
-                id: "t1".into(),
-                phase: TouchPhase::Down,
-                point_mm: [1.0, 2.0],
-                widget_id: None,
-                object_id: None,
-                trigger: TouchTrigger::Pinch,
-            },
+        let info = TouchInfo {
+            id: "t1".into(),
+            hand_id: "h1".into(),
+            phase: TouchPhase::Down,
+            trigger: TouchTrigger::Rest,
+            point_px: [10.0, 20.0],
+            point_mm: Some([1.0, 2.0]),
+            reason: String::new(),
         };
+        let e = HandsEvent::TouchDown { touch: info, t_capture_ns: 7 }.to_contract().unwrap();
         let v = serde_json::to_value(&e).unwrap();
         assert_eq!(v["type"], "touch_down");
         assert_eq!(v["touch"]["phase"], "down");
-        assert_eq!(v["touch"]["trigger"], "pinch");
+        assert_eq!(v["touch"]["trigger"], "rest");
+        assert_eq!(v["touch"]["point_mm"], serde_json::json!([1.0, 2.0]));
         let m: FrameMeta = serde_json::from_str(
             r#"{"type":"frame_meta","camera_id":"c","seq":1,"t_capture_ns":2,"w":640,"h":480}"#,
         )
         .unwrap();
         assert_eq!(m.w, 640);
-        assert_eq!(serde_json::to_value(&m).unwrap()["type"], "frame_meta");
+        let g = HandsEvent::HandsGone { episode_start_ns: 1, last_hand_ns: 2, t_capture_ns: 3 };
+        assert_eq!(
+            serde_json::to_value(g.to_contract().unwrap()).unwrap(),
+            serde_json::json!({"type": "hands_gone", "t_capture_ns": 3, "episode_start_ns": 1, "last_hand_ns": 2})
+        );
     }
 }

@@ -8,6 +8,12 @@
     },
     {
       "$ref": "#/$defs/RenderBlank"
+    },
+    {
+      "$ref": "#/$defs/Pattern"
+    },
+    {
+      "$ref": "#/$defs/PatternClear"
     }
   ],
   "discriminator": {
@@ -15,7 +21,9 @@
     "mapping": {
       "scene": "#/$defs/SceneSnapshot",
       "scene_diff": "#/$defs/SceneDiff",
-      "blank": "#/$defs/RenderBlank"
+      "blank": "#/$defs/RenderBlank",
+      "pattern": "#/$defs/Pattern",
+      "pattern_clear": "#/$defs/PatternClear"
     }
   },
   "$defs": {
@@ -466,6 +474,7 @@
               "api",
               "dwell",
               "pinch",
+              "rest",
               "shadow"
             ]
           }
@@ -1135,6 +1144,85 @@
         "request_id",
         "ms",
         "reason"
+      ]
+    },
+    "Pattern": {
+      "title": "Pattern",
+      "description": "Imagen a pantalla completa en px nativos del proyector, **sin warp y sin widgets** (calibración).\n    Reemplaza a cualquier `pattern` previo y tapa la escena (que sigue viva) hasta `pattern_clear` o `until_ms`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "pattern"
+          ]
+        },
+        "pattern_id": {
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/$defs/PatternImage"
+        },
+        "until_ms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "pattern_id",
+        "image"
+      ]
+    },
+    "PatternImage": {
+      "title": "PatternImage",
+      "description": "Exactamente uno: `path` (archivo local legible por el renderer) o `data_uri` (`data:image/png;base64,...`).",
+      "type": "object",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "data_uri": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": []
+    },
+    "PatternClear": {
+      "title": "PatternClear",
+      "description": "Quita el patrón activo y vuelve a la escena.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "pattern_clear"
+          ]
+        }
+      },
+      "required": [
+        "type"
       ]
     }
   }

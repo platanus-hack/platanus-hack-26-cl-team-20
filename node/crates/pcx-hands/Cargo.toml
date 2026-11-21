@@ -14,6 +14,7 @@ download = ["dep:ureq"]
 coreml = ["ort/coreml"]
 
 [dependencies]
+pcx-contracts = { path = "../../../contracts/rust/pcx-contracts" }
 ort = { workspace = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

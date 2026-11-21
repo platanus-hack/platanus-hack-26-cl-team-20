@@ -572,17 +572,21 @@ impl World {
         self.emit(Event::HomeCallDone { request_id: p.request_id, confirmation_id: Some(cid.into()), status, error }, "core", None);
     }
 
-    /// Consola local → nodo. Debe repetir el `action_digest`.
+    /// Consola (local por HTTP o de la nube como `CloudMessage`) → nodo. Debe repetir el `action_digest`.
     pub fn confirm_action(&mut self, c: &ConfirmAction) -> Result<(), String> {
         let p = self.confirms.get(&c.confirmation_id).ok_or_else(|| format!("confirmación desconocida: {}", c.confirmation_id))?;
         if p.digest != c.action_digest {
             return Err("action_digest no coincide".into());
         }
-        if !self.home_policy.confirm_via.contains(&ConfirmVia::Console) {
-            return Err("la política no admite confirmación por consola".into());
+        if !self.home_policy.confirm_via.contains(&c.by) {
+            return Err(format!("la política no admite confirmación por {:?}", c.by));
         }
+        let via = match c.by {
+            ConfirmVia::Console => ResolvedVia::Console,
+            ConfirmVia::Touch => ResolvedVia::Touch,
+        };
         let cid = c.confirmation_id.clone();
-        self.resolve_confirm(&cid, c.approve, ResolvedVia::Console);
+        self.resolve_confirm(&cid, c.approved, via);
         Ok(())
     }
 
@@ -628,16 +632,21 @@ impl World {
                     let t = self.touch(touch, &src, tc);
                     return Ok(serde_json::to_value(t).unwrap_or_default());
                 }
-                Event::FrameMeta { ref camera_id, .. } => {
-                    self.frames.insert(camera_id.clone(), serde_json::to_value(&ev).unwrap_or_default());
+                Event::FrameMeta(ref fm) => {
+                    self.frames.insert(fm.camera_id.clone(), serde_json::to_value(&ev).unwrap_or_default());
                 }
                 Event::DeviceChanged { device } => {
                     self.store.device_save(&device.id, &serde_json::to_value(&device).unwrap_or_default());
                     self.devices.insert(device.id.clone(), device.clone());
                     self.emit(Event::DeviceChanged { device }, &src, tc);
                 }
-                // externos que pasan tal cual: botón físico/api, deriva de calibración, permanencia, blanked
-                ev @ (Event::WidgetPressed { .. } | Event::CalibrationDrift { .. } | Event::Dwell { .. } | Event::Blanked { .. }) => {
+                // externos que pasan tal cual: botón físico/api, deriva de calibración, permanencia, blanked,
+                // fin de episodio de manos (v2.1)
+                ev @ (Event::WidgetPressed { .. }
+                | Event::CalibrationDrift { .. }
+                | Event::Dwell { .. }
+                | Event::Blanked { .. }
+                | Event::HandsGone(_)) => {
                     self.emit(ev, &src, tc);
                 }
                 other => tracing::debug!("ingesta ignora {}", other.tag()),
