@@ -2,7 +2,9 @@
 //!
 //! - `pcx serve`   core (HTTP/MCP en 127.0.0.1:9200, /render, ZeroMQ, nube opcional).
 //! - `pcx mcp`     MCP por stdio: proxy al daemon si responde; si no, core en proceso.
-//! - `pcx up`      supervisor según `pcx.toml`.
+//! - `pcx up`      supervisor según `pcx.toml` (instancia única, reinicio con backoff, hijos atados al padre).
+//! - `pcx worker hands|capture`  procesos aislados (ONNX y cámaras fuera del core).
+//! - `pcx cameras` lista las cámaras con su id estable, sin abrirlas.
 //! - `pcx replay`  reinyecta por ZeroMQ los eventos de entrada de otro `pcx.db` (demo de respaldo).
 
 use std::path::PathBuf;
@@ -35,6 +37,20 @@ enum Cmd {
         #[arg(long)]
         config: Option<PathBuf>,
     },
+    /// Procesos aislados del core (los lanza `pcx up`).
+    #[command(subcommand)]
+    Worker(Worker),
+    /// Lista las cámaras (id estable para `cam:<id>`) sin abrirlas.
+    Cameras {
+        #[arg(long)]
+        json: bool,
+    },
+    /// Interno: corre `argv` y lo cierra si el supervisor muere (macOS/BSD, sin PDEATHSIG).
+    #[command(hide = true)]
+    Guard {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true, required = true)]
+        argv: Vec<String>,
+    },
     /// Reinyecta objetos y toques de otro log (`<dir>/pcx.db`) por la ingesta ZeroMQ.
     Replay {
         /// Directorio que contiene el `pcx.db` grabado.
@@ -47,15 +63,32 @@ enum Cmd {
     },
 }
 
+#[derive(Subcommand)]
+enum Worker {
+    /// Manos: anillo `pcx.cam.<id>` → pcx-hands (ONNX) → ingesta ZeroMQ del core.
+    Hands(pcxd::worker::HandsArgs),
+    /// Captura: fuente (`cam:<id>`, `replay:`, `mjpeg:`, `phone`) → anillo + FrameMeta.
+    Capture(pcx_capture::cli::RunArgs),
+}
+
 const INPUT_TYPES: &[&str] = &["object_appeared", "object_moved", "object_removed", "touch_down", "touch_move", "touch_up", "frame_meta", "device_changed"];
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+    #[cfg(unix)]
+    if let Some(Cmd::Guard { argv }) = &cli.cmd {
+        std::process::exit(pcxd::supervisor::guard(argv));
+    }
+    #[cfg(unix)]
+    if !matches!(cli.cmd, Some(Cmd::Up { .. })) {
+        pcxd::supervisor::follow_supervisor();
+    }
     tracing_subscriber::fmt()
         .with_writer(std::io::stderr)
         .with_env_filter(tracing_subscriber::EnvFilter::try_from_env("PCX_LOG").unwrap_or_else(|_| "info".into()))
         .init();
-    match Cli::parse().cmd.unwrap_or(Cmd::Serve { port: None }) {
+    match cli.cmd.unwrap_or(Cmd::Serve { port: None }) {
         Cmd::Serve { port } => serve(port).await,
         Cmd::Mcp => mcp_stdio().await,
         Cmd::Up { config } => {
@@ -67,9 +100,24 @@ async fn main() -> anyhow::Result<()> {
                 shutdown_signal().await;
                 s2.cancel();
             });
-            pcx_core::supervisor::up(&cfg, stop).await
+            pcxd::supervisor::up(&cfg, stop).await
         }
         Cmd::Replay { dir, speed, ingest } => replay(dir, speed, ingest).await,
+        Cmd::Worker(Worker::Hands(a)) => pcxd::worker::hands(a).await,
+        Cmd::Worker(Worker::Capture(a)) => {
+            let st = pcx_capture::cli::run_cmd(a).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+            eprintln!("[pcx worker capture] {} cuadros", st.frames);
+            Ok(())
+        }
+        Cmd::Cameras { json } => pcx_capture::cli::list_cmd(json).map_err(|e| anyhow::anyhow!("{e}")),
+        #[cfg(unix)]
+        Cmd::Guard { .. } => unreachable!(),
+        #[cfg(not(unix))]
+        Cmd::Guard { argv } => {
+            // Windows: el Job Object del supervisor ya ata los hijos; aquí solo se ejecuta.
+            let st = std::process::Command::new(&argv[0]).args(&argv[1..]).status()?;
+            std::process::exit(st.code().unwrap_or(1));
+        }
     }
 }
 

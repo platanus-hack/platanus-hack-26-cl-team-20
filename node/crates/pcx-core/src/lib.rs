@@ -1,5 +1,5 @@
 //! Core del nodo pcx (ver `README.md`): actor del mundo de escritor único, log de eventos durable (SQLite),
-//! tools MCP, WS `/render`, flujos locales, ingesta (canal + ZeroMQ), enlace a la nube y supervisor `pcx up`.
+//! tools MCP, WS `/render`, flujos locales, ingesta (canal + ZeroMQ) y enlace a la nube (el supervisor `pcx up` vive en `pcxd`).
 
 pub mod bus;
 pub mod cloud;
@@ -11,7 +11,6 @@ pub mod node;
 pub mod proto;
 pub mod server;
 pub mod store;
-pub mod supervisor;
 pub mod tools;
 pub mod world;
 

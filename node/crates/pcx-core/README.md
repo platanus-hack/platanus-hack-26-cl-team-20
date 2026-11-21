@@ -4,7 +4,10 @@ Actor del mundo de escritor único + log durable (SQLite) + MCP + `/render` + fl
 ```bash
 cargo run -p pcxd -- serve            # 127.0.0.1:9200 (PCX_PORT); PCX_TOKEN (default pcx-dev-token; "" = sin auth)
 cargo run -p pcxd -- mcp              # MCP stdio: proxy al daemon si responde, si no core en proceso
-cargo run -p pcxd -- up               # supervisor según node/pcx.toml (`pcx` = este binario)
+cargo run -p pcxd -- up               # supervisor según node/pcx.toml (crate pcxd; ejemplo del Mac: node/pcx.mac-c920.toml)
+cargo run -p pcxd -- worker hands --camera c920   # manos en proceso aparte: anillo → ONNX → ingesta ZeroMQ
+cargo run -p pcxd -- worker capture --id c920 --source cam:<id>   # captura (= pcx-capture run)
+cargo run -p pcxd -- cameras          # cámaras con id estable, sin abrirlas
 cargo run -p pcxd -- replay <dir>     # reinyecta objetos/toques de otro <dir>/pcx.db por ZeroMQ (demo de respaldo)
 cargo test -p pcx-core -p pcxd        # unidad + links (nube/ZeroMQ/supervisor) + e2e
 ```

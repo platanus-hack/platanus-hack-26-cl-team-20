@@ -1,5 +1,5 @@
 //! Port de `test_links.py` y `test_supervisor.py`: enlace a la nube (gateway WS falso, replay, tool_call,
-//! reconexión), bus ZeroMQ (PULL msgpack/JSON + PUB multipart) y supervisor.
+//! reconexión), bus ZeroMQ (PULL msgpack/JSON + PUB multipart). El supervisor se prueba en `pcxd/tests/supervisor.rs`.
 
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
@@ -11,7 +11,6 @@ use pcx_core::cloud::CloudLink;
 use pcx_core::frames::SyntheticFrameSource;
 use pcx_core::proto::*;
 use pcx_core::store::Store;
-use pcx_core::supervisor::{self, ProcSpec, Supervised};
 use pcx_core::tools::Tools;
 use pcx_core::world::{World, WorldConfig, WorldHandle};
 use tokio_tungstenite::tungstenite::Message;
@@ -166,48 +165,4 @@ async fn bus_zmq_ingesta_y_pub() {
     push.send(ZmqMessage::from(serde_json::to_string(&env).unwrap())).await.unwrap();
     until(|| w.snapshot().objects.is_empty()).await;
     cancel.cancel();
-}
-
-fn short_cmd() -> Vec<&'static str> {
-    if cfg!(windows) {
-        vec!["cmd", "/C", "exit 0"]
-    } else {
-        vec!["sh", "-c", "sleep 0.2"]
-    }
-}
-
-fn long_cmd() -> Vec<&'static str> {
-    if cfg!(windows) {
-        vec!["ping", "-n", "60", "127.0.0.1"]
-    } else {
-        vec!["sleep", "60"]
-    }
-}
-
-#[tokio::test]
-async fn supervisor_reinicia_y_detiene() {
-    let dir = tempfile::tempdir().unwrap();
-    let s = Supervised::new(ProcSpec::new("corto", &short_cmd(), dir.path()));
-    let stop = CancellationToken::new();
-    let task = tokio::spawn(s.clone().watch(stop.clone()));
-    until(|| s.restarts.load(Ordering::Relaxed) >= 1).await;
-    stop.cancel();
-    tokio::time::timeout(Duration::from_secs(10), task).await.unwrap().unwrap();
-}
-
-#[tokio::test]
-async fn supervisor_termina_proceso_largo() {
-    let dir = tempfile::tempdir().unwrap();
-    let mut child = supervisor::spawn_child(&ProcSpec::new("largo", &long_cmd(), dir.path())).unwrap();
-    let t0 = std::time::Instant::now();
-    supervisor::terminate(&mut child, Duration::from_secs(3)).await;
-    assert!(child.try_wait().unwrap().is_some() && t0.elapsed() < Duration::from_secs(4));
-}
-
-#[test]
-fn pcx_toml_carga_solo_habilitados() {
-    let specs = supervisor::load(&std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../pcx.toml")).unwrap();
-    assert_eq!(specs.iter().map(|p| p.name.as_str()).collect::<Vec<_>>(), vec!["core"]);
-    assert!(specs[0].health.as_deref().unwrap().ends_with(":9200/health"));
-    assert_eq!(specs[0].cmd, vec!["pcx", "serve"]);
 }
