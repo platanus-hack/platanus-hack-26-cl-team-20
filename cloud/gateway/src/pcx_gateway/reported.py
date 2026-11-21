@@ -23,7 +23,7 @@ def upsert(items, item):
 def apply_reported(world: WorldState, payload, t_pub_ns):
     # Events have no world revision: keep the authoritative snapshot's rev unchanged.
     if isinstance(payload, ObjectAppeared):
-        world.objects = upsert(world.objects, payload.object)
+        world.objects = upsert(world.objects, msgspec.structs.replace(payload.object))  # sin alias al evento
     elif isinstance(payload, ObjectRemoved):
         world.objects = [obj for obj in world.objects if obj.id != payload.object_id]
     elif isinstance(payload, ObjectMoved):
@@ -42,7 +42,7 @@ def apply_reported(world: WorldState, payload, t_pub_ns):
                             obj.bbox_mm.x + dx, obj.bbox_mm.y + dy, obj.bbox_mm.w, obj.bbox_mm.h
                         )
                 obj.center_mm = payload.center_mm
-                obj.last_seen = t_pub_ns
+                obj.last_seen_ns = t_pub_ns
     elif isinstance(payload, DeviceChanged):
         world.devices = upsert(world.devices, payload.device)
     elif isinstance(payload, (TouchDown, TouchMove)):

@@ -64,6 +64,7 @@ async def live(tmp_path):
         database_url=test_url or f"sqlite+aiosqlite:///{tmp_path}/gateway.db",
         user_token="test-user-secret",
         node_token="test-node-secret",
+        console_token="test-console-secret",
         heartbeat_s=0.1,
         node_idle_s=2,
     )
