@@ -1,0 +1,3327 @@
+[
+  {
+    "name": "scene",
+    "description": "Estado actual en JSON: superficie, objetos (id, label, polygon_mm, center_mm), widgets, transformaciones y el cursor de eventos. Coordenadas en mm, origen arriba a la izquierda.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "include_hands": {
+          "type": "boolean",
+          "default": false
+        },
+        "include_devices": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "look",
+    "description": "Imagen de una cámara con anotaciones (ids, grilla en mm) más un resumen en texto.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "camera_id": {
+          "type": "string"
+        },
+        "annotate": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "project",
+    "description": "Crea o reemplaza widgets proyectados (label, halo, arrow, panel, button, image, effect). Ánclalos con anchor.object_id para que sigan al objeto.",
+    "inputSchema": {
+      "description": "Crea o reemplaza widgets (por `id`).",
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string"
+        },
+        "widgets": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "title": "Label",
+                "description": "Texto centrado en `anchor` (admite `\\n` y Unicode).",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "label"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "anchor": {
+                    "title": "Anchor",
+                    "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                    "type": "object",
+                    "properties": {
+                      "object_id": {
+                        "type": "string"
+                      },
+                      "point_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      },
+                      "offset_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      }
+                    },
+                    "required": []
+                  },
+                  "z": {
+                    "type": "integer",
+                    "default": 0
+                  },
+                  "ttl_s": {
+                    "type": "number"
+                  },
+                  "on_press": {
+                    "title": "OnPress",
+                    "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      },
+                      "triggers": {
+                        "type": "array",
+                        "items": {
+                          "enum": [
+                            "api",
+                            "dwell",
+                            "pinch",
+                            "shadow"
+                          ]
+                        }
+                      },
+                      "dwell_ms": {
+                        "type": "integer",
+                        "default": 800
+                      }
+                    },
+                    "required": []
+                  },
+                  "text": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "size_mm": {
+                    "type": "number",
+                    "default": 12.0
+                  },
+                  "color": {
+                    "type": "string",
+                    "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                    "default": "#FFFFFF"
+                  },
+                  "bg": {
+                    "type": "string",
+                    "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ]
+              },
+              {
+                "title": "Halo",
+                "description": "Borde luminoso animado. Sin `polygon_mm`, el core usa el polígono del objeto anclado.",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "halo"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "anchor": {
+                    "title": "Anchor",
+                    "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                    "type": "object",
+                    "properties": {
+                      "object_id": {
+                        "type": "string"
+                      },
+                      "point_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      },
+                      "offset_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      }
+                    },
+                    "required": []
+                  },
+                  "z": {
+                    "type": "integer",
+                    "default": 0
+                  },
+                  "ttl_s": {
+                    "type": "number"
+                  },
+                  "on_press": {
+                    "title": "OnPress",
+                    "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      },
+                      "triggers": {
+                        "type": "array",
+                        "items": {
+                          "enum": [
+                            "api",
+                            "dwell",
+                            "pinch",
+                            "shadow"
+                          ]
+                        }
+                      },
+                      "dwell_ms": {
+                        "type": "integer",
+                        "default": 800
+                      }
+                    },
+                    "required": []
+                  },
+                  "polygon_mm": {
+                    "description": "Polígono cerrado en mm: [[x,y],...]",
+                    "type": "array",
+                    "items": {
+                      "title": "PointMM",
+                      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                      "type": "array",
+                      "prefixItems": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "minItems": 2
+                    },
+                    "minItems": 3
+                  },
+                  "color": {
+                    "type": "string",
+                    "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                    "default": "#00E5FF"
+                  },
+                  "width_mm": {
+                    "type": "number",
+                    "default": 4.0
+                  },
+                  "pulse_hz": {
+                    "type": "number",
+                    "default": 1.0
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ]
+              },
+              {
+                "title": "Arrow",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "arrow"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "anchor": {
+                    "title": "Anchor",
+                    "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                    "type": "object",
+                    "properties": {
+                      "object_id": {
+                        "type": "string"
+                      },
+                      "point_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      },
+                      "offset_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      }
+                    },
+                    "required": []
+                  },
+                  "z": {
+                    "type": "integer",
+                    "default": 0
+                  },
+                  "ttl_s": {
+                    "type": "number"
+                  },
+                  "on_press": {
+                    "title": "OnPress",
+                    "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      },
+                      "triggers": {
+                        "type": "array",
+                        "items": {
+                          "enum": [
+                            "api",
+                            "dwell",
+                            "pinch",
+                            "shadow"
+                          ]
+                        }
+                      },
+                      "dwell_ms": {
+                        "type": "integer",
+                        "default": 800
+                      }
+                    },
+                    "required": []
+                  },
+                  "from_mm": {
+                    "title": "PointMM",
+                    "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "minItems": 2
+                  },
+                  "to_mm": {
+                    "title": "PointMM",
+                    "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "minItems": 2
+                  },
+                  "color": {
+                    "type": "string",
+                    "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                    "default": "#FFD400"
+                  },
+                  "width_mm": {
+                    "type": "number",
+                    "default": 5.0
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ]
+              },
+              {
+                "title": "Panel",
+                "description": "Título + párrafo con ajuste de línea.",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "panel"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "anchor": {
+                    "title": "Anchor",
+                    "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                    "type": "object",
+                    "properties": {
+                      "object_id": {
+                        "type": "string"
+                      },
+                      "point_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      },
+                      "offset_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      }
+                    },
+                    "required": []
+                  },
+                  "z": {
+                    "type": "integer",
+                    "default": 0
+                  },
+                  "ttl_s": {
+                    "type": "number"
+                  },
+                  "on_press": {
+                    "title": "OnPress",
+                    "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      },
+                      "triggers": {
+                        "type": "array",
+                        "items": {
+                          "enum": [
+                            "api",
+                            "dwell",
+                            "pinch",
+                            "shadow"
+                          ]
+                        }
+                      },
+                      "dwell_ms": {
+                        "type": "integer",
+                        "default": 800
+                      }
+                    },
+                    "required": []
+                  },
+                  "rect_mm": {
+                    "title": "RectMM",
+                    "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "minItems": 4
+                  },
+                  "title": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "body": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "color": {
+                    "type": "string",
+                    "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                    "default": "#FFFFFF"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ]
+              },
+              {
+                "title": "Button",
+                "description": "Botón tocable; `progress` (0..1) dibuja el anillo de permanencia.",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "button"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "anchor": {
+                    "title": "Anchor",
+                    "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                    "type": "object",
+                    "properties": {
+                      "object_id": {
+                        "type": "string"
+                      },
+                      "point_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      },
+                      "offset_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      }
+                    },
+                    "required": []
+                  },
+                  "z": {
+                    "type": "integer",
+                    "default": 0
+                  },
+                  "ttl_s": {
+                    "type": "number"
+                  },
+                  "on_press": {
+                    "title": "OnPress",
+                    "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      },
+                      "triggers": {
+                        "type": "array",
+                        "items": {
+                          "enum": [
+                            "api",
+                            "dwell",
+                            "pinch",
+                            "shadow"
+                          ]
+                        }
+                      },
+                      "dwell_ms": {
+                        "type": "integer",
+                        "default": 800
+                      }
+                    },
+                    "required": []
+                  },
+                  "rect_mm": {
+                    "title": "RectMM",
+                    "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "minItems": 4
+                  },
+                  "label": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "progress": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "default": 0.0
+                  },
+                  "color": {
+                    "type": "string",
+                    "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                    "default": "#00E676"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ]
+              },
+              {
+                "title": "Image",
+                "description": "Imagen en un rectángulo. `src`: `asset:<id>`, `data:<mime>;base64,...` o `https://...`.",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "image"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "anchor": {
+                    "title": "Anchor",
+                    "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                    "type": "object",
+                    "properties": {
+                      "object_id": {
+                        "type": "string"
+                      },
+                      "point_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      },
+                      "offset_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      }
+                    },
+                    "required": []
+                  },
+                  "z": {
+                    "type": "integer",
+                    "default": 0
+                  },
+                  "ttl_s": {
+                    "type": "number"
+                  },
+                  "on_press": {
+                    "title": "OnPress",
+                    "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      },
+                      "triggers": {
+                        "type": "array",
+                        "items": {
+                          "enum": [
+                            "api",
+                            "dwell",
+                            "pinch",
+                            "shadow"
+                          ]
+                        }
+                      },
+                      "dwell_ms": {
+                        "type": "integer",
+                        "default": 800
+                      }
+                    },
+                    "required": []
+                  },
+                  "rect_mm": {
+                    "title": "RectMM",
+                    "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "minItems": 4
+                  },
+                  "src": {
+                    "type": "string"
+                  },
+                  "opacity": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "default": 1.0
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "src"
+                ]
+              },
+              {
+                "title": "Effect",
+                "description": "Efecto de shader WGSL por nombre (catálogo del compositor), con parámetros numéricos o vectores.",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "effect"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "anchor": {
+                    "title": "Anchor",
+                    "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                    "type": "object",
+                    "properties": {
+                      "object_id": {
+                        "type": "string"
+                      },
+                      "point_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      },
+                      "offset_mm": {
+                        "title": "PointMM",
+                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2
+                      }
+                    },
+                    "required": []
+                  },
+                  "z": {
+                    "type": "integer",
+                    "default": 0
+                  },
+                  "ttl_s": {
+                    "type": "number"
+                  },
+                  "on_press": {
+                    "title": "OnPress",
+                    "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      },
+                      "triggers": {
+                        "type": "array",
+                        "items": {
+                          "enum": [
+                            "api",
+                            "dwell",
+                            "pinch",
+                            "shadow"
+                          ]
+                        }
+                      },
+                      "dwell_ms": {
+                        "type": "integer",
+                        "default": 800
+                      }
+                    },
+                    "required": []
+                  },
+                  "shader": {
+                    "type": "string"
+                  },
+                  "params": {
+                    "type": "object",
+                    "default": {}
+                  },
+                  "rect_mm": {
+                    "title": "RectMM",
+                    "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "minItems": 4
+                  },
+                  "polygon_mm": {
+                    "description": "Polígono cerrado en mm: [[x,y],...]",
+                    "type": "array",
+                    "items": {
+                      "title": "PointMM",
+                      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                      "type": "array",
+                      "prefixItems": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "minItems": 2
+                    },
+                    "minItems": 3
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "shader"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "widgets"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "remove",
+    "description": "Borra widgets proyectados por id.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string"
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "ids"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "ask",
+    "description": "Proyecta una pregunta con un botón por opción y espera el toque o el plazo.",
+    "inputSchema": {
+      "description": "Proyecta una pregunta con un botón por opción; responde con el evento `ask_answered` o vence.",
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string"
+        },
+        "question": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 6,
+          "minItems": 1
+        },
+        "timeout_s": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 600,
+          "default": 60.0
+        },
+        "anchor": {
+          "title": "Anchor",
+          "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+          "type": "object",
+          "properties": {
+            "object_id": {
+              "type": "string"
+            },
+            "point_mm": {
+              "title": "PointMM",
+              "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2
+            },
+            "offset_mm": {
+              "title": "PointMM",
+              "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2
+            }
+          },
+          "required": []
+        }
+      },
+      "required": [
+        "question",
+        "options"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "events_wait",
+    "description": "Long-poll de eventos físicos (toques, objetos, flujos) posteriores a `cursor`.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cursor": {
+          "type": "integer",
+          "default": 0
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "timeout_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 50,
+          "default": 25.0
+        },
+        "max_events": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "default": 50
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "run_flow",
+    "description": "Ejecuta en el nodo una máquina de estados (estados, transiciones por evento o tiempo y acciones project/remove/emit/home_call) sin ida y vuelta al agente por cada paso.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string"
+        },
+        "flow": {
+          "title": "Flow",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "initial": {
+              "type": "string"
+            },
+            "states": {
+              "type": "array",
+              "items": {
+                "title": "FlowState",
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "on_enter": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "title": "Project",
+                          "description": "Crea o reemplaza widgets (por `id`).",
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "enum": [
+                                "project"
+                              ]
+                            },
+                            "request_id": {
+                              "type": "string"
+                            },
+                            "widgets": {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "title": "Label",
+                                    "description": "Texto centrado en `anchor` (admite `\\n` y Unicode).",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "enum": [
+                                          "label"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "anchor": {
+                                        "title": "Anchor",
+                                        "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                        "type": "object",
+                                        "properties": {
+                                          "object_id": {
+                                            "type": "string"
+                                          },
+                                          "point_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          },
+                                          "offset_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "z": {
+                                        "type": "integer",
+                                        "default": 0
+                                      },
+                                      "ttl_s": {
+                                        "type": "number"
+                                      },
+                                      "on_press": {
+                                        "title": "OnPress",
+                                        "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "string"
+                                          },
+                                          "triggers": {
+                                            "type": "array",
+                                            "items": {
+                                              "enum": [
+                                                "api",
+                                                "dwell",
+                                                "pinch",
+                                                "shadow"
+                                              ]
+                                            }
+                                          },
+                                          "dwell_ms": {
+                                            "type": "integer",
+                                            "default": 800
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "text": {
+                                        "type": "string",
+                                        "default": ""
+                                      },
+                                      "size_mm": {
+                                        "type": "number",
+                                        "default": 12.0
+                                      },
+                                      "color": {
+                                        "type": "string",
+                                        "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                                        "default": "#FFFFFF"
+                                      },
+                                      "bg": {
+                                        "type": "string",
+                                        "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "id"
+                                    ]
+                                  },
+                                  {
+                                    "title": "Halo",
+                                    "description": "Borde luminoso animado. Sin `polygon_mm`, el core usa el polígono del objeto anclado.",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "enum": [
+                                          "halo"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "anchor": {
+                                        "title": "Anchor",
+                                        "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                        "type": "object",
+                                        "properties": {
+                                          "object_id": {
+                                            "type": "string"
+                                          },
+                                          "point_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          },
+                                          "offset_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "z": {
+                                        "type": "integer",
+                                        "default": 0
+                                      },
+                                      "ttl_s": {
+                                        "type": "number"
+                                      },
+                                      "on_press": {
+                                        "title": "OnPress",
+                                        "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "string"
+                                          },
+                                          "triggers": {
+                                            "type": "array",
+                                            "items": {
+                                              "enum": [
+                                                "api",
+                                                "dwell",
+                                                "pinch",
+                                                "shadow"
+                                              ]
+                                            }
+                                          },
+                                          "dwell_ms": {
+                                            "type": "integer",
+                                            "default": 800
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "polygon_mm": {
+                                        "description": "Polígono cerrado en mm: [[x,y],...]",
+                                        "type": "array",
+                                        "items": {
+                                          "title": "PointMM",
+                                          "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                          "type": "array",
+                                          "prefixItems": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "number"
+                                            }
+                                          ],
+                                          "minItems": 2
+                                        },
+                                        "minItems": 3
+                                      },
+                                      "color": {
+                                        "type": "string",
+                                        "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                                        "default": "#00E5FF"
+                                      },
+                                      "width_mm": {
+                                        "type": "number",
+                                        "default": 4.0
+                                      },
+                                      "pulse_hz": {
+                                        "type": "number",
+                                        "default": 1.0
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "id"
+                                    ]
+                                  },
+                                  {
+                                    "title": "Arrow",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "enum": [
+                                          "arrow"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "anchor": {
+                                        "title": "Anchor",
+                                        "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                        "type": "object",
+                                        "properties": {
+                                          "object_id": {
+                                            "type": "string"
+                                          },
+                                          "point_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          },
+                                          "offset_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "z": {
+                                        "type": "integer",
+                                        "default": 0
+                                      },
+                                      "ttl_s": {
+                                        "type": "number"
+                                      },
+                                      "on_press": {
+                                        "title": "OnPress",
+                                        "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "string"
+                                          },
+                                          "triggers": {
+                                            "type": "array",
+                                            "items": {
+                                              "enum": [
+                                                "api",
+                                                "dwell",
+                                                "pinch",
+                                                "shadow"
+                                              ]
+                                            }
+                                          },
+                                          "dwell_ms": {
+                                            "type": "integer",
+                                            "default": 800
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "from_mm": {
+                                        "title": "PointMM",
+                                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                        "type": "array",
+                                        "prefixItems": [
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          }
+                                        ],
+                                        "minItems": 2
+                                      },
+                                      "to_mm": {
+                                        "title": "PointMM",
+                                        "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                        "type": "array",
+                                        "prefixItems": [
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          }
+                                        ],
+                                        "minItems": 2
+                                      },
+                                      "color": {
+                                        "type": "string",
+                                        "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                                        "default": "#FFD400"
+                                      },
+                                      "width_mm": {
+                                        "type": "number",
+                                        "default": 5.0
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "id"
+                                    ]
+                                  },
+                                  {
+                                    "title": "Panel",
+                                    "description": "Título + párrafo con ajuste de línea.",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "enum": [
+                                          "panel"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "anchor": {
+                                        "title": "Anchor",
+                                        "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                        "type": "object",
+                                        "properties": {
+                                          "object_id": {
+                                            "type": "string"
+                                          },
+                                          "point_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          },
+                                          "offset_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "z": {
+                                        "type": "integer",
+                                        "default": 0
+                                      },
+                                      "ttl_s": {
+                                        "type": "number"
+                                      },
+                                      "on_press": {
+                                        "title": "OnPress",
+                                        "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "string"
+                                          },
+                                          "triggers": {
+                                            "type": "array",
+                                            "items": {
+                                              "enum": [
+                                                "api",
+                                                "dwell",
+                                                "pinch",
+                                                "shadow"
+                                              ]
+                                            }
+                                          },
+                                          "dwell_ms": {
+                                            "type": "integer",
+                                            "default": 800
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "rect_mm": {
+                                        "title": "RectMM",
+                                        "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+                                        "type": "array",
+                                        "prefixItems": [
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          }
+                                        ],
+                                        "minItems": 4
+                                      },
+                                      "title": {
+                                        "type": "string",
+                                        "default": ""
+                                      },
+                                      "body": {
+                                        "type": "string",
+                                        "default": ""
+                                      },
+                                      "color": {
+                                        "type": "string",
+                                        "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                                        "default": "#FFFFFF"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "id"
+                                    ]
+                                  },
+                                  {
+                                    "title": "Button",
+                                    "description": "Botón tocable; `progress` (0..1) dibuja el anillo de permanencia.",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "enum": [
+                                          "button"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "anchor": {
+                                        "title": "Anchor",
+                                        "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                        "type": "object",
+                                        "properties": {
+                                          "object_id": {
+                                            "type": "string"
+                                          },
+                                          "point_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          },
+                                          "offset_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "z": {
+                                        "type": "integer",
+                                        "default": 0
+                                      },
+                                      "ttl_s": {
+                                        "type": "number"
+                                      },
+                                      "on_press": {
+                                        "title": "OnPress",
+                                        "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "string"
+                                          },
+                                          "triggers": {
+                                            "type": "array",
+                                            "items": {
+                                              "enum": [
+                                                "api",
+                                                "dwell",
+                                                "pinch",
+                                                "shadow"
+                                              ]
+                                            }
+                                          },
+                                          "dwell_ms": {
+                                            "type": "integer",
+                                            "default": 800
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "rect_mm": {
+                                        "title": "RectMM",
+                                        "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+                                        "type": "array",
+                                        "prefixItems": [
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          }
+                                        ],
+                                        "minItems": 4
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "default": ""
+                                      },
+                                      "progress": {
+                                        "type": "number",
+                                        "minimum": 0.0,
+                                        "maximum": 1.0,
+                                        "default": 0.0
+                                      },
+                                      "color": {
+                                        "type": "string",
+                                        "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                                        "default": "#00E676"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "id"
+                                    ]
+                                  },
+                                  {
+                                    "title": "Image",
+                                    "description": "Imagen en un rectángulo. `src`: `asset:<id>`, `data:<mime>;base64,...` o `https://...`.",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "enum": [
+                                          "image"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "anchor": {
+                                        "title": "Anchor",
+                                        "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                        "type": "object",
+                                        "properties": {
+                                          "object_id": {
+                                            "type": "string"
+                                          },
+                                          "point_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          },
+                                          "offset_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "z": {
+                                        "type": "integer",
+                                        "default": 0
+                                      },
+                                      "ttl_s": {
+                                        "type": "number"
+                                      },
+                                      "on_press": {
+                                        "title": "OnPress",
+                                        "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "string"
+                                          },
+                                          "triggers": {
+                                            "type": "array",
+                                            "items": {
+                                              "enum": [
+                                                "api",
+                                                "dwell",
+                                                "pinch",
+                                                "shadow"
+                                              ]
+                                            }
+                                          },
+                                          "dwell_ms": {
+                                            "type": "integer",
+                                            "default": 800
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "rect_mm": {
+                                        "title": "RectMM",
+                                        "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+                                        "type": "array",
+                                        "prefixItems": [
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          }
+                                        ],
+                                        "minItems": 4
+                                      },
+                                      "src": {
+                                        "type": "string"
+                                      },
+                                      "opacity": {
+                                        "type": "number",
+                                        "minimum": 0.0,
+                                        "maximum": 1.0,
+                                        "default": 1.0
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "id",
+                                      "src"
+                                    ]
+                                  },
+                                  {
+                                    "title": "Effect",
+                                    "description": "Efecto de shader WGSL por nombre (catálogo del compositor), con parámetros numéricos o vectores.",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "enum": [
+                                          "effect"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "anchor": {
+                                        "title": "Anchor",
+                                        "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                        "type": "object",
+                                        "properties": {
+                                          "object_id": {
+                                            "type": "string"
+                                          },
+                                          "point_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          },
+                                          "offset_mm": {
+                                            "title": "PointMM",
+                                            "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                            "type": "array",
+                                            "prefixItems": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "minItems": 2
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "z": {
+                                        "type": "integer",
+                                        "default": 0
+                                      },
+                                      "ttl_s": {
+                                        "type": "number"
+                                      },
+                                      "on_press": {
+                                        "title": "OnPress",
+                                        "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "string"
+                                          },
+                                          "triggers": {
+                                            "type": "array",
+                                            "items": {
+                                              "enum": [
+                                                "api",
+                                                "dwell",
+                                                "pinch",
+                                                "shadow"
+                                              ]
+                                            }
+                                          },
+                                          "dwell_ms": {
+                                            "type": "integer",
+                                            "default": 800
+                                          }
+                                        },
+                                        "required": []
+                                      },
+                                      "shader": {
+                                        "type": "string"
+                                      },
+                                      "params": {
+                                        "type": "object",
+                                        "default": {}
+                                      },
+                                      "rect_mm": {
+                                        "title": "RectMM",
+                                        "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+                                        "type": "array",
+                                        "prefixItems": [
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          }
+                                        ],
+                                        "minItems": 4
+                                      },
+                                      "polygon_mm": {
+                                        "description": "Polígono cerrado en mm: [[x,y],...]",
+                                        "type": "array",
+                                        "items": {
+                                          "title": "PointMM",
+                                          "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                          "type": "array",
+                                          "prefixItems": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "number"
+                                            }
+                                          ],
+                                          "minItems": 2
+                                        },
+                                        "minItems": 3
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "id",
+                                      "shader"
+                                    ]
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "widgets"
+                          ]
+                        },
+                        {
+                          "title": "Update",
+                          "description": "Cambia solo algunos campos de un widget existente (merge superficial).",
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "enum": [
+                                "update"
+                              ]
+                            },
+                            "request_id": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "set": {
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "id",
+                            "set"
+                          ]
+                        },
+                        {
+                          "title": "Remove",
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "enum": [
+                                "remove"
+                              ]
+                            },
+                            "request_id": {
+                              "type": "string"
+                            },
+                            "ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "ids"
+                          ]
+                        },
+                        {
+                          "title": "Clear",
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "enum": [
+                                "clear"
+                              ]
+                            },
+                            "request_id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ]
+                        },
+                        {
+                          "title": "Emit",
+                          "description": "Emite un evento propio (`flow_emitted`), p. ej. para avisar al agente que un flujo terminó.",
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "enum": [
+                                "emit"
+                              ]
+                            },
+                            "request_id": {
+                              "type": "string"
+                            },
+                            "event": {
+                              "type": "string"
+                            },
+                            "data": {
+                              "type": "object",
+                              "default": {}
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "event"
+                          ]
+                        },
+                        {
+                          "title": "HomeCall",
+                          "description": "Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).",
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "enum": [
+                                "home_call"
+                              ]
+                            },
+                            "request_id": {
+                              "type": "string"
+                            },
+                            "domain": {
+                              "type": "string"
+                            },
+                            "service": {
+                              "type": "string"
+                            },
+                            "data": {
+                              "type": "object",
+                              "default": {}
+                            },
+                            "requires_confirmation": {
+                              "type": "boolean",
+                              "default": true
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "domain",
+                            "service"
+                          ]
+                        }
+                      ]
+                    },
+                    "default": []
+                  },
+                  "transitions": {
+                    "type": "array",
+                    "items": {
+                      "title": "Transition",
+                      "description": "Se dispara por `on` (evento) o por `after_s` (segundos en el estado). Ejecuta `actions` y pasa a `to`.",
+                      "type": "object",
+                      "properties": {
+                        "on": {
+                          "title": "EventFilter",
+                          "description": "Coincide con un evento si `event` == su `type` y cada par de `where` es igual al campo (rutas con punto,\n    p. ej. `{\"widget_id\": \"next\"}` o `{\"touch.widget_id\": \"next\"}`).",
+                          "type": "object",
+                          "properties": {
+                            "event": {
+                              "type": "string"
+                            },
+                            "where": {
+                              "type": "object",
+                              "default": {}
+                            }
+                          },
+                          "required": [
+                            "event"
+                          ]
+                        },
+                        "after_s": {
+                          "type": "number"
+                        },
+                        "to": {
+                          "type": "string"
+                        },
+                        "actions": {
+                          "type": "array",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "title": "Project",
+                                "description": "Crea o reemplaza widgets (por `id`).",
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "enum": [
+                                      "project"
+                                    ]
+                                  },
+                                  "request_id": {
+                                    "type": "string"
+                                  },
+                                  "widgets": {
+                                    "type": "array",
+                                    "items": {
+                                      "anyOf": [
+                                        {
+                                          "title": "Label",
+                                          "description": "Texto centrado en `anchor` (admite `\\n` y Unicode).",
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "enum": [
+                                                "label"
+                                              ]
+                                            },
+                                            "id": {
+                                              "type": "string"
+                                            },
+                                            "anchor": {
+                                              "title": "Anchor",
+                                              "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                              "type": "object",
+                                              "properties": {
+                                                "object_id": {
+                                                  "type": "string"
+                                                },
+                                                "point_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                },
+                                                "offset_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "z": {
+                                              "type": "integer",
+                                              "default": 0
+                                            },
+                                            "ttl_s": {
+                                              "type": "number"
+                                            },
+                                            "on_press": {
+                                              "title": "OnPress",
+                                              "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                              "type": "object",
+                                              "properties": {
+                                                "value": {
+                                                  "type": "string"
+                                                },
+                                                "triggers": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "enum": [
+                                                      "api",
+                                                      "dwell",
+                                                      "pinch",
+                                                      "shadow"
+                                                    ]
+                                                  }
+                                                },
+                                                "dwell_ms": {
+                                                  "type": "integer",
+                                                  "default": 800
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "text": {
+                                              "type": "string",
+                                              "default": ""
+                                            },
+                                            "size_mm": {
+                                              "type": "number",
+                                              "default": 12.0
+                                            },
+                                            "color": {
+                                              "type": "string",
+                                              "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                                              "default": "#FFFFFF"
+                                            },
+                                            "bg": {
+                                              "type": "string",
+                                              "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$"
+                                            }
+                                          },
+                                          "required": [
+                                            "type",
+                                            "id"
+                                          ]
+                                        },
+                                        {
+                                          "title": "Halo",
+                                          "description": "Borde luminoso animado. Sin `polygon_mm`, el core usa el polígono del objeto anclado.",
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "enum": [
+                                                "halo"
+                                              ]
+                                            },
+                                            "id": {
+                                              "type": "string"
+                                            },
+                                            "anchor": {
+                                              "title": "Anchor",
+                                              "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                              "type": "object",
+                                              "properties": {
+                                                "object_id": {
+                                                  "type": "string"
+                                                },
+                                                "point_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                },
+                                                "offset_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "z": {
+                                              "type": "integer",
+                                              "default": 0
+                                            },
+                                            "ttl_s": {
+                                              "type": "number"
+                                            },
+                                            "on_press": {
+                                              "title": "OnPress",
+                                              "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                              "type": "object",
+                                              "properties": {
+                                                "value": {
+                                                  "type": "string"
+                                                },
+                                                "triggers": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "enum": [
+                                                      "api",
+                                                      "dwell",
+                                                      "pinch",
+                                                      "shadow"
+                                                    ]
+                                                  }
+                                                },
+                                                "dwell_ms": {
+                                                  "type": "integer",
+                                                  "default": 800
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "polygon_mm": {
+                                              "description": "Polígono cerrado en mm: [[x,y],...]",
+                                              "type": "array",
+                                              "items": {
+                                                "title": "PointMM",
+                                                "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                "type": "array",
+                                                "prefixItems": [
+                                                  {
+                                                    "type": "number"
+                                                  },
+                                                  {
+                                                    "type": "number"
+                                                  }
+                                                ],
+                                                "minItems": 2
+                                              },
+                                              "minItems": 3
+                                            },
+                                            "color": {
+                                              "type": "string",
+                                              "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                                              "default": "#00E5FF"
+                                            },
+                                            "width_mm": {
+                                              "type": "number",
+                                              "default": 4.0
+                                            },
+                                            "pulse_hz": {
+                                              "type": "number",
+                                              "default": 1.0
+                                            }
+                                          },
+                                          "required": [
+                                            "type",
+                                            "id"
+                                          ]
+                                        },
+                                        {
+                                          "title": "Arrow",
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "enum": [
+                                                "arrow"
+                                              ]
+                                            },
+                                            "id": {
+                                              "type": "string"
+                                            },
+                                            "anchor": {
+                                              "title": "Anchor",
+                                              "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                              "type": "object",
+                                              "properties": {
+                                                "object_id": {
+                                                  "type": "string"
+                                                },
+                                                "point_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                },
+                                                "offset_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "z": {
+                                              "type": "integer",
+                                              "default": 0
+                                            },
+                                            "ttl_s": {
+                                              "type": "number"
+                                            },
+                                            "on_press": {
+                                              "title": "OnPress",
+                                              "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                              "type": "object",
+                                              "properties": {
+                                                "value": {
+                                                  "type": "string"
+                                                },
+                                                "triggers": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "enum": [
+                                                      "api",
+                                                      "dwell",
+                                                      "pinch",
+                                                      "shadow"
+                                                    ]
+                                                  }
+                                                },
+                                                "dwell_ms": {
+                                                  "type": "integer",
+                                                  "default": 800
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "from_mm": {
+                                              "title": "PointMM",
+                                              "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                              "type": "array",
+                                              "prefixItems": [
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                }
+                                              ],
+                                              "minItems": 2
+                                            },
+                                            "to_mm": {
+                                              "title": "PointMM",
+                                              "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                              "type": "array",
+                                              "prefixItems": [
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                }
+                                              ],
+                                              "minItems": 2
+                                            },
+                                            "color": {
+                                              "type": "string",
+                                              "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                                              "default": "#FFD400"
+                                            },
+                                            "width_mm": {
+                                              "type": "number",
+                                              "default": 5.0
+                                            }
+                                          },
+                                          "required": [
+                                            "type",
+                                            "id"
+                                          ]
+                                        },
+                                        {
+                                          "title": "Panel",
+                                          "description": "Título + párrafo con ajuste de línea.",
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "enum": [
+                                                "panel"
+                                              ]
+                                            },
+                                            "id": {
+                                              "type": "string"
+                                            },
+                                            "anchor": {
+                                              "title": "Anchor",
+                                              "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                              "type": "object",
+                                              "properties": {
+                                                "object_id": {
+                                                  "type": "string"
+                                                },
+                                                "point_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                },
+                                                "offset_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "z": {
+                                              "type": "integer",
+                                              "default": 0
+                                            },
+                                            "ttl_s": {
+                                              "type": "number"
+                                            },
+                                            "on_press": {
+                                              "title": "OnPress",
+                                              "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                              "type": "object",
+                                              "properties": {
+                                                "value": {
+                                                  "type": "string"
+                                                },
+                                                "triggers": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "enum": [
+                                                      "api",
+                                                      "dwell",
+                                                      "pinch",
+                                                      "shadow"
+                                                    ]
+                                                  }
+                                                },
+                                                "dwell_ms": {
+                                                  "type": "integer",
+                                                  "default": 800
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "rect_mm": {
+                                              "title": "RectMM",
+                                              "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+                                              "type": "array",
+                                              "prefixItems": [
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                }
+                                              ],
+                                              "minItems": 4
+                                            },
+                                            "title": {
+                                              "type": "string",
+                                              "default": ""
+                                            },
+                                            "body": {
+                                              "type": "string",
+                                              "default": ""
+                                            },
+                                            "color": {
+                                              "type": "string",
+                                              "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                                              "default": "#FFFFFF"
+                                            }
+                                          },
+                                          "required": [
+                                            "type",
+                                            "id"
+                                          ]
+                                        },
+                                        {
+                                          "title": "Button",
+                                          "description": "Botón tocable; `progress` (0..1) dibuja el anillo de permanencia.",
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "enum": [
+                                                "button"
+                                              ]
+                                            },
+                                            "id": {
+                                              "type": "string"
+                                            },
+                                            "anchor": {
+                                              "title": "Anchor",
+                                              "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                              "type": "object",
+                                              "properties": {
+                                                "object_id": {
+                                                  "type": "string"
+                                                },
+                                                "point_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                },
+                                                "offset_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "z": {
+                                              "type": "integer",
+                                              "default": 0
+                                            },
+                                            "ttl_s": {
+                                              "type": "number"
+                                            },
+                                            "on_press": {
+                                              "title": "OnPress",
+                                              "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                              "type": "object",
+                                              "properties": {
+                                                "value": {
+                                                  "type": "string"
+                                                },
+                                                "triggers": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "enum": [
+                                                      "api",
+                                                      "dwell",
+                                                      "pinch",
+                                                      "shadow"
+                                                    ]
+                                                  }
+                                                },
+                                                "dwell_ms": {
+                                                  "type": "integer",
+                                                  "default": 800
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "rect_mm": {
+                                              "title": "RectMM",
+                                              "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+                                              "type": "array",
+                                              "prefixItems": [
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                }
+                                              ],
+                                              "minItems": 4
+                                            },
+                                            "label": {
+                                              "type": "string",
+                                              "default": ""
+                                            },
+                                            "progress": {
+                                              "type": "number",
+                                              "minimum": 0.0,
+                                              "maximum": 1.0,
+                                              "default": 0.0
+                                            },
+                                            "color": {
+                                              "type": "string",
+                                              "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+                                              "default": "#00E676"
+                                            }
+                                          },
+                                          "required": [
+                                            "type",
+                                            "id"
+                                          ]
+                                        },
+                                        {
+                                          "title": "Image",
+                                          "description": "Imagen en un rectángulo. `src`: `asset:<id>`, `data:<mime>;base64,...` o `https://...`.",
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "enum": [
+                                                "image"
+                                              ]
+                                            },
+                                            "id": {
+                                              "type": "string"
+                                            },
+                                            "anchor": {
+                                              "title": "Anchor",
+                                              "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                              "type": "object",
+                                              "properties": {
+                                                "object_id": {
+                                                  "type": "string"
+                                                },
+                                                "point_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                },
+                                                "offset_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "z": {
+                                              "type": "integer",
+                                              "default": 0
+                                            },
+                                            "ttl_s": {
+                                              "type": "number"
+                                            },
+                                            "on_press": {
+                                              "title": "OnPress",
+                                              "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                              "type": "object",
+                                              "properties": {
+                                                "value": {
+                                                  "type": "string"
+                                                },
+                                                "triggers": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "enum": [
+                                                      "api",
+                                                      "dwell",
+                                                      "pinch",
+                                                      "shadow"
+                                                    ]
+                                                  }
+                                                },
+                                                "dwell_ms": {
+                                                  "type": "integer",
+                                                  "default": 800
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "rect_mm": {
+                                              "title": "RectMM",
+                                              "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+                                              "type": "array",
+                                              "prefixItems": [
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                }
+                                              ],
+                                              "minItems": 4
+                                            },
+                                            "src": {
+                                              "type": "string"
+                                            },
+                                            "opacity": {
+                                              "type": "number",
+                                              "minimum": 0.0,
+                                              "maximum": 1.0,
+                                              "default": 1.0
+                                            }
+                                          },
+                                          "required": [
+                                            "type",
+                                            "id",
+                                            "src"
+                                          ]
+                                        },
+                                        {
+                                          "title": "Effect",
+                                          "description": "Efecto de shader WGSL por nombre (catálogo del compositor), con parámetros numéricos o vectores.",
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "enum": [
+                                                "effect"
+                                              ]
+                                            },
+                                            "id": {
+                                              "type": "string"
+                                            },
+                                            "anchor": {
+                                              "title": "Anchor",
+                                              "description": "Dónde se ancla un widget: a un objeto (lo sigue si se mueve) o a un punto fijo, más un desplazamiento.",
+                                              "type": "object",
+                                              "properties": {
+                                                "object_id": {
+                                                  "type": "string"
+                                                },
+                                                "point_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                },
+                                                "offset_mm": {
+                                                  "title": "PointMM",
+                                                  "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                  "type": "array",
+                                                  "prefixItems": [
+                                                    {
+                                                      "type": "number"
+                                                    },
+                                                    {
+                                                      "type": "number"
+                                                    }
+                                                  ],
+                                                  "minItems": 2
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "z": {
+                                              "type": "integer",
+                                              "default": 0
+                                            },
+                                            "ttl_s": {
+                                              "type": "number"
+                                            },
+                                            "on_press": {
+                                              "title": "OnPress",
+                                              "description": "Hace tocable al widget: el core emite `widget_pressed{widget_id, value}` al confirmarse el toque.",
+                                              "type": "object",
+                                              "properties": {
+                                                "value": {
+                                                  "type": "string"
+                                                },
+                                                "triggers": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "enum": [
+                                                      "api",
+                                                      "dwell",
+                                                      "pinch",
+                                                      "shadow"
+                                                    ]
+                                                  }
+                                                },
+                                                "dwell_ms": {
+                                                  "type": "integer",
+                                                  "default": 800
+                                                }
+                                              },
+                                              "required": []
+                                            },
+                                            "shader": {
+                                              "type": "string"
+                                            },
+                                            "params": {
+                                              "type": "object",
+                                              "default": {}
+                                            },
+                                            "rect_mm": {
+                                              "title": "RectMM",
+                                              "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+                                              "type": "array",
+                                              "prefixItems": [
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                },
+                                                {
+                                                  "type": "number"
+                                                }
+                                              ],
+                                              "minItems": 4
+                                            },
+                                            "polygon_mm": {
+                                              "description": "Polígono cerrado en mm: [[x,y],...]",
+                                              "type": "array",
+                                              "items": {
+                                                "title": "PointMM",
+                                                "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+                                                "type": "array",
+                                                "prefixItems": [
+                                                  {
+                                                    "type": "number"
+                                                  },
+                                                  {
+                                                    "type": "number"
+                                                  }
+                                                ],
+                                                "minItems": 2
+                                              },
+                                              "minItems": 3
+                                            }
+                                          },
+                                          "required": [
+                                            "type",
+                                            "id",
+                                            "shader"
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "widgets"
+                                ]
+                              },
+                              {
+                                "title": "Update",
+                                "description": "Cambia solo algunos campos de un widget existente (merge superficial).",
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "enum": [
+                                      "update"
+                                    ]
+                                  },
+                                  "request_id": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "set": {
+                                    "type": "object"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "id",
+                                  "set"
+                                ]
+                              },
+                              {
+                                "title": "Remove",
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "enum": [
+                                      "remove"
+                                    ]
+                                  },
+                                  "request_id": {
+                                    "type": "string"
+                                  },
+                                  "ids": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "ids"
+                                ]
+                              },
+                              {
+                                "title": "Clear",
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "enum": [
+                                      "clear"
+                                    ]
+                                  },
+                                  "request_id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "type"
+                                ]
+                              },
+                              {
+                                "title": "Emit",
+                                "description": "Emite un evento propio (`flow_emitted`), p. ej. para avisar al agente que un flujo terminó.",
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "enum": [
+                                      "emit"
+                                    ]
+                                  },
+                                  "request_id": {
+                                    "type": "string"
+                                  },
+                                  "event": {
+                                    "type": "string"
+                                  },
+                                  "data": {
+                                    "type": "object",
+                                    "default": {}
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "event"
+                                ]
+                              },
+                              {
+                                "title": "HomeCall",
+                                "description": "Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).",
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "enum": [
+                                      "home_call"
+                                    ]
+                                  },
+                                  "request_id": {
+                                    "type": "string"
+                                  },
+                                  "domain": {
+                                    "type": "string"
+                                  },
+                                  "service": {
+                                    "type": "string"
+                                  },
+                                  "data": {
+                                    "type": "object",
+                                    "default": {}
+                                  },
+                                  "requires_confirmation": {
+                                    "type": "boolean",
+                                    "default": true
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "domain",
+                                  "service"
+                                ]
+                              }
+                            ]
+                          },
+                          "default": []
+                        }
+                      },
+                      "required": [
+                        "to"
+                      ]
+                    },
+                    "default": []
+                  },
+                  "final": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            },
+            "cleanup": {
+              "type": "boolean",
+              "default": true
+            },
+            "timeout_s": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "initial",
+            "states"
+          ]
+        }
+      },
+      "required": [
+        "flow"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "calibrate",
+    "description": "Calibra cámara↔proyector↔mesa: quick (ArUco, ~3 s), precise (gray code) o verify.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "precise",
+            "quick",
+            "verify"
+          ],
+          "default": "quick"
+        },
+        "camera_id": {
+          "type": "string"
+        },
+        "projector_id": {
+          "type": "string"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "devices",
+    "description": "Lista los dispositivos del nodo (cámaras, proyectores, celulares, Home Assistant, MIDI).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "camera",
+            "home_assistant",
+            "midi",
+            "phone",
+            "projector"
+          ]
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "home",
+    "description": "Llama un servicio de Home Assistant (p. ej. light.turn_on). Pide confirmación en la mesa si requires_confirmation.",
+    "inputSchema": {
+      "description": "Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).",
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "service": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "default": {}
+        },
+        "requires_confirmation": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "domain",
+        "service"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": false
+    }
+  }
+]

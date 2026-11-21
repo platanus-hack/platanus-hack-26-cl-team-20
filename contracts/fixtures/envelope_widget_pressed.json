@@ -1,0 +1,11 @@
+{
+  "type": "widget_pressed",
+  "v": 1,
+  "seq": 4182,
+  "t_capture_ns": 1795231660101000000,
+  "t_pub_ns": 1795231660119000000,
+  "source": "core",
+  "node_id": "mesa-max",
+  "payload": {"type": "widget_pressed", "widget_id": "siguiente", "value": "next", "trigger": "dwell",
+              "point_mm": [525, 362.5]}
+}

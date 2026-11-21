@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "camera_id": {
+      "type": "string"
+    },
+    "annotate": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

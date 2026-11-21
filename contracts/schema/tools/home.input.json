@@ -1,0 +1,27 @@
+{
+  "description": "Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).",
+  "type": "object",
+  "properties": {
+    "request_id": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "service": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "default": {}
+    },
+    "requires_confirmation": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "domain",
+    "service"
+  ]
+}

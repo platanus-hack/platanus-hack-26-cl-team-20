@@ -1,0 +1,12 @@
+{
+  "type": "scene_diff",
+  "rev": 13,
+  "base_rev": 12,
+  "t_send_ms": 1795231660140.1,
+  "upsert": [
+    {"type": "button", "id": "siguiente", "rect_mm": [470, 340, 110, 45], "label": "Siguiente ✓",
+     "progress": 0.8, "color": "#00E676", "on_press": {"value": "next"}}
+  ],
+  "remove": ["flecha"],
+  "transforms": null
+}

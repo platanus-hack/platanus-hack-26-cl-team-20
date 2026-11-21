@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "properties": {
+    "cursor": {
+      "type": "integer",
+      "default": 0
+    },
+    "types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "timeout_s": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 50,
+      "default": 25.0
+    },
+    "max_events": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500,
+      "default": 50
+    }
+  }
+}

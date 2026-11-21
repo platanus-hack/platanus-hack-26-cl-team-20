@@ -1,0 +1,704 @@
+{
+  "anyOf": [
+    {
+      "$ref": "#/$defs/ObjectAppeared"
+    },
+    {
+      "$ref": "#/$defs/ObjectMoved"
+    },
+    {
+      "$ref": "#/$defs/ObjectRemoved"
+    },
+    {
+      "$ref": "#/$defs/TouchDown"
+    },
+    {
+      "$ref": "#/$defs/TouchMove"
+    },
+    {
+      "$ref": "#/$defs/TouchUp"
+    },
+    {
+      "$ref": "#/$defs/WidgetPressed"
+    },
+    {
+      "$ref": "#/$defs/Dwell"
+    },
+    {
+      "$ref": "#/$defs/AskAnswered"
+    },
+    {
+      "$ref": "#/$defs/CalibrationDrift"
+    },
+    {
+      "$ref": "#/$defs/FlowStateChanged"
+    },
+    {
+      "$ref": "#/$defs/FlowEmitted"
+    },
+    {
+      "$ref": "#/$defs/FrameMeta"
+    },
+    {
+      "$ref": "#/$defs/DeviceChanged"
+    }
+  ],
+  "discriminator": {
+    "propertyName": "type",
+    "mapping": {
+      "object_appeared": "#/$defs/ObjectAppeared",
+      "object_moved": "#/$defs/ObjectMoved",
+      "object_removed": "#/$defs/ObjectRemoved",
+      "touch_down": "#/$defs/TouchDown",
+      "touch_move": "#/$defs/TouchMove",
+      "touch_up": "#/$defs/TouchUp",
+      "widget_pressed": "#/$defs/WidgetPressed",
+      "dwell": "#/$defs/Dwell",
+      "ask_answered": "#/$defs/AskAnswered",
+      "calibration_drift": "#/$defs/CalibrationDrift",
+      "flow_state_changed": "#/$defs/FlowStateChanged",
+      "flow_emitted": "#/$defs/FlowEmitted",
+      "frame_meta": "#/$defs/FrameMeta",
+      "device_changed": "#/$defs/DeviceChanged"
+    }
+  },
+  "$defs": {
+    "ObjectAppeared": {
+      "title": "ObjectAppeared",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "object_appeared"
+          ]
+        },
+        "object": {
+          "$ref": "#/$defs/ObjectState"
+        }
+      },
+      "required": [
+        "type",
+        "object"
+      ]
+    },
+    "ObjectState": {
+      "title": "ObjectState",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "polygon_mm": {
+          "description": "Polígono cerrado en mm: [[x,y],...]",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PointMM"
+          },
+          "minItems": 3
+        },
+        "center_mm": {
+          "$ref": "#/$defs/PointMM"
+        },
+        "bbox_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RectMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "since": {
+          "type": "integer"
+        },
+        "last_seen": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "confidence",
+        "polygon_mm",
+        "center_mm",
+        "since",
+        "last_seen"
+      ]
+    },
+    "PointMM": {
+      "title": "PointMM",
+      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "minItems": 2
+    },
+    "RectMM": {
+      "title": "RectMM",
+      "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "minItems": 4
+    },
+    "ObjectMoved": {
+      "title": "ObjectMoved",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "object_moved"
+          ]
+        },
+        "object_id": {
+          "type": "string"
+        },
+        "center_mm": {
+          "$ref": "#/$defs/PointMM"
+        },
+        "polygon_mm": {
+          "anyOf": [
+            {
+              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PointMM"
+              },
+              "minItems": 3
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "object_id",
+        "center_mm"
+      ]
+    },
+    "ObjectRemoved": {
+      "title": "ObjectRemoved",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "object_removed"
+          ]
+        },
+        "object_id": {
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "object_id"
+      ]
+    },
+    "TouchDown": {
+      "title": "TouchDown",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "touch_down"
+          ]
+        },
+        "touch": {
+          "$ref": "#/$defs/Touch"
+        }
+      },
+      "required": [
+        "type",
+        "touch"
+      ]
+    },
+    "Touch": {
+      "title": "Touch",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "down",
+            "move",
+            "up"
+          ]
+        },
+        "point_mm": {
+          "$ref": "#/$defs/PointMM"
+        },
+        "widget_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "object_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "trigger": {
+          "enum": [
+            "api",
+            "dwell",
+            "pinch",
+            "shadow"
+          ],
+          "default": "dwell"
+        }
+      },
+      "required": [
+        "id",
+        "phase",
+        "point_mm"
+      ]
+    },
+    "TouchMove": {
+      "title": "TouchMove",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "touch_move"
+          ]
+        },
+        "touch": {
+          "$ref": "#/$defs/Touch"
+        }
+      },
+      "required": [
+        "type",
+        "touch"
+      ]
+    },
+    "TouchUp": {
+      "title": "TouchUp",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "touch_up"
+          ]
+        },
+        "touch": {
+          "$ref": "#/$defs/Touch"
+        }
+      },
+      "required": [
+        "type",
+        "touch"
+      ]
+    },
+    "WidgetPressed": {
+      "title": "WidgetPressed",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "widget_pressed"
+          ]
+        },
+        "widget_id": {
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "trigger": {
+          "enum": [
+            "api",
+            "dwell",
+            "pinch",
+            "shadow"
+          ],
+          "default": "dwell"
+        },
+        "point_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PointMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "widget_id"
+      ]
+    },
+    "Dwell": {
+      "title": "Dwell",
+      "description": "Progreso de permanencia sobre un punto (para animar el anillo); `progress` = 1 confirma.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "dwell"
+          ]
+        },
+        "point_mm": {
+          "$ref": "#/$defs/PointMM"
+        },
+        "progress": {
+          "type": "number"
+        },
+        "widget_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "object_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "point_mm",
+        "progress"
+      ]
+    },
+    "AskAnswered": {
+      "title": "AskAnswered",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "ask_answered"
+          ]
+        },
+        "request_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "answer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "timed_out": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "CalibrationDrift": {
+      "title": "CalibrationDrift",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "calibration_drift"
+          ]
+        },
+        "from_frame": {
+          "type": "string"
+        },
+        "to_frame": {
+          "type": "string"
+        },
+        "residual_mm": {
+          "type": "number"
+        },
+        "threshold_mm": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "from_frame",
+        "to_frame",
+        "residual_mm",
+        "threshold_mm"
+      ]
+    },
+    "FlowStateChanged": {
+      "title": "FlowStateChanged",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "flow_state_changed"
+          ]
+        },
+        "flow_id": {
+          "type": "string"
+        },
+        "from_state": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "to_state": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cause": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "flow_id"
+      ]
+    },
+    "FlowEmitted": {
+      "title": "FlowEmitted",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "flow_emitted"
+          ]
+        },
+        "flow_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "event": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "default": {}
+        }
+      },
+      "required": [
+        "type",
+        "event"
+      ]
+    },
+    "FrameMeta": {
+      "title": "FrameMeta",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "frame_meta"
+          ]
+        },
+        "camera_id": {
+          "type": "string"
+        },
+        "seq": {
+          "type": "integer"
+        },
+        "t_capture_ns": {
+          "type": "integer"
+        },
+        "w": {
+          "type": "integer"
+        },
+        "h": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "camera_id",
+        "seq",
+        "t_capture_ns",
+        "w",
+        "h"
+      ]
+    },
+    "DeviceChanged": {
+      "title": "DeviceChanged",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "device_changed"
+          ]
+        },
+        "device": {
+          "$ref": "#/$defs/Device"
+        }
+      },
+      "required": [
+        "type",
+        "device"
+      ]
+    },
+    "Device": {
+      "title": "Device",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "camera",
+            "home_assistant",
+            "midi",
+            "phone",
+            "projector"
+          ]
+        },
+        "adapter": {
+          "type": "string"
+        },
+        "caps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "status": {
+          "enum": [
+            "degraded",
+            "offline",
+            "online",
+            "unknown"
+          ],
+          "default": "unknown"
+        },
+        "meta": {
+          "type": "object",
+          "default": {}
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "adapter"
+      ]
+    }
+  }
+}
