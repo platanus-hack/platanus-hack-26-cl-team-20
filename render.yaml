@@ -1,18 +1,23 @@
-# Render Blueprint: keep one worker and one instance (node sockets are process-local).
-# Reference: https://render.com/docs/blueprint-spec
+# Render Blueprint de pcx (gateway en la nube). Referencia: https://render.com/docs/blueprint-spec
+# Una instancia y un worker: los WSS de los nodos y las tool calls pendientes viven en ese proceso.
+# Secretos (sync: false) se cargan a mano en el dashboard; nada secreto en este archivo.
 services:
   - type: web
     name: pcx-gateway
     runtime: python
     region: virginia
-    plan: starter
-    numInstances: 1
+    plan: starter            # pago: no se duerme (free cerraría los WSS de los nodos)
+    numInstances: 1          # sin autoscaling: el estado de conexiones es local al proceso
+    healthCheckPath: /health # 503 si la DB no responde
+    maxShutdownDelaySeconds: 30
+    buildFilter:
+      paths: [cloud/gateway/**, contracts/src/**, contracts/pyproject.toml, render.yaml]
     buildCommand: pip install uv && uv sync --directory cloud/gateway --frozen --no-dev
-    startCommand: uv run --directory cloud/gateway --no-dev uvicorn pcx_gateway.app:create_app --factory --host 0.0.0.0 --port ${PORT:-9210} --workers 1
-    healthCheckPath: /health
+    # __main__ fija PORT, ws_max_size (8 MiB), un worker y cierre gracioso de 20 s (WSS → 1012, el nodo reconecta).
+    startCommand: cd cloud/gateway && exec .venv/bin/python -m pcx_gateway
     envVars:
       - key: PYTHON_VERSION
-        value: 3.12.13
+        value: "3.12.13"
       - key: DATABASE_URL
         fromDatabase:
           name: pcx-db
@@ -22,9 +27,11 @@ services:
           type: keyvalue
           name: pcx-events
           property: connectionString
-      - key: PCX_USER_TOKEN
+      - key: PCX_USER_TOKEN      # MCP (agentes)
         sync: false
-      - key: PCX_NODE_TOKEN
+      - key: PCX_NODE_TOKEN      # WSS del nodo y subida de miniaturas
+        sync: false
+      - key: PCX_CONSOLE_TOKEN   # personas: aprobar confirmaciones de domótica; nunca a un agente
         sync: false
       - key: PCX_NODE_ID
         value: demo-node
@@ -32,11 +39,13 @@ services:
         value: demo-space
       - key: PCX_USER_ID
         value: demo-user
+      - key: PCX_RETENTION_DAYS
+        value: "30"
   - type: keyvalue
     name: pcx-events
     region: virginia
     plan: starter
-    ipAllowList: []
+    ipAllowList: []          # solo red privada de Render
     maxmemoryPolicy: noeviction
 databases:
   - name: pcx-db
@@ -44,4 +53,4 @@ databases:
     plan: basic-256mb
     databaseName: pcx
     user: pcx
-    ipAllowList: []
+    ipAllowList: []          # solo red privada de Render
