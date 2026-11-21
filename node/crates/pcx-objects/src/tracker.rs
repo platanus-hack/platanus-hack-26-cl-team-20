@@ -1,14 +1,16 @@
 //! La cascada (port de `Seguidor.revisar` / `registrar_todo` de `seguidor_v4.py`, versión 02:09 del 21-nov).
 //!
-//! Nivel 0 diff limpio/limpio · 1 NCC «¿sigue en su caja?» · 2 ORB rígido · 3 DINO(prompt)+SAM(caja) ·
-//! 4 LLM desempata · 5 registro global (SAM automático + LLM nombra). Mismos umbrales que el original.
+//! Nivel 0 diff limpio/limpio · 1 NCC «¿sigue en su caja?» · 2 ORB rígido · 2b histograma HSV en las zonas
+//! cambiadas sin dueño (barato, sin modelos; el nivel por color de `seguidor_objetos.py`/`seguidor_v2.py`) ·
+//! 3 DINO(prompt)+SAM(caja) · 4 LLM desempata · 5 registro global (SAM automático + LLM nombra).
+//! Mismos umbrales que el original en los niveles que existen allá.
 
 use crate::contract::{ObjectEvent, ObjectState};
 use crate::geom::{self, Affine, Canvas, IDENTITY};
 use crate::llm::{LlmError, Part, SentImage, VisionLlm};
 use crate::models::{self, BoxErr, Detection, Detector, Segmenter};
 use crate::orb::{self, OrbParams};
-use crate::raster::{self, Mask};
+use crate::raster::{self, Blob, Mask};
 use image::{GrayImage, Rgb, RgbImage};
 use pcx_contracts::{PointMM, RectMM};
 use serde_json::{json, Value};
@@ -31,6 +33,25 @@ pub struct Params {
     pub n2_min_inliers: usize,
     pub n2_ransac_px: f64,
     pub n2_max_scale_dev: f64,
+    /// Nivel 2b (histograma HSV en zonas cambiadas sin dueño), antes de DINO. `false` = cascada original.
+    pub n2b_enabled: bool,
+    pub n2b_metric: HistMetric,
+    /// Similitud mínima de histograma para aceptar sin preguntar (misma escala que `n3_sim_ok`).
+    pub n2b_sim_ok: f64,
+    /// Razón de área candidato/referencia admitida (un papel arrugado se achica).
+    pub n2b_ratio: (f64, f64),
+    /// Ventaja de puntaje sobre el segundo candidato; con menos, queda ambiguo y decide N3/N4.
+    pub n2b_margin: f64,
+    /// Fracción mínima del candidato dentro del área útil del lienzo.
+    pub n2b_min_inside: f64,
+    /// Un píxel «se parece al objeto» si su casillero HSV pesa más que esta fracción del máximo de la referencia.
+    pub n2b_backproj: f32,
+    /// Distancia máxima al lugar anterior (mm). `None`: cualquier lugar de la mesa es plausible.
+    pub n2b_max_dist_mm: Option<f64>,
+    /// Evidencia de que el candidato es un objeto y no mesa vacía: fracción mínima de sus píxeles que difieren (en
+    /// algún canal, más que `n2b_contrast`) de la mediana de la mesa que lo rodea. Sin eso no se asigna.
+    pub n2b_min_contrast_frac: f64,
+    pub n2b_contrast: u8,
     pub n3_box_threshold: f32,
     pub n3_sim_ok: f64,
     pub n3_ratio: (f64, f64),
@@ -53,6 +74,16 @@ impl Default for Params {
             n2_min_inliers: 10,
             n2_ransac_px: 4.0,
             n2_max_scale_dev: 0.15,
+            n2b_enabled: true,
+            n2b_metric: HistMetric::Correl,
+            n2b_sim_ok: 0.6,
+            n2b_ratio: (0.4, 2.0),
+            n2b_margin: 0.25,
+            n2b_min_inside: 0.9,
+            n2b_backproj: 0.05,
+            n2b_max_dist_mm: None,
+            n2b_min_contrast_frac: 0.5,
+            n2b_contrast: 20,
             n3_box_threshold: 0.22,
             n3_sim_ok: 0.6,
             n3_ratio: (0.5, 2.0),
@@ -64,6 +95,15 @@ impl Default for Params {
             n5_effort: "medium".into(),
         }
     }
+}
+
+/// Comparación de histogramas del nivel 2b.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HistMetric {
+    /// `cv2.HISTCMP_CORREL` (la del original; −1..1).
+    Correl,
+    /// Coeficiente de Bhattacharyya (0..1); más tolerante a cambios de proporción entre colores.
+    Bhattacharyya,
 }
 
 /// Foto limpia (proyector apagado, marcador de sincronía ya borrado) **rectificada al lienzo** de la mesa.
@@ -110,6 +150,10 @@ pub struct Report {
     /// Bitácora como la del original (`N1 taza: sigue igual`, `N2 rígido (34 pts)`...).
     pub log: Vec<String>,
     pub seconds: f64,
+    /// Objetos que el nivel 2b vio en más de un lugar (color parecido): no se asignan sin N3/N4.
+    pub ambiguous: Vec<String>,
+    /// Tiempo acumulado del nivel 2b en esta revisión (ms).
+    pub n2b_ms: f64,
 }
 
 pub struct Tracker {
@@ -135,11 +179,23 @@ pub enum TrackError {
     Llm(#[from] LlmError),
 }
 
+#[derive(Clone)]
 struct Cand {
     mask: Mask,
     score: f64,
     sim: f64,
     ratio: f64,
+    /// Centro y eje principal (solo nivel 2b).
+    pose: Option<Pose>,
+    from_hist: bool,
+}
+
+/// Centroide (px del lienzo), ángulo del eje principal (rad, módulo 180°) y elongación (razón de ejes).
+#[derive(Debug, Clone, Copy)]
+struct Pose {
+    c: (f64, f64),
+    theta: f64,
+    elong: f64,
 }
 
 impl Tracker {
@@ -332,44 +388,99 @@ impl Tracker {
                 metodo = format!("N2 rígido ({ninl} pts)");
                 conf = (0.5 + ninl as f64 / 60.0).min(1.0);
             } else {
-                // ---- nivel 3 ----
-                let cands = match self.n3_candidates(&o, rgb, &libre, &mut dino_cache, &mut sam_ready) {
-                    Ok(c) => c,
-                    Err(e) => {
-                        rep.log.push(format!("  N3 {}: {e}", o.label));
-                        vec![]
+                let mut pick: Option<Cand> = None;
+                // ---- nivel 2b ----
+                let mut c2b = vec![];
+                if p.n2b_enabled {
+                    let tb = Instant::now();
+                    c2b = self.n2b_candidates(&o, rgb, &libre);
+                    let ok: Vec<&Cand> = c2b.iter().filter(|c| c.sim > p.n2b_sim_ok).collect();
+                    if !ok.is_empty() && (ok.len() == 1 || ok[0].score - ok[1].score > p.n2b_margin) {
+                        metodo = format!("N2b hist (sim {:.2})", ok[0].sim);
+                        conf = (0.9 * ok[0].sim).clamp(0.0, 1.0);
+                        pick = Some(ok[0].clone());
+                    } else if ok.len() > 1 {
+                        rep.ambiguous.push(o.id.clone());
+                        rep.log.push(format!(
+                            "  N2b {}: ambiguo ({} candidatos de color parecido) → N3/N4",
+                            o.label,
+                            ok.len()
+                        ));
                     }
-                };
-                let buenos: Vec<&Cand> = cands
-                    .iter()
-                    .filter(|c| c.sim > p.n3_sim_ok && p.n3_ratio.0 < c.ratio && c.ratio < p.n3_ratio.1)
-                    .collect();
-                let mut elegido: Option<&Cand> = None;
-                if !buenos.is_empty() && (buenos.len() == 1 || buenos[0].score - buenos[1].score > p.n3_margin) {
-                    elegido = Some(buenos[0]);
-                    metodo = format!("N3 dino+sam (sim {:.2})", buenos[0].sim);
-                    conf = buenos[0].sim.clamp(0.0, 1.0);
-                } else {
-                    let dudosos: Vec<&Cand> = cands.iter().filter(|c| c.sim > p.n4_sim_min).collect();
-                    if !dudosos.is_empty() {
-                        // ---- nivel 4 ----
-                        match self.n4_llm(&o, rgb, &dudosos) {
-                            Ok(Some(k)) => {
-                                elegido = Some(dudosos[k]);
-                                metodo = "N4 llm".into();
-                                conf = 0.6;
-                            }
-                            Ok(None) => {}
-                            Err(e) => rep.log.push(format!("  N4 {}: {e}", o.label)),
+                    let ms = tb.elapsed().as_secs_f64() * 1e3;
+                    rep.n2b_ms += ms;
+                    rep.log.push(format!("  N2b {}: {} candidatos en {ms:.1} ms", o.label, c2b.len()));
+                }
+                if pick.is_none() {
+                    // ---- nivel 3 ----
+                    let mut cands = match self.n3_candidates(&o, rgb, &libre, &mut dino_cache, &mut sam_ready) {
+                        Ok(c) => c,
+                        Err(e) => {
+                            rep.log.push(format!("  N3 {}: {e}", o.label));
+                            vec![]
+                        }
+                    };
+                    // los candidatos por color que DINO no trajo también pueden ir al juez
+                    for c in c2b {
+                        if !cands.iter().any(|k| iou(&k.mask, &c.mask) > 0.5) {
+                            cands.push(c);
                         }
                     }
+                    cands.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+                    let buenos: Vec<&Cand> = cands
+                        .iter()
+                        .filter(|c| c.sim > p.n3_sim_ok && p.n3_ratio.0 < c.ratio && c.ratio < p.n3_ratio.1)
+                        .collect();
+                    let mut elegido: Option<&Cand> = None;
+                    if !buenos.is_empty() && (buenos.len() == 1 || buenos[0].score - buenos[1].score > p.n3_margin) {
+                        elegido = Some(buenos[0]);
+                        let nivel = if buenos[0].from_hist { "N2b hist" } else { "N3 dino+sam" };
+                        metodo = format!("{nivel} (sim {:.2})", buenos[0].sim);
+                        conf = buenos[0].sim.clamp(0.0, 1.0);
+                    } else {
+                        let dudosos: Vec<&Cand> = cands.iter().filter(|c| c.sim > p.n4_sim_min).collect();
+                        if !dudosos.is_empty() {
+                            // ---- nivel 4 ----
+                            match self.n4_llm(&o, rgb, &dudosos) {
+                                Ok(Some(k)) => {
+                                    elegido = Some(dudosos[k]);
+                                    metodo = "N4 llm".into();
+                                    conf = 0.6;
+                                }
+                                Ok(None) => {}
+                                Err(e) => rep.log.push(format!("  N4 {}: {e}", o.label)),
+                            }
+                        }
+                    }
+                    pick = elegido.cloned();
                 }
-                if let Some(c) = elegido {
-                    if let (Some(c1), Some(c0)) = (raster::centroid(&c.mask), raster::centroid(&o.mask)) {
+                if let Some(c) = pick {
+                    let antes = if o.hidden {
+                        None
+                    } else {
+                        o.reference.as_ref().and_then(|r| pose_of(&r.mask, (r.bbox.0, r.bbox.1)))
+                    };
+                    if let (Some(p1), Some(p0)) = (c.pose, antes) {
+                        // sin textura no hay puntos que casar: el giro sale del eje principal (módulo 180°) y solo
+                        // si la forma se conservó; si no, traslación de centroide como en N3.
+                        let rigido = p0.elong > 1.2 && p1.elong > 1.2 && 0.8 < c.ratio && c.ratio < 1.25;
+                        let mut d = if rigido { p1.theta - p0.theta } else { 0.0 };
+                        if d > std::f64::consts::FRAC_PI_2 {
+                            d -= std::f64::consts::PI;
+                        } else if d <= -std::f64::consts::FRAC_PI_2 {
+                            d += std::f64::consts::PI;
+                        }
+                        let (cs, sn) = (d.cos(), d.sin());
+                        let a: Affine = [
+                            [cs, -sn, p1.c.0 - (cs * p0.c.0 - sn * p0.c.1)],
+                            [sn, cs, p1.c.1 - (sn * p0.c.0 + cs * p0.c.1)],
+                        ];
+                        o.aff_mm = geom::compose(&self.canvas.affine_px_to_mm(&a), &o.aff_mm);
+                    } else if let (Some(c1), Some(c0)) = (raster::centroid(&c.mask), raster::centroid(&o.mask)) {
                         o.aff_mm[0][2] += (c1.0 - c0.0) * self.canvas.mm_per_px;
                         o.aff_mm[1][2] += (c1.1 - c0.1) * self.canvas.mm_per_px;
                     }
-                    nuevo = Some(c.mask.clone());
+                    nuevo = Some(c.mask);
                 }
             }
             match nuevo.filter(raster::any) {
@@ -442,6 +553,9 @@ impl Tracker {
         let r = o.reference.as_ref()?;
         let p = &self.params;
         let (k1, d1) = orb::detect_and_compute(&raster::gray(&r.color), Some(&r.mask), &p.orb);
+        if k1.len() < 10 {
+            return None; // sin textura: ni vale la pena el ORB de la foto completa (lo toma el nivel 2b)
+        }
         let zon = raster::dilate_sq(zonas, 31);
         let (k2, d2) = orb::detect_and_compute(&raster::gray(rgb), Some(&zon), &p.orb);
         if k1.len() < 10 || k2.len() < 10 {
@@ -460,6 +574,177 @@ impl Tracker {
             return None;
         }
         Some((a, n))
+    }
+
+    /// Nivel 2b: candidatos por histograma HSV en las zonas cambiadas que nadie reclamó. Sin modelos: la máscara
+    /// nueva sale del contorno de la zona (arrugado/doblado, o girado sin textura donde ORB no tiene puntos).
+    /// Las zonas pegadas al lugar anterior se juntan con la máscara vieja y se les quita lo que ahora es mesa
+    /// (píxeles cuyo color no está en el histograma de referencia), así también sirve si se movió o giró en el lugar.
+    fn n2b_candidates(&self, o: &TrackedObject, rgb: &RgbImage, libre: &Mask) -> Vec<Cand> {
+        let p = &self.params;
+        let Some(r) = o.reference.as_ref() else { return vec![] };
+        let (w, h) = (self.canvas.width, self.canvas.height);
+        let (wz, px, area) = (w as usize, rgb.as_raw(), self.area.as_raw());
+        // histograma de referencia con la misma tabla cuantizada que los candidatos
+        let mut lut = raster::BinLut::default();
+        let (rm, rc, rw) = (r.mask.as_raw(), r.color.as_raw(), r.mask.width());
+        let mut ref_hist = vec![0f32; raster::COLOR_BINS];
+        let mut ref_area = 0u64;
+        for (i, &v) in rm.iter().enumerate() {
+            if v > 0 {
+                ref_hist[lut.bin(&rc[i * 3..i * 3 + 3])] += 1.0;
+                ref_area += 1;
+            }
+        }
+        if ref_area == 0 {
+            return vec![];
+        }
+        let ref_area = ref_area as f64;
+        raster::l2_normalize(&mut ref_hist);
+        let thr = p.n2b_backproj * ref_hist.iter().cloned().fold(0f32, f32::max);
+        let old = !o.hidden;
+        let in_old = |x: i64, y: i64| {
+            old && x >= r.bbox.0 as i64
+                && x < r.bbox.2 as i64
+                && y >= r.bbox.1 as i64
+                && y < r.bbox.3 as i64
+                && rm[((y as u32 - r.bbox.1) * rw + (x as u32 - r.bbox.0)) as usize] > 0
+        };
+        let old_pose = if old { pose_of(&r.mask, (r.bbox.0, r.bbox.1)) } else { None };
+        let blobs = raster::blobs(libre, 30);
+        let mut groups: Vec<(Vec<&Blob>, bool)> = vec![];
+        let mut home: Vec<&Blob> = vec![];
+        for b in &blobs {
+            // ¿pegada (a ≤ 4 px) al lugar anterior? muestreo cada 4 px a lo largo de cada corrida
+            let cerca = old
+                && b.bbox.0 < r.bbox.2 + 4
+                && r.bbox.0 < b.bbox.2 + 4
+                && b.bbox.1 < r.bbox.3 + 4
+                && r.bbox.1 < b.bbox.3 + 4
+                && b.runs.iter().any(|run| {
+                    let y = run.y as i64;
+                    (run.x0 as i64 - 4..run.x1 as i64 + 4)
+                        .step_by(4)
+                        .any(|x| in_old(x, y - 4) || in_old(x, y) || in_old(x, y + 4))
+                });
+            if cerca {
+                home.push(b);
+            } else if b.area as f64 >= p.n2b_ratio.0 * ref_area {
+                groups.push((vec![b], false));
+            }
+        }
+        if !home.is_empty() {
+            groups.push((home, true));
+        }
+        let mut out = vec![];
+        for (group, with_old) in groups {
+            let mut bb = if with_old { r.bbox } else { group[0].bbox };
+            for b in &group {
+                bb = (bb.0.min(b.bbox.0), bb.1.min(b.bbox.1), bb.2.max(b.bbox.2), bb.3.max(b.bbox.3));
+            }
+            let bb = pad(bb, 3, w, h);
+            let (cw, ch) = ((bb.2 - bb.0) as usize, (bb.3 - bb.1) as usize);
+            let mut m = vec![0u8; cw * ch];
+            for run in group.iter().flat_map(|b| &b.runs) {
+                let row = (run.y - bb.1) as usize * cw;
+                if !with_old {
+                    m[row + (run.x0 - bb.0) as usize..row + (run.x1 - bb.0) as usize].fill(255);
+                    continue;
+                }
+                for x in run.x0..run.x1 {
+                    // lugar anterior que ahora muestra la mesa: fuera
+                    let i = (run.y as usize * wz + x as usize) * 3;
+                    if !in_old(x as i64, run.y as i64) || ref_hist[lut.bin(&px[i..i + 3])] > thr {
+                        m[row + (x - bb.0) as usize] = 255;
+                    }
+                }
+            }
+            if with_old {
+                // lo que no cambió porque el objeto se tapa a sí mismo (color liso) sigue siendo objeto
+                for (k, &v) in rm.iter().enumerate() {
+                    if v > 0 {
+                        let (x, y) = (r.bbox.0 + k as u32 % rw, r.bbox.1 + k as u32 / rw);
+                        let i = (y as usize * wz + x as usize) * 3;
+                        if ref_hist[lut.bin(&px[i..i + 3])] > thr {
+                            m[(y - bb.1) as usize * cw + (x - bb.0) as usize] = 255;
+                        }
+                    }
+                }
+            }
+            let m = Mask::from_raw(cw as u32, ch as u32, m).expect("recorte");
+            let m = raster::fill_largest_fast(&raster::open_sq_fast(&m, 5));
+            // la mesa alrededor: píxeles del recorte ampliado que no son candidato ni zona cambiada (mediana por canal)
+            let ring = pad(bb, 12, w, h);
+            let mut med = [[0u32; 256]; 3];
+            let mut n_ring = 0u32;
+            let lib = libre.as_raw();
+            for y in ring.1..ring.3 {
+                let in_y = y >= bb.1 && y < bb.3;
+                for x in ring.0..ring.2 {
+                    let i = y as usize * wz + x as usize;
+                    let en_cand =
+                        in_y && x >= bb.0 && x < bb.2 && m.as_raw()[(y - bb.1) as usize * cw + (x - bb.0) as usize] > 0;
+                    if en_cand || lib[i] > 0 || area[i] == 0 {
+                        continue;
+                    }
+                    for c in 0..3 {
+                        med[c][px[i * 3 + c] as usize] += 1;
+                    }
+                    n_ring += 1;
+                }
+            }
+            let mesa = med.map(|hc| {
+                let (mut acc, mut v) = (0u32, 0usize);
+                while v < 255 && acc + hc[v] <= n_ring / 2 {
+                    acc += hc[v];
+                    v += 1;
+                }
+                v as u8
+            });
+            let mut hist = vec![0f32; raster::COLOR_BINS];
+            let (mut n, mut inside, mut distinto) = (0u64, 0u64, 0u64);
+            for (k, &v) in m.as_raw().iter().enumerate() {
+                if v > 0 {
+                    let i = (bb.1 as usize + k / cw) * wz + bb.0 as usize + k % cw;
+                    let q = &px[i * 3..i * 3 + 3];
+                    n += 1;
+                    inside += (area[i] > 0) as u64;
+                    hist[lut.bin(q)] += 1.0;
+                    distinto += (q[0].abs_diff(mesa[0]) > p.n2b_contrast
+                        || q[1].abs_diff(mesa[1]) > p.n2b_contrast
+                        || q[2].abs_diff(mesa[2]) > p.n2b_contrast) as u64;
+                }
+            }
+            // un lugar que ahora se ve igual que la mesa que lo rodea es un retiro, no el objeto (y sin mesa
+            // alrededor con qué comparar no hay evidencia: tampoco se asigna)
+            if n < 80 || n_ring < 50 || (distinto as f64) < p.n2b_min_contrast_frac * n as f64 {
+                continue;
+            }
+            let ratio = n as f64 / ref_area;
+            if n < 80
+                || ratio <= p.n2b_ratio.0
+                || ratio >= p.n2b_ratio.1
+                || (inside as f64) < p.n2b_min_inside * n as f64
+            {
+                continue;
+            }
+            let pose = pose_of(&m, (bb.0, bb.1));
+            if let (Some(max_mm), Some(p1), Some(p0)) = (p.n2b_max_dist_mm, pose, old_pose) {
+                if (p1.c.0 - p0.c.0).hypot(p1.c.1 - p0.c.1) * self.canvas.mm_per_px > max_mm {
+                    continue;
+                }
+            }
+            raster::l2_normalize(&mut hist);
+            let sim = match p.n2b_metric {
+                HistMetric::Correl => raster::correl(&ref_hist, &hist),
+                HistMetric::Bhattacharyya => raster::bhattacharyya(&ref_hist, &hist),
+            };
+            // mismo puntaje que N3 sin el término de DINO (toda la zona cambió: en_zona = 1)
+            let score = 0.8 * sim + 0.4 - 0.5 * ratio.ln().abs();
+            out.push(Cand { mask: raster::place(&m, bb, w, h), score, sim, ratio, pose, from_hist: true });
+        }
+        out.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        out
     }
 
     fn n3_candidates(
@@ -501,7 +786,7 @@ impl Tracker {
             let en_zona = raster::count(&raster::and(zonas, &m)) as f64 / n as f64;
             let ratio = n as f64 / ref_area as f64;
             let score = d.score as f64 + 0.8 * sim + 0.4 * (en_zona * 2.0).min(1.0) - 0.5 * ratio.max(1e-3).ln().abs();
-            out.push(Cand { mask: m, score, sim, ratio });
+            out.push(Cand { mask: m, score, sim, ratio, pose: None, from_hist: false });
         }
         out.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
         Ok(out)
@@ -686,6 +971,47 @@ fn recrop(o: &mut TrackedObject, rgb: &RgbImage) {
     }
     let b = pad(raster::bbox(&o.mask).expect("máscara no vacía"), 6, rgb.width(), rgb.height());
     o.reference = Some(Ref { color: raster::crop_rgb(rgb, b), mask: raster::crop_gray(&o.mask, b), bbox: b });
+}
+
+/// Centroide y eje principal por momentos de segundo orden de una máscara recortada con origen `origin`.
+fn pose_of(m: &Mask, origin: (u32, u32)) -> Option<Pose> {
+    let (mut n, mut sx, mut sy, mut sxx, mut syy, mut sxy) = (0.0f64, 0.0, 0.0, 0.0, 0.0, 0.0);
+    let w = m.width() as usize;
+    for (k, &v) in m.as_raw().iter().enumerate() {
+        if v > 0 {
+            let (x, y) = ((k % w) as f64, (k / w) as f64);
+            n += 1.0;
+            sx += x;
+            sy += y;
+            sxx += x * x;
+            syy += y * y;
+            sxy += x * y;
+        }
+    }
+    if n < 1.0 {
+        return None;
+    }
+    let (mx, my) = (sx / n, sy / n);
+    let (a, b, c) = (sxx / n - mx * mx, sxy / n - mx * my, syy / n - my * my);
+    let (t, d) = ((a + c) / 2.0, (((a - c) / 2.0).powi(2) + b * b).sqrt());
+    Some(Pose {
+        c: (origin.0 as f64 + mx + 0.5, origin.1 as f64 + my + 0.5),
+        theta: 0.5 * (2.0 * b).atan2(a - c),
+        elong: ((t + d) / (t - d).max(1e-9)).sqrt(),
+    })
+}
+
+fn iou(a: &Mask, b: &Mask) -> f64 {
+    let (mut i, mut u) = (0u64, 0u64);
+    for (&x, &y) in a.as_raw().iter().zip(b.as_raw()) {
+        i += (x > 0 && y > 0) as u64;
+        u += (x > 0 || y > 0) as u64;
+    }
+    if u == 0 {
+        0.0
+    } else {
+        i as f64 / u as f64
+    }
 }
 
 fn ref_mask_full(o: &TrackedObject, w: u32, h: u32) -> Mask {

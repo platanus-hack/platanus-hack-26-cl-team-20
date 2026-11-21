@@ -137,7 +137,8 @@ fn n3_arrugado_dino_sam() {
     let sam = FakeSam::default();
     let dino = FakeDino::default();
     let mut t = tracker_with(&a, &b).with_segmenter(Box::new(sam.clone())).with_detector(Box::new(dino.clone()));
-    // arrugado: misma paleta, otra disposición → ORB no calza; DINO lo encuentra por prompt.
+    t.params.n2b_enabled = false; // cascada original: desde R4 este caso lo resuelve antes el nivel 2b (tests/n2b.rs)
+                                  // arrugado: misma paleta, otra disposición → ORB no calza; DINO lo encuentra por prompt.
     let a2 = Obj { tex: scrambled(&a.tex, 7), cx: 330.0, cy: 90.0, angle_deg: 10.0 };
     let m2 = mask_of(&a2);
     *sam.truth.lock().unwrap() = vec![m2.clone(), mask_of(&b)];
