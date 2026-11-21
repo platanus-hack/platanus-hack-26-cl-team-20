@@ -83,6 +83,24 @@ Probado con cámara simulada, manos sintéticas y cliente MCP real. **No probado
 Los campos nuevos (`point_px`, `radius_mm`, shaders `hands`/`html`) no están en `contracts/`: el gateway los deja pasar
 porque el contrato no prohíbe campos extra, pero no salen en el esquema de `tools/list` ni los entiende el nodo Rust.
 
+## Modelo de lente (pedido de Max)
+
+Método medido por el orquestador en `tools/mesa-agente/lente.py`; resultado de referencia en
+`data/lente/2026-11-21/lente-modelo.json`. En el nodo navegador:
+
+- La calibración puede llevar `lens: {f, cx, cy, k1, k2}` (radial de OpenCV, focal nominal) y entonces `matrix` lleva
+  píxeles **ya corregidos** a mm. `pxToMm`/`mmToPx` de `calib.js` son el único camino: los usan `look` (grilla, que se
+  dibuja curva), `anchor.point_px`, `polygon_px`, `from_px`/`to_px`, las manos y `calibrate verify`.
+- `calibrate` con `mode: "precise"` (o el botón «Calibrar con lente»): corre quick y después proyecta 144 puntos verdes
+  (16×9 cada 60 mm), 3 pares encendido/apagado, componentes conexas, empareja con la calibración vigente (22 px) y
+  ajusta k1 y k2 por búsqueda con la homografía por mínimos cuadrados adentro, descartando por rondas los puntos sobre
+  objetos altos. Devuelve f nominal, k1, k2, error en px y mm, puntos usados y descartados. Solo guarda el modelo si
+  mejora a la homografía sola.
+- Cargar un modelo ya medido: pegar el JSON en «Modelo de lente (pegar JSON)» o `calibrate` con el campo extra `model`.
+- Resolución: todo se guarda en píxeles de `image_px` y se usa normalizado (manos y video en 0..1; los píxeles de `look`
+  se escalan si la foto llega a otro tamaño), así que no hay que reescalar parámetros.
+- Visor: el shader quita la distorsión además de rectificar, y muestra «Lente: k1, k2, error mm».
+
 ## Enlace para ver en vivo
 
 «Copiar enlace para ver» (paso Agente) entrega `/ver/<token>`. Quien lo abre ve la cámara cenital, lo proyectado

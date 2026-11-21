@@ -41,6 +41,7 @@
               <button class="btn" id="detectar" hidden>Detectar monitores</button>
               <button class="btn" id="cerrar" hidden>Cerrar</button>
               <button class="btn" id="calibrar">Calibrar</button>
+              <button class="btn" id="calibrar-lente">Calibrar con lente</button>
               <label class="check"><input type="checkbox" id="patron" checked /> Patrón de prueba</label>
               <label class="check"><input type="checkbox" id="manos" /> Manos</label>
               <label class="check">Texto
@@ -62,6 +63,12 @@
               <p class="chico">Píxeles de la foto de la cámara cenital → mm de la mesa. Un par por línea: <code>px_x, px_y &gt; mm_x, mm_y</code>.</p>
               <textarea id="manual-pares" rows="4" spellcheck="false"></textarea>
               <div class="fila"><button class="btn" id="manual-aplicar">Usar estos puntos</button></div>
+            </details>
+            <details class="manual">
+              <summary>Modelo de lente (pegar JSON)</summary>
+              <p class="chico">El JSON de <code>lente-modelo.json</code>: <code>camera_id, imagen, f_px, cx, cy, k1, k2, H_px_sin_distorsion_a_mm</code>.</p>
+              <textarea id="lente-json" rows="5" spellcheck="false"></textarea>
+              <div class="fila"><button class="btn" id="lente-cargar">Cargar modelo</button></div>
             </details>
           </div>
           <figure class="previa">

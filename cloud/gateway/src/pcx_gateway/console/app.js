@@ -1,6 +1,6 @@
 // Consola de pcx: detecta cámaras y monitores, lanza la ventana del proyector y entrega el comando para un agente.
 import { BrowserNode } from "./node.js";
-import { apply, solveH } from "./calib.js";
+import { pxToMm, solveH } from "./calib.js";
 import { HandTracker } from "./hands.js";
 import { HtmlLayer } from "./html-layer.js";
 import { drawHands, drawScene, hit, trackTrails } from "./render.js";
@@ -172,6 +172,7 @@ function simFrame() {
   ctx.translate(1040, 360 + scene.height / 2);
   ctx.rotate(Math.PI);
   ctx.drawImage(scene, 0, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // quien anote encima (look) dibuja en píxeles de la foto
   return { canvas: c, camera: simCam };
 }
 
@@ -357,7 +358,7 @@ const viewState = () => ({
   textScale,
   calib: calibDots,
   // Para rectificar el video en el visor; solo si la calibración es de la cámara que se está mandando.
-  homography: node.calib && (SIM || node.calib.camera_id === streamCamera()?.id) ? { matrix: node.calib.matrix, image_px: node.calib.image_px } : null,
+  homography: node.calib && (SIM || node.calib.camera_id === streamCamera()?.id) ? { matrix: node.calib.matrix, image_px: node.calib.image_px, lens: node.calib.lens ?? null, residual_mm: node.calib.residual_mm } : null,
 });
 
 // Calidad del video: parte en la mejor y baja un escalón solo si quien mira (o la subida) no da abasto.
@@ -475,7 +476,9 @@ function paintProjector() {
     $("calib-estado").textContent =
       c.source === "manual"
         ? `Calibración manual de 4 puntos sobre ${c.camera_id}. «Calibrar» la reemplaza por una automática.`
-        : `Calibrada con ${c.camera_id}: ${c.points} de ${c.total ?? c.points} marcas, error ${c.residual_mm} mm. ${c.warning || "El agente ya puede apuntar en píxeles de la foto."}`;
+        : c.lens
+          ? `Calibrada con ${c.camera_id} con modelo de lente: k1 ${c.lens.k1.toFixed(4)}, k2 ${c.lens.k2.toFixed(4)}, error ${c.residual_mm ?? "?"} mm${c.points ? `, ${c.points} puntos` : ""}.`
+          : `Calibrada con ${c.camera_id}: ${c.points} de ${c.total ?? c.points} marcas, error ${c.residual_mm} mm. ${c.warning || "El agente ya puede apuntar en píxeles de la foto."}`;
   else if (!c && !node.calibrating)
     $("calib-estado").textContent = "Sin calibrar: el agente ve la foto, pero no sabe dónde cae cada punto de la mesa.";
   const { width_mm, height_mm } = node.world.surface;
@@ -564,6 +567,29 @@ function ensureCalib(force = false) {
     $("calib-estado").textContent = err.message;
   }
 }
+$("lente-cargar").onclick = () => {
+  try {
+    node.loadModel($("lente-json").value);
+    $("calib-aviso").hidden = true;
+  } catch (err) {
+    showCalibError(err);
+  }
+  paintProjector();
+};
+$("calibrar-lente").onclick = async () => {
+  $("calibrar-lente").disabled = $("calibrar").disabled = true;
+  $("calib-aviso").hidden = true;
+  $("calib-estado").textContent = "Calibrando con lente: primero las 9 marcas y después una grilla densa de puntos (unos 25 s). Saca las manos de la mesa.";
+  try {
+    const quick = await node.calibrate({ mode: "quick" });
+    const r = await node.calibrateLens({}, quick);
+    if (!r.saved) showCalibError(new Error(r.note));
+  } catch (err) {
+    showCalibError(err);
+  }
+  $("calibrar-lente").disabled = $("calibrar").disabled = false;
+  paintProjector();
+};
 $("manual-aplicar").onclick = () => {
   store.set("manualPairs", $("manual-pares").value);
   ensureCalib(true);
@@ -590,7 +616,7 @@ function onHands(found) {
   smooth.length = found.length;
   const hands = found.map((h, i) => {
     const px = h.lm.map((p) => [p.x * iw, p.y * ih]);
-    let mm = px.map((p) => apply(c.matrix, p));
+    let mm = px.map((p) => pxToMm(c, p)); // lente + homografía
     if (smooth[i]) mm = mm.map((p, k) => [smooth[i][k][0] + 0.55 * (p[0] - smooth[i][k][0]), smooth[i][k][1] + 0.55 * (p[1] - smooth[i][k][1])]);
     smooth[i] = mm;
     const palm = Math.hypot(px[0][0] - px[9][0], px[0][1] - px[9][1]) || 1;

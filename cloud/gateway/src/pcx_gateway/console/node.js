@@ -1,7 +1,7 @@
 // El navegador como nodo de pcx: habla por WSS con el gateway el mismo protocolo que el nodo Rust
 // (contracts/src/pcx_contracts/cloud.py) y resuelve las tools con la cámara y la ventana del proyector.
 
-import { annotate, apply, diff, findDot, invert, litArea, ransacH, signal } from "./calib.js";
+import { annotate, apply, components, diff, findDot, fitLens, invert, litArea, mmToPx, pxToMm, ransacH, signal, solveH } from "./calib.js";
 
 const CONTRACT = 2;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -213,7 +213,9 @@ export class BrowserNode extends EventTarget {
     if (!c) throw new Error("Sin calibración: llama a calibrate antes de usar coordenadas en píxeles de cámara.");
     if (cameraId && cameraId !== c.camera_id)
       throw new Error(`La calibración es de ${c.camera_id}, no de ${cameraId}. Calibra esa cámara o usa los píxeles de ${c.camera_id}.`);
-    return apply(c.matrix, p).map((v) => round(v));
+    // Los píxeles son los de la foto de look; si esa foto no mide lo mismo que la de la calibración, se escalan.
+    const k = this.lookSize ? c.image_px[0] / this.lookSize[0] : 1;
+    return pxToMm(c, [p[0] * k, p[1] * k]).map((v) => round(v));
   }
 
   /** Acepta geometría en píxeles de cámara (anchor.point_px, polygon_px, from_px, to_px) y la deja en mm. */
@@ -234,7 +236,7 @@ export class BrowserNode extends EventTarget {
     const mode = args.mode ?? "quick";
     if (mode === "verify" && !this.calib) throw new Error("No hay calibración que verificar: llama a calibrate con mode quick.");
     const { width_mm: W, height_mm: H } = this.world.surface;
-    const [nx, ny] = mode === "precise" ? [5, 4] : [3, 3];
+    const [nx, ny] = [3, 3];
     const R = 30; // radio de la marca en mm
     const targets = [];
     for (let j = 0; j < ny; j++)
@@ -283,7 +285,7 @@ export class BrowserNode extends EventTarget {
         await sleep(60);
       }
       if (!lit) throw fail("La cámara no ve la proyección: encendí todo el proyector en verde y la foto no cambió.");
-      const settle = Math.min(1500, Math.max(300, lag * 1.5 + 150));
+      const settle = (this.settle = Math.min(1500, Math.max(300, lag * 1.5 + 150)));
       // Diámetro esperado de la marca en la foto, por regla de tres con el área iluminada.
       const win = 2 * Math.sqrt((lit.area * (Math.PI * R * R)) / (W * H) / Math.PI);
       // 2. Cada marca: dos fotos con ella y dos sin ella, intercaladas; así un objeto o una mano quieta se cancelan.
@@ -336,7 +338,7 @@ export class BrowserNode extends EventTarget {
     if (found.length < 4)
       throw fail(`Solo vi ${found.length} de ${total} marcas en la cámara ${camera_id}; con menos de 4 no se puede calcular. ${missing}`, detail);
     if (mode === "verify") {
-      const e = px.map((p, i) => Math.hypot(...apply(this.calib.matrix, p).map((v, a) => v - mm[i][a])));
+      const e = px.map((p, i) => Math.hypot(...pxToMm(this.calib, p).map((v, a) => v - mm[i][a])));
       const rms = Math.sqrt(e.reduce((a, v) => a + v * v, 0) / e.length);
       return { camera_id, mode, points_found: px.length, points_total: total, residual_mm: round(rms), max_error_mm: round(Math.max(...e)), ok: rms < 12, missing };
     }
@@ -377,6 +379,148 @@ export class BrowserNode extends EventTarget {
       note:
         "Homografía guardada: píxeles de la foto de look → mm de la mesa. look ahora trae la grilla en mm; en project puedes usar " +
         "anchor.point_px (y polygon_px en halo, from_px/to_px en arrow) con píxeles de esa foto. Si mueven la cámara o el proyector, calibra de nuevo.",
+    };
+  }
+
+  /** Carga un modelo de lente medido afuera (el JSON de tools/mesa-agente/lente.py o el que devuelve `precise`). */
+  loadModel(m) {
+    if (typeof m === "string") m = JSON.parse(m);
+    const lens = m.lens ?? { f: m.f_px, cx: m.cx, cy: m.cy, k1: m.k1, k2: m.k2 ?? 0 };
+    const matrix = m.matrix ?? m.H_px_sin_distorsion_a_mm;
+    const image_px = m.image_px ?? m.imagen;
+    const nums = [lens.f, lens.cx, lens.cy, lens.k1, lens.k2, ...(matrix ?? []), ...(image_px ?? [])];
+    if (matrix?.length !== 9 || image_px?.length !== 2 || !nums.every(Number.isFinite) || !(lens.f > 0))
+      throw new Error("Modelo de lente incompleto: se necesitan f_px, cx, cy, k1, k2, H_px_sin_distorsion_a_mm (9 números) e imagen [ancho, alto].");
+    const camera_id = m.camera_id ?? this.calib?.camera_id;
+    if (!camera_id) throw new Error("El modelo no dice de qué cámara es (camera_id).");
+    const calib = {
+      camera_id,
+      matrix,
+      image_px,
+      lens,
+      residual_mm: m.residual_mm ?? m.error_mm?.mediana ?? null,
+      points: m.points ?? m.puntos ?? null,
+      total: m.total ?? m.puntos ?? null,
+      source: "modelo",
+      version: (this.calib?.version ?? 0) + 1,
+    };
+    this.setCalib(calib);
+    this.hooks.saveCalib(calib);
+    return {
+      camera_id,
+      loaded: true,
+      lens,
+      image_px,
+      residual_mm: calib.residual_mm,
+      note: "Modelo de lente cargado: look, anchor.point_px, polygon_px y las manos pasan por lente + homografía. Otro calibrate lo reemplaza.",
+    };
+  }
+
+  /** `precise`: después de quick, proyecta una grilla densa de puntos verdes y ajusta la distorsión de la lente. */
+  async calibrateLens(args, quick) {
+    const { width_mm: W, height_mm: H } = this.world.surface;
+    const grid = [];
+    for (let y = 41; y < H - 20; y += 60) for (let x = 50; x < W - 20; x += 60) grid.push([x, y]);
+    const settle = this.settle ?? 500;
+    this.calibrating = true;
+    this.hooks.progress?.(`Lente: ${grid.length} puntos…`);
+    const on = [];
+    const off = [];
+    let size;
+    try {
+      for (let c = 0; c < 3; c++) {
+        for (const [list, dots] of [[on, grid.map(([x, y]) => [x, y, 9])], [off, []]]) {
+          this.hooks.showCalib({ dots });
+          await sleep(settle);
+          const f = await this.hooks.frame(args.camera_id);
+          size = [f.canvas.width, f.canvas.height];
+          list.push(signal(f.canvas, f.canvas.width)); // a resolución completa: los puntos son chicos
+        }
+      }
+    } finally {
+      this.hooks.showCalib(null);
+      this.calibrating = false;
+    }
+    const blobs = components(diff(on, off));
+    // Empareja cada mancha con el punto que debería estar ahí según la calibración vigente (uno a uno, el más cercano).
+    const match = (calib, tol) => {
+      const inv = invert(calib.matrix);
+      const pairs = [];
+      grid.forEach((mm, g) => {
+        const e = mmToPx(calib, mm, inv);
+        blobs.forEach((b, n) => {
+          const dist = Math.hypot(b.x - e[0], b.y - e[1]);
+          if (dist < tol) pairs.push({ g, n, dist });
+        });
+      });
+      const usedG = new Set();
+      const usedN = new Set();
+      const out = [];
+      for (const p of pairs.sort((a, b) => a.dist - b.dist)) {
+        if (usedG.has(p.g) || usedN.has(p.n)) continue;
+        usedG.add(p.g);
+        usedN.add(p.n);
+        out.push({ px: [blobs[p.n].x, blobs[p.n].y], mm: grid[p.g] });
+      }
+      return out;
+    };
+    const tol = (22 * size[0]) / 1280;
+    let pairs = match(this.calib, tol);
+    const why = `Quedó guardada la calibración sin lente (${quick.points_used} marcas, ${quick.residual_mm} mm).`;
+    if (pairs.length < 30) throw new Error(`Lente: solo ubiqué ${pairs.length} de ${grid.length} puntos de la grilla densa; necesito 30. ${why}`);
+    let fit = fitLens(pairs.map((p) => p.px), pairs.map((p) => p.mm), size);
+    if (fit) {
+      // Segunda pasada: con el modelo ya ajustado se recuperan puntos de los bordes que la homografía sola no alcanzaba.
+      const again = match({ matrix: fit.matrix, lens: fit.lens }, tol / 2);
+      if (again.length > pairs.length) {
+        pairs = again;
+        fit = fitLens(pairs.map((p) => p.px), pairs.map((p) => p.mm), size) ?? fit;
+      }
+    }
+    if (!fit || fit.used.length < 30) throw new Error(`Lente: el ajuste no convergió con ${pairs.length} puntos. ${why}`);
+    // Comparación con solo homografía sobre los mismos puntos: el modelo se guarda solo si mejora.
+    const plain = solveH(fit.used.map((i) => pairs[i].px), fit.used.map((i) => pairs[i].mm));
+    const flat = fit.used.map((i) => Math.hypot(...apply(plain, pairs[i].px).map((v, a) => v - pairs[i].mm[a]))).sort((a, b) => a - b);
+    const flatMedian = flat[flat.length >> 1];
+    const result = {
+      camera_id: quick.camera_id,
+      mode: "precise",
+      image_px: size,
+      f_px: round(fit.lens.f),
+      cx: fit.lens.cx,
+      cy: fit.lens.cy,
+      k1: round(fit.lens.k1, 5),
+      k2: round(fit.lens.k2, 5),
+      rms_px: round(fit.rms_px, 2),
+      error_mm: { median: round(fit.err_mm.median), p95: round(fit.err_mm.p95), max: round(fit.err_mm.max) },
+      error_mm_homography_only: round(flatMedian),
+      points_total: grid.length,
+      points_found: pairs.length,
+      points_used: fit.used.length,
+      points_discarded: pairs.length - fit.used.length,
+      matrix_undistorted_px_to_mm: fit.matrix.map((v) => round(v, 6)),
+    };
+    if (fit.err_mm.median > flatMedian * 0.95)
+      return { ...result, saved: false, note: `El modelo de lente no mejora a la homografía sola (${round(fit.err_mm.median)} contra ${round(flatMedian)} mm): no lo guardé. ${why}` };
+    const calib = {
+      camera_id: quick.camera_id,
+      matrix: fit.matrix,
+      image_px: size,
+      lens: fit.lens,
+      residual_mm: round(fit.err_mm.median),
+      points: fit.used.length,
+      total: grid.length,
+      source: "lente",
+      version: (this.calib?.version ?? 0) + 1,
+    };
+    this.setCalib(calib);
+    this.hooks.saveCalib(calib);
+    return {
+      ...result,
+      saved: true,
+      note:
+        "Modelo de lente guardado (focal nominal: con una vista plana no queda determinada; k1 y k2 sí). look, anchor.point_px, " +
+        "polygon_px y las manos pasan por lente + homografía. La matriz vale para píxeles ya corregidos.",
     };
   }
 
@@ -441,7 +585,8 @@ export class BrowserNode extends EventTarget {
       const { canvas, camera } = await this.hooks.frame(args.camera_id);
       const { surface, widgets } = this.world;
       const calibrated = this.calib?.camera_id === camera.id;
-      if (calibrated && args.annotate !== false) annotate(canvas.getContext("2d"), this.calib.matrix, surface);
+      this.lookSize = [canvas.width, canvas.height];
+      if (calibrated && args.annotate !== false) annotate(canvas.getContext("2d"), this.calib, surface);
       return {
         images: [{ type: "image", data: canvas.toDataURL("image/jpeg", 0.82).split(",")[1], mime_type: "image/jpeg" }],
         data: {
@@ -456,6 +601,14 @@ export class BrowserNode extends EventTarget {
             ? {
                 matrix_px_to_mm: this.calib.matrix.map((v) => round(v, 6)),
                 residual_mm: this.calib.residual_mm,
+                ...(this.calib.lens
+                  ? {
+                      lens: this.calib.lens,
+                      lens_note:
+                        "Hay modelo de lente: matrix_px_to_mm vale para píxeles ya corregidos de distorsión. No conviertas a mano: " +
+                        "manda píxeles de esta foto en anchor.point_px y el nodo aplica lente + homografía.",
+                    }
+                  : {}),
                 summary:
                   "Cuadro en vivo con la superficie proyectable y una grilla cada 100 mm (annotate=false la quita). Para apuntar a " +
                   "algo que ves, usa sus píxeles en esta foto: anchor.point_px en project (polygon_px en halo, from_px/to_px en arrow).",
@@ -496,7 +649,10 @@ export class BrowserNode extends EventTarget {
     },
 
     async calibrate(args) {
-      return { data: await this.calibrate(args) };
+      // `model`: carga un modelo ya medido (lente + homografía) sin proyectar nada. Fuera del contrato: va como campo extra.
+      if (args.model) return { data: this.loadModel(args.model) };
+      const quick = await this.calibrate({ ...args, mode: args.mode === "precise" ? "quick" : args.mode });
+      return { data: args.mode === "precise" ? await this.calibrateLens(args, quick) : quick };
     },
 
     async remove(args) {

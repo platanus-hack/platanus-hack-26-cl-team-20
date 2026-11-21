@@ -43,8 +43,12 @@ if (gl) {
     shader(
       gl.FRAGMENT_SHADER,
       // Por cada píxel de la mesa (mm) busca de qué píxel de la foto viene; lo que cae fuera de la foto queda negro.
-      `precision highp float; uniform sampler2D t; uniform mat3 H; uniform vec2 mm; uniform vec2 img; varying vec2 v;
-       void main(){ vec3 q = H * vec3(v.x * mm.x, (1.0 - v.y) * mm.y, 1.0); vec2 uv = q.xy / q.z / img;
+      // Con modelo de lente, el píxel corregido se lleva al píxel real de la foto con la fórmula radial (k1, k2).
+      `precision highp float; uniform sampler2D t; uniform mat3 H; uniform vec2 mm; uniform vec2 img;
+       uniform vec3 lens; uniform vec2 kk; varying vec2 v;
+       void main(){ vec3 q = H * vec3(v.x * mm.x, (1.0 - v.y) * mm.y, 1.0); vec2 p = q.xy / q.z;
+         if (lens.x > 0.0) { vec2 n = (p - lens.yz) / lens.x; float r2 = dot(n, n); p = n * (1.0 + kk.x * r2 + kk.y * r2 * r2) * lens.x + lens.yz; }
+         vec2 uv = p / img;
          gl_FragColor = (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) ? vec4(0.0, 0.0, 0.0, 1.0) : texture2D(t, uv); }`,
     ),
   );
@@ -58,7 +62,7 @@ if (gl) {
   gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
   for (const [k, val] of [[gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE], [gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR]])
     gl.texParameteri(gl.TEXTURE_2D, k, val);
-  warp = { H: gl.getUniformLocation(prog, "H"), mm: gl.getUniformLocation(prog, "mm"), img: gl.getUniformLocation(prog, "img") };
+  warp = Object.fromEntries(["H", "mm", "img", "lens", "kk"].map((n) => [n, gl.getUniformLocation(prog, n)]));
 }
 
 const canRectify = () => !!(warp && view?.homography);
@@ -67,7 +71,9 @@ const rectified = () => $("rectificar").checked && canRectify();
 function drawCamera() {
   if (!lastFrame) return;
   if (rectified()) {
-    const { matrix, image_px } = view.homography;
+    const { matrix, image_px, lens } = view.homography;
+    gl.uniform3f(warp.lens, lens?.f ?? 0, lens?.cx ?? 0, lens?.cy ?? 0);
+    gl.uniform2f(warp.kk, lens?.k1 ?? 0, lens?.k2 ?? 0);
     const m = invert(matrix); // mm → píxeles de la foto de look
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, lastFrame);
@@ -225,7 +231,9 @@ function frame(t) {
 }
 
 setInterval(() => {
-  $("video-nota").textContent = frames && lastFrame ? `Video: ${lastFrame.width}×${lastFrame.height}, ${frames} cuadros/s.` : "Sin video: la consola de la mesa no está mandando cuadros.";
+  const L = view?.homography?.lens;
+  const lente = L ? ` Lente: k1 ${L.k1.toFixed(4)}, k2 ${L.k2.toFixed(4)}, error ${view.homography.residual_mm ?? "?"} mm.` : view?.homography ? " Sin modelo de lente (solo homografía)." : "";
+  $("video-nota").textContent = (frames && lastFrame ? `Video: ${lastFrame.width}×${lastFrame.height}, ${frames} cuadros/s.` : "Sin video: la consola de la mesa no está mandando cuadros.") + lente;
   frames = 0;
 }, 1000);
 layout();
