@@ -1,0 +1,11 @@
+[package]
+name = "pcx-perception"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Percepción de pcx: foto limpia (apagón del proyector + mediana de cuadros del anillo). El worker de objetos llega con R2."
+publish = false
+
+[dependencies]
+pcx-shm = { path = "../pcx-shm" }
+thiserror = "2"

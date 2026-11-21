@@ -3484,6 +3484,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "pcx-perception"
+version = "0.1.0"
+dependencies = [
+ "pcx-shm",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "pcx-renderer"
 version = "0.1.0"
 dependencies = [
