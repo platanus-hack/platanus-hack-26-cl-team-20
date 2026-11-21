@@ -36,3 +36,5 @@ Registro cronológico para retomar el trabajo después de una compactación de c
 - 05:50 · CI listo → PR #2 (las pruebas corren en GitHub, no en el disco local). PR general #1 (borrador) hacia `main`.
 - 05:54 · Codex alcanzó su límite de uso (se restablece 06:16). Seguridad (C) y despliegue quedaron con cambios sin commitear en sus worktrees; se reanudan solos a las 06:17.
 - 05:55 · Render: el equipo tiene **USD 50 en créditos** (cuenta de Manu). Investigando precios y plan de gasto; **no desplegar** hasta que Manu lo apruebe.
+- 06:00 · Paridad con la rama `mesa` lista → `docs/arquitectura/PARIDAD-MESA.md` (22 tareas en los bloques R, S, C y M). Integrada en `manu/plataforma`.
+- 06:02 · Lanzadas **R1** (foto limpia, crate nuevo `pcx-perception`, rama `feat/foto-limpia`) y **R4+R5** (nivel N2b barato + rectificador polinomial, rama `feat/objetos-rapidos`), ambas con Claude Fable. Siguen en la cola, sin hardware: S1 (catálogo v2), M1 (modos `pcx mode`) y M5 (`free_rect`). Después: R2→R3, S2→S3, C1→C2 y M2–M4.
