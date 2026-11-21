@@ -14,6 +14,8 @@ name = "pcx-renderer"
 path = "src/main.rs"
 
 [dependencies]
+base64 = "0.22"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }
 pcx-contracts = { path = "../contracts/rust/pcx-contracts" }
 image = { version = "0.25", default-features = false, features = ["png"] }
 parley = "0.13"
@@ -27,3 +29,6 @@ winit = "0.30"
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
 raw-window-handle = "0.6"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Graphics_Gdi"] }

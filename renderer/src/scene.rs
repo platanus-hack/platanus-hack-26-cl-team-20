@@ -39,7 +39,7 @@ pub struct SceneState {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Projection {
     /// LUT densa; `fallback` = `approx_matrix` o la mejor homografía, si la LUT no se puede usar.
-    Lut { lut: LutTransform, fallback: Option<[f64; 9]> },
+    Lut { lut: Box<LutTransform>, fallback: Option<[f64; 9]> },
     Homography([f64; 9]),
     /// Sin transform para este proyector: la superficie se centra en la salida.
     Fit,
@@ -68,7 +68,7 @@ impl SceneState {
             }
             ToRenderer::SceneDiff(d) => self.apply_diff(d, now_s),
             // `blank` no toca la escena: lo maneja `Runtime`. `pattern`/`pattern_clear` (v2.1) tampoco: los
-            // dibuja aparte, sin warp ni widgets (TODO renderer: aún no implementado).
+            // dibuja Runtime aparte, sin warp ni widgets.
             ToRenderer::Blank(_) | ToRenderer::Pattern(_) | ToRenderer::PatternClear(_) => Outcome::Stale,
         }
     }
@@ -165,7 +165,7 @@ impl SceneState {
     pub fn projection(&self) -> Projection {
         match select_projector_transform(&self.transforms, &self.projector_id) {
             Some((_, Transform::Lut(l))) => Projection::Lut {
-                lut: l.clone(),
+                lut: Box::new(l.clone()),
                 fallback: Transform::projector_matrix(&self.transforms, &self.projector_id),
             },
             Some((_, Transform::Homography(h))) => Projection::Homography(h.matrix),

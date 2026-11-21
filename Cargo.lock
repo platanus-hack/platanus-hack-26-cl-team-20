@@ -3343,16 +3343,19 @@ dependencies = [
 name = "pcx-renderer"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "image",
  "objc2 0.6.5",
  "parley",
  "pcx-contracts",
  "pollster",
  "raw-window-handle",
+ "reqwest 0.12.28",
  "serde",
  "serde_json",
  "tungstenite 0.30.0",
  "vello",
+ "windows-sys 0.61.2",
  "winit",
 ]
 

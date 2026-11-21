@@ -62,7 +62,7 @@ impl Lut {
         if body.len() < n * 4 {
             return Err(format!("faltan datos: {} bytes para {h}x{w}x2 f32", body.len()));
         }
-        let data = body[..n * 4].chunks_exact(4).map(|c| f32::from_le_bytes(c.try_into().unwrap())).collect();
+        let data = body[..n * 4].as_chunks::<4>().0.iter().map(|c| f32::from_le_bytes(*c)).collect();
         Ok(Lut { width: w, height: h, data })
     }
 
@@ -125,7 +125,7 @@ pub fn sha256_hex(data: &[u8]) -> String {
         msg.push(0);
     }
     msg.extend_from_slice(&((data.len() as u64) * 8).to_be_bytes());
-    for chunk in msg.chunks_exact(64) {
+    for chunk in msg.as_chunks::<64>().0 {
         let mut w = [0u32; 64];
         for i in 0..16 {
             w[i] = u32::from_be_bytes(chunk[i * 4..i * 4 + 4].try_into().unwrap());

@@ -20,6 +20,8 @@ struct Args {
     time: Option<f64>,
     size: (u32, u32),
     display: Option<String>,
+    list_displays: bool,
+    allow_main: bool,
     latency: u32,
     bench: bool,
     bench_frames: usize,
@@ -27,10 +29,11 @@ struct Args {
 }
 
 const HELP: &str = "pcx-renderer [--ws URL | --no-ws] [--scene ARCHIVO.json ...] [--ppmm N] [--effects DIR]
-             [--assets DIR] [--fonts DIR] [--projector ID]
+             [--assets-dir DIR] [--allow-remote-images] [--fonts DIR] [--projector ID]
              [--lut ARCHIVO.npy [--lut-step MM]]
   --headless [--frames N] [--out DIR] [--hz N] [--time T] [--size 1920x1080]
-  --display <índice|nombre> [--latency N]
+  --list-displays
+  --display <índice|nombre> [--allow-main] [--latency N]
   --bench [--bench-frames N]";
 
 fn parse_args() -> Args {
@@ -45,6 +48,8 @@ fn parse_args() -> Args {
         time: None,
         size: (1920, 1080),
         display: None,
+        list_displays: false,
+        allow_main: false,
         latency: 1,
         bench: false,
         bench_frames: 200,
@@ -59,7 +64,8 @@ fn parse_args() -> Args {
             "--scene" => a.scenes.push(it.next().expect("--scene ARCHIVO").into()),
             "--ppmm" => a.cfg.ppmm = num(it.next(), "--ppmm"),
             "--effects" => a.cfg.effects_dir = it.next().expect("--effects DIR").into(),
-            "--assets" => a.cfg.assets_dir = it.next().expect("--assets DIR").into(),
+            "--assets" | "--assets-dir" => a.cfg.assets_dir = it.next().expect("--assets-dir DIR").into(),
+            "--allow-remote-images" => a.cfg.allow_remote_images = true,
             "--lut" => a.cfg.lut_path = it.next(),
             "--lut-step" => a.cfg.lut_grid_step = num(it.next(), "--lut-step"),
             "--projector" => a.projector = it.next().expect("--projector ID"),
@@ -74,7 +80,9 @@ fn parse_args() -> Args {
                 let (w, h) = s.split_once('x').expect("--size WxH");
                 a.size = (w.parse().expect("ancho"), h.parse().expect("alto"));
             }
-            "--display" => a.display = it.next(),
+            "--display" => a.display = Some(it.next().expect("--display índice|nombre")),
+            "--list-displays" => a.list_displays = true,
+            "--allow-main" => a.allow_main = true,
             "--latency" => a.latency = num(it.next(), "--latency") as u32,
             "--bench" => a.bench = true,
             "--bench-frames" => a.bench_frames = num(it.next(), "--bench-frames") as usize,
@@ -102,6 +110,10 @@ fn load_scenes(rt: &mut Runtime, files: &[PathBuf]) {
 
 fn main() {
     let args = parse_args();
+    if args.list_displays {
+        display::run(args, Runtime::offline());
+        return;
+    }
     if args.bench {
         let mut eng = Engine::headless(args.cfg);
         println!("| widgets | cuadros | ms/cuadro p50 | p95 | media |");
@@ -140,7 +152,7 @@ fn run_headless(args: Args, mut rt: Runtime) {
     let mut next = Instant::now();
     let mut n = 0u64;
     while args.frames.is_none_or(|f| n < f) {
-        if n % 30 == 0 {
+        if n.is_multiple_of(30) {
             eng.poll_effects();
         }
         rt.draw(&mut eng, &view, w, h, args.time);
@@ -172,6 +184,7 @@ fn run_headless(args: Args, mut rt: Runtime) {
 /// Modo con ventana (Mac del montaje). No se ejecuta en los tests.
 mod display {
     use super::*;
+    use pcx_renderer::displays::{self, Bounds};
     use winit::application::ApplicationHandler;
     use winit::dpi::{LogicalPosition, LogicalSize};
     use winit::event::{ElementState, KeyEvent, WindowEvent};
@@ -185,6 +198,8 @@ mod display {
         config: wgpu::SurfaceConfiguration,
         engine: Engine,
         _instance: wgpu::Instance,
+        bounds: Bounds,
+        monitor: winit::monitor::MonitorHandle,
     }
 
     struct App {
@@ -193,38 +208,47 @@ mod display {
         gfx: Option<Gfx>,
         frame_no: u64,
         cfg: Option<EngineConfig>,
+        error: Option<String>,
     }
 
     impl App {
-        fn create(&mut self, el: &ActiveEventLoop) {
+        fn create(&mut self, el: &ActiveEventLoop) -> Result<(), String> {
             let monitors: Vec<_> = el.available_monitors().collect();
-            for (i, m) in monitors.iter().enumerate() {
-                eprintln!("[win] display {i}: {:?} pos={:?} size={:?} escala={}", m.name(), m.position(), m.size(), m.scale_factor());
+            let primary = el.primary_monitor();
+            let info: Vec<_> = monitors.iter().map(|m| displays::describe(m, primary.as_ref())).collect();
+            for (i, d) in info.iter().enumerate() {
+                println!(
+                    "{i}: {} bounds=({}, {}) {}x{} escala={} principal={}",
+                    d.name, d.bounds.x, d.bounds.y, d.bounds.width, d.bounds.height, d.scale, d.primary
+                );
             }
-            let sel = self.args.display.clone().unwrap_or_default();
-            let mon = match sel.parse::<usize>() {
-                Ok(i) => monitors.get(i).cloned(),
-                Err(_) => monitors.iter().find(|m| m.name().is_some_and(|n| n.contains(&sel))).cloned(),
+            if self.args.list_displays {
+                el.exit();
+                return Ok(());
             }
-            .or_else(|| {
-                let primary = el.primary_monitor();
-                monitors.iter().find(|m| Some(*m) != primary.as_ref()).cloned()
-            })
-            .or(monitors.first().cloned())
-            .expect("sin displays");
+            let index = displays::select(&info, self.args.display.as_deref().unwrap_or(""), self.args.allow_main)?;
+            let mon = monitors[index].clone();
+            let bounds = info[index].bounds;
             let sf = mon.scale_factor();
             let pos: LogicalPosition<f64> = mon.position().to_logical(sf);
             let size: LogicalSize<f64> = mon.size().to_logical(sf);
             // Ventana sin bordes del tamaño del display. NUNCA pantalla completa nativa (kernel panics en el montaje).
             let attrs = Window::default_attributes()
+                .with_visible(false)
                 .with_title("pcx-renderer")
                 .with_position(pos)
                 .with_inner_size(size)
                 .with_resizable(false)
                 .with_decorations(false)
                 .with_window_level(WindowLevel::AlwaysOnTop);
-            let window = Arc::new(el.create_window(attrs).expect("ventana"));
+            #[cfg(not(target_os = "macos"))]
+            let attrs = attrs.with_fullscreen(Some(winit::window::Fullscreen::Borderless(Some(mon.clone()))));
+            let window = Arc::new(el.create_window(attrs).map_err(|e| e.to_string())?);
+            // Antes de mostrar contenido o inicializar la GPU, fallar si el SO ignoró el display.
+            verify_window(&window, bounds, &mon)?;
             pin_window(&window);
+            window.set_visible(true);
+            verify_window(&window, bounds, &mon)?;
             let instance = engine::new_instance();
             let surface = instance.create_surface(window.clone()).expect("surface");
             let (adapter, device, queue) = engine::gpu_init(&instance, Some(&surface));
@@ -250,13 +274,14 @@ mod display {
             surface.configure(&device, &config);
             eprintln!("[win] salida {}x{} {format:?}", config.width, config.height);
             let engine = Engine::new(device, queue, format, self.cfg.take().unwrap());
-            self.gfx = Some(Gfx { window, surface, config, engine, _instance: instance });
+            self.gfx = Some(Gfx { window, surface, config, engine, _instance: instance, bounds, monitor: mon });
+            Ok(())
         }
 
         fn frame(&mut self) {
             let Some(g) = self.gfx.as_mut() else { return };
             self.frame_no += 1;
-            if self.frame_no % 30 == 0 {
+            if self.frame_no.is_multiple_of(30) {
                 g.engine.poll_effects();
             }
             let st = match g.surface.get_current_texture() {
@@ -283,12 +308,24 @@ mod display {
 
     impl ApplicationHandler for App {
         fn resumed(&mut self, el: &ActiveEventLoop) {
-            if self.gfx.is_none() {
-                self.create(el);
+            if self.gfx.is_none()
+                && let Err(error) = self.create(el)
+            {
+                self.error = Some(error);
+                self.gfx = None;
+                el.exit();
             }
         }
 
         fn window_event(&mut self, el: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
+            if let Some(g) = &self.gfx
+                && let Err(error) = verify_window(&g.window, g.bounds, &g.monitor)
+            {
+                self.error = Some(error);
+                self.gfx = None; // Cierra también ante cambios de monitor o de escala.
+                el.exit();
+                return;
+            }
             match event {
                 WindowEvent::CloseRequested => el.exit(),
                 WindowEvent::KeyboardInput {
@@ -314,12 +351,24 @@ mod display {
         }
     }
 
+    fn verify_window(window: &Window, bounds: Bounds, monitor: &winit::monitor::MonitorHandle) -> Result<(), String> {
+        let position = window.outer_position().map_err(|e| format!("no se puede verificar la ventana: {e}"))?;
+        let size = window.outer_size();
+        let actual = Bounds { x: position.x, y: position.y, width: size.width, height: size.height };
+        if !bounds.contains(actual) || window.current_monitor().as_ref() != Some(monitor) {
+            return Err(format!("ventana fuera del display elegido: {actual:?}, esperado {bounds:?}; salida abortada"));
+        }
+        Ok(())
+    }
+
     /// Visible en todos los Spaces, fuera de Mission Control y sobre la barra de menú (ver spike).
     #[cfg(target_os = "macos")]
     fn pin_window(window: &Window) {
         use objc2::{msg_send, runtime::AnyObject};
         use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-        let Ok(h) = window.window_handle() else { return };
+        let Ok(h) = window.window_handle() else {
+            return;
+        };
         if let RawWindowHandle::AppKit(h) = h.as_raw() {
             let view = h.ns_view.as_ptr() as *mut AnyObject;
             // canJoinAllSpaces | stationary | ignoresCycle | fullScreenAuxiliary
@@ -349,7 +398,11 @@ mod display {
         }
         let event_loop = builder.build().expect("event loop");
         event_loop.set_control_flow(ControlFlow::Poll);
-        let mut app = App { args, rt, gfx: None, frame_no: 0, cfg: Some(cfg) };
+        let mut app = App { args, rt, gfx: None, frame_no: 0, cfg: Some(cfg), error: None };
         event_loop.run_app(&mut app).expect("run");
+        if let Some(error) = app.error {
+            eprintln!("[display] {error}");
+            std::process::exit(1);
+        }
     }
 }

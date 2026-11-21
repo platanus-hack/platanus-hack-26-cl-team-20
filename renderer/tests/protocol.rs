@@ -1,16 +1,26 @@
-//! Protocolo contra un core falso (servidor WS en Rust, puerto 9231): snapshot → presented,
+//! Protocolo contra un core falso (servidor WS en Rust, puerto efímero): snapshot → presented,
 //! diff → presented, hueco de rev → resync, stats cada 1 s, reconexión manteniendo la escena.
 
 use std::net::TcpListener;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
-use pcx_renderer::engine::{Engine, EngineConfig};
+use pcx_renderer::runtime::FrameRenderer;
 use pcx_renderer::runtime::{Runtime, now_epoch_ms};
+use pcx_renderer::scene::SceneState;
 use serde_json::{Value, json};
 use tungstenite::{Message, WebSocket};
 
-const PORT: u16 = 9231;
+// El protocolo se prueba independientemente de Metal/Vulkan; golden.rs verifica los cuadros GPU.
+struct ProtocolRenderer;
+impl FrameRenderer for ProtocolRenderer {
+    type Target = ();
+    fn scene(&mut self, _: &SceneState, _: f64, _: f64, _: &(), _: (u32, u32)) {}
+    fn black(&mut self, _: &()) {}
+    fn pattern(&mut self, _: u64, src: &str, _: &()) -> bool {
+        pcx_renderer::images::ImageCache::new(std::path::PathBuf::from(".")).load(src).is_ok()
+    }
+}
 
 type Ws = WebSocket<std::net::TcpStream>;
 
@@ -61,8 +71,13 @@ fn accept(l: &TcpListener) -> Ws {
 
 #[test]
 fn protocolo_con_core_falso() {
-    let listener = TcpListener::bind(("127.0.0.1", PORT)).unwrap();
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let port = listener.local_addr().unwrap().port();
     let (done_tx, done_rx) = mpsc::channel::<Result<(), String>>();
+    use base64::Engine as _;
+    let mut png = std::io::Cursor::new(Vec::new());
+    image::RgbaImage::from_pixel(1, 1, image::Rgba([255, 255, 255, 255])).write_to(&mut png, image::ImageFormat::Png).unwrap();
+    let pattern_uri = format!("data:image/png;base64,{}", base64::engine::general_purpose::STANDARD.encode(png.into_inner()));
     let server = std::thread::spawn(move || {
         let r = std::panic::catch_unwind(move || {
             let mut ws = accept(&listener);
@@ -70,10 +85,31 @@ fn protocolo_con_core_falso() {
             wait_for(&mut ws, "presented 1", presented(1));
             send(&mut ws, diff(2, 1));
             wait_for(&mut ws, "presented 2", presented(2));
-            // Falta el rev 3: el renderer debe pedir snapshot y no aplicar el diff.
-            send(&mut ws, diff(4, 3));
+            // v2.1: primer cuadro con patrón → pattern_shown, una sola vez.
+            send(
+                &mut ws,
+                json!({"type": "pattern", "pattern_id": "calib-1",
+                "image": {"data_uri": pattern_uri}, "until_ms": null}),
+            );
+            let shown = wait_for(&mut ws, "pattern_shown", |v| v["type"] == "pattern_shown");
+            assert_eq!(shown["pattern_id"], "calib-1");
+            assert!(shown["t_present_ms"].as_f64().unwrap() > 0.0);
+            // Una nueva rev sigue pendiente mientras el patrón tapa los widgets.
+            send(&mut ws, scene(3));
+            let deadline = Instant::now() + Duration::from_millis(80);
+            while Instant::now() < deadline {
+                if let Ok(Message::Text(t)) = ws.read() {
+                    let v: Value = serde_json::from_str(&t).unwrap();
+                    assert_ne!(v["type"], "pattern_shown", "ack duplicado");
+                    assert!(!presented(3)(&v), "no se mostró todavía la escena");
+                }
+            }
+            send(&mut ws, json!({"type": "pattern_clear"}));
+            wait_for(&mut ws, "presented 3 tras pattern_clear", presented(3));
+            // Falta el rev 4: el renderer debe pedir snapshot y no aplicar el diff.
+            send(&mut ws, diff(5, 4));
             let r = wait_for(&mut ws, "resync", |v| v["type"] == "resync");
-            assert_eq!(r["have_rev"], 2);
+            assert_eq!(r["have_rev"], 3);
             send(&mut ws, scene(5));
             wait_for(&mut ws, "presented 5", presented(5));
             let st = wait_for(&mut ws, "stats", |v| v["type"] == "stats");
@@ -94,10 +130,9 @@ fn protocolo_con_core_falso() {
         let _ = done_tx.send(r.map_err(|_| "el core falso falló (ver panic arriba)".to_string()));
     });
 
-    let mut eng = Engine::headless(EngineConfig::default());
-    let target = eng.create_target(640, 360);
-    let view = target.create_view(&Default::default());
-    let mut rt = Runtime::connect(&format!("ws://127.0.0.1:{PORT}/render"));
+    let mut eng = ProtocolRenderer;
+    let view = ();
+    let mut rt = Runtime::connect(&format!("ws://127.0.0.1:{port}/render"));
     let t0 = Instant::now();
     let mut saw_disconnect_with_scene = false;
     let result = loop {
@@ -108,7 +143,6 @@ fn protocolo_con_core_falso() {
             assert_eq!(rt.state.entries.len(), 2);
             saw_disconnect_with_scene = true;
         }
-        eng.wait_idle();
         rt.after_present(now_epoch_ms());
         if let Ok(r) = done_rx.try_recv() {
             break r;

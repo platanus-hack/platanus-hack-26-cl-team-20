@@ -1,6 +1,7 @@
 //! pcx-renderer: compositor del proyector. Ver `README.md`.
 
 pub mod bench;
+pub mod displays;
 pub mod draw;
 pub mod effects;
 pub mod engine;
