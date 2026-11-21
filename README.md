@@ -20,10 +20,15 @@ Cómo correr el engine: `engine/README.md` (Python 3.12 o 3.13, no 3.14).
 | Carpeta | Qué va | Responsable |
 |---|---|---|
 | `engine/` | sl-scanner de Max: calibración, escena, efectos, API y MCP | Max (original), Manu (orden) |
-| `agent/` | Puente para que un agente controle el engine: API, tools/MCP, ejemplos | Manu, Daniel |
-| `experiences/` | Casos de uso y escenas que se muestran en la demo | Pablo, Matilda |
+| `agent/` | Ordenar el engine y conectar agentes a su API/MCP | Manu, Daniel |
+| `experiences/` | Dolor elegido, casos de uso, guion de la demo, nombre y marca | Pablo, Matilda |
 | `hardware/` | Rig de proyector y cámara, piezas 3D (fuentes y STL), lista de equipos | 3D |
-| `docs/` | Rúbrica, decisiones, pitch, guion de la demo | todos |
+| `docs/` | `PLAN.md` (plan vivo), `RUBRICA.md`, `CONTRATO.md`, `transcripciones/` de las conversaciones, `investigacion/` | orquestador de Daniel + todos |
+
+## Empezar
+
+1. Lee `docs/PLAN.md` (5 min): idea, reparto, rúbrica, feedback del mentor.
+2. Lee el README de tu carpeta.
 
 ## Reglas mínimas
 
