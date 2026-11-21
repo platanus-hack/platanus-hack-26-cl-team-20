@@ -132,22 +132,22 @@ pub struct ModelFile {
 /// Grounding DINO tiny (ONNX, `onnx-community/grounding-dino-tiny-ONNX`) y MobileSAM (`Acly/MobileSAM`).
 pub mod catalog {
     use super::ModelFile;
-    /// int8 (204 MB): el que se usa por defecto en CPU.
+    /// fp32 (719 MB): el que se usa. Las variantes int8/uint8 usan `ConvInteger`, que el EP de CPU de ORT no tiene.
     pub const DINO_MODEL: ModelFile = ModelFile {
-        url: "https://huggingface.co/onnx-community/grounding-dino-tiny-ONNX/resolve/main/onnx/model_int8.onnx",
-        file_name: "grounding-dino-tiny-int8.onnx",
-        sha256: "3bff430de583461ab3c1e8b99b19508f4fb238bf0fea0cde2c45f840a0082a26",
-    };
-    /// fp32 (719 MB): más fiel al PyTorch de Daniel; usar con `GroundingDino::load_with(DINO_MODEL_FP32, ..)`.
-    pub const DINO_MODEL_FP32: ModelFile = ModelFile {
         url: "https://huggingface.co/onnx-community/grounding-dino-tiny-ONNX/resolve/main/onnx/model.onnx",
         file_name: "grounding-dino-tiny.onnx",
         sha256: "267c8b00d269dc2dda0d8592812d3027abd5fb59f1cabf8e3d56f8fdf07f68ec",
     };
+    /// int8 (204 MB): NO corre en el EP de CPU (`ConvInteger(10)` sin implementación); queda para otros EP.
+    pub const DINO_MODEL_INT8: ModelFile = ModelFile {
+        url: "https://huggingface.co/onnx-community/grounding-dino-tiny-ONNX/resolve/main/onnx/model_int8.onnx",
+        file_name: "grounding-dino-tiny-int8.onnx",
+        sha256: "3bff430de583461ab3c1e8b99b19508f4fb238bf0fea0cde2c45f840a0082a26",
+    };
     pub const DINO_TOKENIZER: ModelFile = ModelFile {
         url: "https://huggingface.co/onnx-community/grounding-dino-tiny-ONNX/resolve/main/tokenizer.json",
         file_name: "grounding-dino-tiny.tokenizer.json",
-        sha256: "",
+        sha256: "d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66",
     };
     pub const SAM_ENCODER: ModelFile = ModelFile {
         url: "https://huggingface.co/Acly/MobileSAM/resolve/main/mobile_sam_image_encoder.onnx",
