@@ -248,9 +248,16 @@ pub fn crop_gray(img: &GrayImage, b: (u32, u32, u32, u32)) -> GrayImage {
 /// Pega `m` (recortada en `b`) en una máscara de `w×h`.
 pub fn place(m: &Mask, b: (u32, u32, u32, u32), w: u32, h: u32) -> Mask {
     let mut out = empty(w, h);
-    for (x, y, p) in m.enumerate_pixels() {
-        if p.0[0] > 0 && b.0 + x < w && b.1 + y < h {
-            out.put_pixel(b.0 + x, b.1 + y, ON);
+    let (mw, mh) = (m.width() as usize, m.height() as usize);
+    if b.0 >= w || mw == 0 {
+        return out;
+    }
+    let cols = mw.min((w - b.0) as usize);
+    let dst: &mut [u8] = out.as_mut();
+    for (y, row) in m.as_raw().chunks_exact(mw).enumerate().take(mh.min(h.saturating_sub(b.1) as usize)) {
+        let o = (b.1 as usize + y) * w as usize + b.0 as usize;
+        for (d, &v) in dst[o..o + cols].iter_mut().zip(row) {
+            *d = if v > 0 { 255 } else { 0 };
         }
     }
     out
@@ -258,21 +265,237 @@ pub fn place(m: &Mask, b: (u32, u32, u32, u32), w: u32, h: u32) -> Mask {
 
 /// Histograma HSV 18×8 normalizado L2 (`calcHist([0,1], [18,8], [0,180,0,256])` + `normalize`).
 pub fn hsv_hist(rgb: &RgbImage, m: &Mask) -> Vec<f32> {
-    let mut h = vec![0f32; 18 * 8];
+    let mut h = vec![0f32; HSV_BINS];
     for (p, mk) in rgb.pixels().zip(m.pixels()) {
         if mk.0[0] == 0 {
             continue;
         }
-        let (hue, sat) = hue_sat_cv(p);
-        let hb = ((hue as usize) * 18 / 180).min(17);
-        let sb = ((sat as usize) * 8 / 256).min(7);
-        h[hb * 8 + sb] += 1.0;
+        h[hsv_bin(p)] += 1.0;
     }
+    l2_normalize(&mut h);
+    h
+}
+
+/// Casillero del histograma 18×8 (tono × saturación) de un píxel.
+pub fn hsv_bin(p: &Rgb<u8>) -> usize {
+    let (hue, sat) = hue_sat_cv(p);
+    ((hue as usize) * 18 / 180).min(17) * 8 + ((sat as usize) * 8 / 256).min(7)
+}
+
+pub const HSV_BINS: usize = 18 * 8;
+
+pub fn l2_normalize(h: &mut [f32]) {
     let n = h.iter().map(|v| v * v).sum::<f32>().sqrt();
     if n > 0.0 {
         h.iter_mut().for_each(|v| *v /= n);
     }
-    h
+}
+
+/// Coeficiente de Bhattacharyya `Σ √(p·q)` con `p`, `q` normalizados a suma 1: 1 = iguales, 0 = sin traslape
+/// (`1 − cv2.compareHist(..., HISTCMP_BHATTACHARYYA)²`).
+pub fn bhattacharyya(a: &[f32], b: &[f32]) -> f64 {
+    let (sa, sb): (f64, f64) = (a.iter().map(|&v| v as f64).sum(), b.iter().map(|&v| v as f64).sum());
+    if sa <= 0.0 || sb <= 0.0 {
+        return 0.0;
+    }
+    a.iter().zip(b).map(|(&x, &y)| (x as f64 * y as f64).sqrt()).sum::<f64>() / (sa * sb).sqrt()
+}
+
+/// Corrida horizontal de píxeles encendidos: fila `y`, columnas `[x0, x1)`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Run {
+    pub y: u32,
+    pub x0: u32,
+    pub x1: u32,
+}
+
+/// Componente conexa como lista de corridas (en orden de fila), con su área y su caja exclusiva.
+#[derive(Debug, Clone)]
+pub struct Blob {
+    pub runs: Vec<Run>,
+    pub area: u64,
+    pub bbox: (u32, u32, u32, u32),
+}
+
+/// Etiqueta por corridas + union-find. `on`: qué valor cuenta (encendido o fondo); `diag`: conexidad 8 (si no, 4).
+/// Las filas vacías se saltan con una comparación de bloque y dentro de la fila se avanza de a 16 bytes, así una
+/// máscara rala de 1280×720 cuesta ~1 ms incluso sin optimizar (el nivel 2b corre sobre esto).
+fn label_runs(raw: &[u8], w: usize, on: bool, diag: bool) -> Vec<Blob> {
+    let mut runs: Vec<Run> = vec![];
+    let mut parent: Vec<u32> = vec![];
+    fn find(parent: &mut [u32], mut i: u32) -> u32 {
+        while parent[i as usize] != i {
+            parent[i as usize] = parent[parent[i as usize] as usize];
+            i = parent[i as usize];
+        }
+        i
+    }
+    let zeros = vec![0u8; w];
+    let (z16, f16) = ([0u8; 16], [255u8; 16]);
+    let (mut prev, mut prev_y) = (0..0, usize::MAX);
+    for (y, row) in raw.chunks_exact(w).enumerate() {
+        if on && row == &zeros[..] {
+            continue;
+        }
+        let start = runs.len();
+        let mut x = 0;
+        let mut open: Option<usize> = None;
+        while x < w {
+            if on && x + 16 <= w {
+                let c = &row[x..x + 16];
+                if (open.is_none() && c == z16) || (open.is_some() && c == f16) {
+                    x += 16;
+                    continue;
+                }
+            }
+            let active = (row[x] > 0) == on;
+            match (open, active) {
+                (None, true) => open = Some(x),
+                (Some(x0), false) => {
+                    runs.push(Run { y: y as u32, x0: x0 as u32, x1: x as u32 });
+                    open = None;
+                }
+                _ => {}
+            }
+            x += 1;
+        }
+        if let Some(x0) = open {
+            runs.push(Run { y: y as u32, x0: x0 as u32, x1: w as u32 });
+        }
+        for i in start..runs.len() {
+            parent.push(i as u32);
+            if prev_y.wrapping_add(1) != y {
+                continue;
+            }
+            let c = runs[i];
+            for q in prev.clone() {
+                let r = runs[q];
+                let toca = if diag { r.x0 <= c.x1 && c.x0 <= r.x1 } else { r.x0 < c.x1 && c.x0 < r.x1 };
+                if toca {
+                    let (ra, rb) = (find(&mut parent, i as u32), find(&mut parent, q as u32));
+                    if ra != rb {
+                        parent[ra.max(rb) as usize] = ra.min(rb);
+                    }
+                }
+            }
+        }
+        (prev, prev_y) = (start..runs.len(), y);
+    }
+    let mut slot = vec![u32::MAX; runs.len()];
+    let mut out: Vec<Blob> = vec![];
+    for (i, r) in runs.iter().enumerate() {
+        let root = find(&mut parent, i as u32) as usize;
+        if slot[root] == u32::MAX {
+            slot[root] = out.len() as u32;
+            out.push(Blob { runs: vec![], area: 0, bbox: (u32::MAX, u32::MAX, 0, 0) });
+        }
+        let b = &mut out[slot[root] as usize];
+        b.runs.push(*r);
+        b.area += (r.x1 - r.x0) as u64;
+        b.bbox = (b.bbox.0.min(r.x0), b.bbox.1.min(r.y), b.bbox.2.max(r.x1), b.bbox.3.max(r.y + 1));
+    }
+    out
+}
+
+/// Componentes conexas (8) de al menos `min_area` px, en orden de aparición (fila, columna).
+pub fn blobs(m: &Mask, min_area: u64) -> Vec<Blob> {
+    if m.width() == 0 {
+        return vec![];
+    }
+    let mut b = label_runs(m.as_raw(), m.width() as usize, true, true);
+    b.retain(|b| b.area >= min_area);
+    b
+}
+
+/// Igual que `fill_largest` (componente más grande con los agujeros rellenos) pero por corridas: para los recortes
+/// del nivel 2b, donde la versión con `imageproc` cuesta decenas de ms sin optimizar.
+pub fn fill_largest_fast(m: &Mask) -> Mask {
+    let (w, h) = m.dimensions();
+    let mut out = empty(w, h);
+    if w == 0 || h == 0 {
+        return out;
+    }
+    let comps = label_runs(m.as_raw(), w as usize, true, true);
+    let mut best: Option<&Blob> = None;
+    for c in &comps {
+        if best.is_none_or(|b| c.area > b.area) {
+            best = Some(c);
+        }
+    }
+    let Some(best) = best else { return out };
+    let paint = |out: &mut Mask, runs: &[Run]| {
+        let raw: &mut [u8] = out.as_mut();
+        for r in runs {
+            let o = (r.y * w) as usize;
+            raw[o + r.x0 as usize..o + r.x1 as usize].fill(255);
+        }
+    };
+    paint(&mut out, &best.runs);
+    // fondo que no toca el borde (4-conexo) = agujero
+    let holes: Vec<Blob> = label_runs(out.as_raw(), w as usize, false, false)
+        .into_iter()
+        .filter(|b| b.bbox.0 > 0 && b.bbox.1 > 0 && b.bbox.2 < w && b.bbox.3 < h)
+        .collect();
+    for b in &holes {
+        paint(&mut out, &b.runs);
+    }
+    out
+}
+
+/// Apertura con kernel cuadrado `k×k` por conteo deslizante (separable). Fuera de la imagen cuenta como encendido
+/// al erosionar (no se come lo que toca el borde), como el borde por defecto de OpenCV.
+pub fn open_sq_fast(m: &Mask, k: u8) -> Mask {
+    let (w, h) = (m.width() as usize, m.height() as usize);
+    let r = (k / 2) as usize;
+    if w == 0 || h == 0 || r == 0 {
+        return m.clone();
+    }
+    // una pasada 1-D sobre `n` elementos de paso `step` desde `base`: erosión (todos) o dilatación (alguno)
+    fn pass(src: &[u8], dst: &mut [u8], (base, step, n): (usize, usize, usize), r: usize, erode: bool, acc: &mut [u32]) {
+        acc[0] = 0;
+        for i in 0..n {
+            acc[i + 1] = acc[i] + (src[base + i * step] > 0) as u32;
+        }
+        for i in 0..n {
+            let (a, b) = (i.saturating_sub(r), (i + r + 1).min(n));
+            let c = acc[b] - acc[a];
+            let v = if erode { c as usize == b - a } else { c > 0 };
+            dst[base + i * step] = if v { 255 } else { 0 };
+        }
+    }
+    let mut a = m.as_raw().clone();
+    let mut b = vec![0u8; a.len()];
+    let mut acc = vec![0u32; w.max(h) + 1];
+    for erode in [true, false] {
+        for y in 0..h {
+            pass(&a, &mut b, (y * w, 1, w), r, erode, &mut acc);
+        }
+        for x in 0..w {
+            pass(&b, &mut a, (x, w, h), r, erode, &mut acc);
+        }
+    }
+    Mask::from_raw(w as u32, h as u32, a).expect("mismo tamaño")
+}
+
+/// Casillero HSV por color cuantizado a 5 bits por canal, calculado a demanda. Evita la conversión a HSV por píxel
+/// (lo caro del nivel 2b); referencia y candidato deben usar la misma tabla para que los histogramas sean comparables.
+pub struct BinLut(Vec<u8>);
+
+impl Default for BinLut {
+    fn default() -> Self {
+        BinLut(vec![u8::MAX; 1 << 15])
+    }
+}
+
+impl BinLut {
+    /// `rgb`: los 3 bytes del píxel.
+    pub fn bin(&mut self, rgb: &[u8]) -> usize {
+        let key = ((rgb[0] as usize >> 3) << 10) | ((rgb[1] as usize >> 3) << 5) | (rgb[2] as usize >> 3);
+        if self.0[key] == u8::MAX {
+            self.0[key] = hsv_bin(&Rgb([rgb[0] & 0xF8 | 4, rgb[1] & 0xF8 | 4, rgb[2] & 0xF8 | 4])) as u8;
+        }
+        self.0[key] as usize
+    }
 }
 
 /// H en [0,180), S en [0,255] como OpenCV 8 bits.
@@ -423,5 +646,61 @@ mod tests {
         let m = full(10, 10);
         let h = hsv_hist(&img, &m);
         assert!((correl(&h, &h) - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn blobs_y_bhattacharyya() {
+        let mut m = empty(64, 40);
+        for y in 5..15 {
+            for x in 3..20 {
+                m.put_pixel(x, y, ON);
+            }
+        }
+        for y in 20..30 {
+            for x in 40..50 {
+                m.put_pixel(x, y, ON);
+            }
+        }
+        m.put_pixel(50, 30, ON); // diagonal: misma componente (8-conexa)
+        m.put_pixel(63, 39, ON);
+        let b = blobs(&m, 5);
+        assert_eq!(b.len(), 2);
+        assert_eq!((b[0].area, b[0].bbox), (170, (3, 5, 20, 15)));
+        assert_eq!((b[1].area, b[1].bbox), (101, (40, 20, 51, 31)));
+        assert_eq!(blobs(&m, 1).len(), 3);
+        let (p, q, r) = ([4.0f32, 0.0, 1.0], [8.0f32, 0.0, 2.0], [0.0f32, 3.0, 0.0]);
+        assert!((bhattacharyya(&p, &q) - 1.0).abs() < 1e-6);
+        assert_eq!(bhattacharyya(&p, &r), 0.0);
+    }
+
+    #[test]
+    fn versiones_rapidas_equivalen() {
+        // manchas pseudoaleatorias con agujeros, en forma de U y sueltas
+        let mut s = 99u64;
+        let mut m = empty(97, 61);
+        for _ in 0..60 {
+            s = s.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            let (x, y, a, b) = ((s >> 33) % 90, (s >> 41) % 55, 2 + (s >> 20) % 12, 2 + (s >> 12) % 9);
+            for yy in y..(y + b).min(61) {
+                for xx in x..(x + a).min(97) {
+                    m.put_pixel(xx as u32, yy as u32, ON);
+                }
+            }
+        }
+        for (x, y) in [(30, 30), (31, 30), (50, 20), (70, 40)] {
+            m.put_pixel(x, y, Luma([0]));
+        }
+        assert_eq!(fill_largest_fast(&m), fill_largest(&m));
+        assert_eq!(blobs(&m, 1).len(), components(&m).len());
+        assert_eq!(blobs(&m, 1).iter().map(|b| b.area).sum::<u64>(), count(&m));
+        // apertura: igual a la de imageproc lejos del borde
+        let (a, b) = (open_sq_fast(&m, 5), open_sq(&m, 5));
+        for y in 3..58 {
+            for x in 3..94 {
+                assert_eq!(a.get_pixel(x, y), b.get_pixel(x, y), "({x}, {y})");
+            }
+        }
+        let cut = crop_gray(&m, (10, 5, 40, 30));
+        assert_eq!(place(&cut, (10, 5, 40, 30), 97, 61), and(&m, &place(&full(30, 25), (10, 5, 40, 30), 97, 61)));
     }
 }
