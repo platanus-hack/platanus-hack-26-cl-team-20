@@ -28,5 +28,14 @@ cpu-time = "1"
 zeromq = { version = "0.4", optional = true }
 nokhwa = { version = "0.10", features = ["input-native"], optional = true }
 
+# Captura nativa en macOS (AVFoundation): abre por uniqueID, 420v con el rango exacto, NV12 → RGB.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = { version = "0.6", features = ["exception"] }
+objc2-foundation = { version = "0.3", features = ["NSArray", "NSString", "NSError", "NSDictionary", "NSValue", "NSObject", "NSEnumerator"] }
+objc2-av-foundation = { version = "0.3", features = ["AVCaptureDevice", "AVCaptureSession", "AVCaptureInput", "AVCaptureOutputBase", "AVCaptureVideoDataOutput", "AVMediaFormat", "AVCaptureSessionPreset", "objc2-core-media", "objc2-core-video", "dispatch2", "block2"] }
+objc2-core-media = { version = "0.3", features = ["CMFormatDescription", "CMSampleBuffer", "CMTime", "CMTimeRange", "CMSync", "objc2-core-video"] }
+objc2-core-video = { version = "0.3", features = ["CVBase", "CVPixelBuffer", "CVImageBuffer", "CVBuffer", "CVReturn"] }
+dispatch2 = "0.3"
+
 [dev-dependencies]
 tokio-tungstenite = "0.26"

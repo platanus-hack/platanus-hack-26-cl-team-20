@@ -1,6 +1,9 @@
 //! Adaptadores de fuente. Cada uno corre en su hilo o tarea y deja el último cuadro en un `LatestTx`; termina cuando
 //! la bomba suelta el receptor. Para agregar uno: una función `spawn(…, tx)` y una rama en `open_source`.
 
+#[cfg(target_os = "macos")]
+pub mod avf;
+pub mod camera;
 pub mod mjpeg;
 pub mod phone;
 pub mod replay;
@@ -16,21 +19,24 @@ use std::path::PathBuf;
 pub enum SourceSpec {
     Replay(PathBuf),
     Uvc(u32),
+    /// Cámara local con backend nativo, por id estable o subcadena única del nombre (`pcx-capture list`).
+    Cam(String),
     Mjpeg(String),
     Phone(u16),
 }
 
 impl std::str::FromStr for SourceSpec {
     type Err = String;
-    /// `replay:<ruta>` · `uvc:<índice>` · `mjpeg:<url>` · `phone[:<puerto>]`.
+    /// `replay:<ruta>` · `cam:<id|nombre>` · `uvc:<índice>` · `mjpeg:<url>` · `phone[:<puerto>]`.
     fn from_str(s: &str) -> Result<Self, String> {
         let (kind, arg) = s.split_once(':').unwrap_or((s, ""));
         Ok(match kind {
             "replay" => Self::Replay(PathBuf::from(arg)),
             "uvc" => Self::Uvc(if arg.is_empty() { 0 } else { arg.parse().map_err(|_| format!("índice inválido: {arg}"))? }),
+            "cam" if !arg.is_empty() => Self::Cam(arg.to_string()),
             "mjpeg" => Self::Mjpeg(arg.to_string()),
             "phone" => Self::Phone(if arg.is_empty() { phone::DEFAULT_PORT } else { arg.parse().map_err(|_| "puerto inválido")? }),
-            _ => return Err(format!("fuente desconocida: {s:?} (replay:|uvc:|mjpeg:|phone)")),
+            _ => return Err(format!("fuente desconocida: {s:?} (replay:|cam:|uvc:|mjpeg:|phone)")),
         })
     }
 }
@@ -40,6 +46,7 @@ impl SourceSpec {
         match self {
             Self::Replay(_) => "replay",
             Self::Uvc(_) => "uvc",
+            Self::Cam(_) => "cam",
             Self::Mjpeg(_) => "mjpeg",
             Self::Phone(_) => "phone",
         }
@@ -58,11 +65,13 @@ pub struct SourceOpts {
     pub looped: bool,
     /// Interfaz para `phone` (por defecto 0.0.0.0).
     pub bind_ip: std::net::IpAddr,
+    /// Exposición/balance de blancos fijos (best-effort, solo `cam`).
+    pub controls: camera::CamControls,
 }
 
 impl Default for SourceOpts {
     fn default() -> Self {
-        Self { size: Some((1280, 720)), fps: None, max_speed: false, looped: true, bind_ip: [0, 0, 0, 0].into() }
+        Self { size: Some((1280, 720)), fps: None, max_speed: false, looped: true, bind_ip: [0, 0, 0, 0].into(), controls: Default::default() }
     }
 }
 
@@ -100,6 +109,10 @@ pub async fn open_source(spec: &SourceSpec, opts: &SourceOpts) -> Result<Running
             info = Some(format!("abre {} en el celular", srv.url()));
             phone_srv = Some(srv);
             format!("phone:{port}")
+        }
+        SourceSpec::Cam(sel) => {
+            camera::spawn(sel, opts.size.unwrap_or((1280, 720)), opts.fps.unwrap_or(30.0), opts.controls, tx)?;
+            format!("cam:{sel}")
         }
         #[cfg(feature = "uvc")]
         SourceSpec::Uvc(i) => {
