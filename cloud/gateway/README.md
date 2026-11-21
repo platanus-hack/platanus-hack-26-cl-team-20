@@ -47,3 +47,10 @@ Timeouts: project/remove/run_flow 15 s (ack), look 20 s, home 30 s, calibrate 18
 `home`: decide la `HomePolicy` del nodo; `pending` se registra con su `action_digest` y se resuelve con un toque
 (`confirmation_resolved{via:touch}`) o la consola. Tool extra `history(query, since, until)`: memoria del espacio.
 MCP es Streamable HTTP stateless con Bearer estático; no implementa OAuth ni push. El fake produce datos sintéticos.
+
+## Consola web (`/`)
+El gateway sirve la consola estática de `src/pcx_gateway/console/` (sin build). Con `PCX_OPEN_SESSIONS=1`,
+`POST /api/sessions` (público, tope de 30 por IP y hora) crea usuario + espacio + nodo con tokens propios y el
+navegador entra como nodo por `/node`: `look` devuelve un cuadro de la cámara, `project`/`remove`/`ask` dibujan en la
+ventana del proyector. Local: `PORT=9215 PCX_OPEN_SESSIONS=1 uv run python -m pcx_gateway` y abrir
+`http://localhost:9215/` en Chrome. Detalle y pendientes: `ESTADO-consola.md` en la raíz.

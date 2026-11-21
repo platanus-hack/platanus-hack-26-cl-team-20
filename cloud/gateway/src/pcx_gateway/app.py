@@ -3,7 +3,9 @@
 import asyncio
 import logging
 import time
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager, suppress
+from pathlib import Path
 
 import msgspec
 from mcp.server.lowlevel import Server
@@ -27,7 +29,8 @@ from pcx_contracts.tools import mcp_tools
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
-from starlette.routing import Route, WebSocketRoute
+from starlette.routing import Mount, Route, WebSocketRoute
+from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from .config import Settings
@@ -89,7 +92,7 @@ class Guard:
             return await JSONResponse({"error": "Cuerpo demasiado grande"}, status_code=413)(
                 scope, receive, send
             )
-        if path.startswith(("/mcp", "/api/")) and not path.startswith("/api/node/"):
+        if path.startswith(("/mcp", "/api/")) and not path.startswith(("/api/node/", "/api/sessions")):
             token = bearer(scope)
             identity = await self.store.identity(token) if token else None
             if identity is None or (path.startswith("/mcp") and identity.scope != "mcp"):
@@ -237,6 +240,23 @@ def create_app(settings: Settings | None = None):
         await store.put_thumbnail(node["space_id"], request.path_params["object_id"], body, mime, label)
         return Response(status_code=204)
 
+    recent_sessions: dict[str, deque] = defaultdict(deque)
+
+    async def api_sessions(request):
+        """Consola web: una sesión por visita (usuario + espacio + nodo propios). Público, con tope por IP."""
+        if not settings.open_sessions:
+            return JSONResponse(
+                {"error": "Sesiones abiertas desactivadas (PCX_OPEN_SESSIONS=1)"}, status_code=403
+            )
+        stamps = recent_sessions[request.client.host if request.client else "?"]
+        now = time.time()
+        while stamps and now - stamps[0] > 3600:
+            stamps.popleft()
+        if len(stamps) >= settings.sessions_per_hour:
+            return JSONResponse({"error": "Demasiadas sesiones nuevas; prueba en un rato"}, status_code=429)
+        stamps.append(now)
+        return JSONResponse(await store.create_session(), status_code=201)
+
     async def api_confirmations(request):
         identity = request.state.identity
         rows = await store.confirmations(identity.space_id, request.query_params.get("status"))
@@ -358,11 +378,14 @@ def create_app(settings: Settings | None = None):
             Route("/api/history", api_history),
             Route("/api/objects/{object_id}/thumbnail", api_thumbnail),
             Route("/api/node/objects/{object_id}/thumbnail", api_node_thumbnail, methods=["PUT"]),
+            Route("/api/sessions", api_sessions, methods=["POST"]),
             Route("/api/confirmations", api_confirmations),
             Route("/api/confirmations/{cid}", api_confirm, methods=["POST"]),
             WebSocketRoute("/node", node_socket),
             Route("/mcp", MCPRoute(manager), methods=["GET", "POST", "DELETE"]),
             Route("/mcp/", MCPRoute(manager), methods=["GET", "POST", "DELETE"]),
+            # Consola web (estática, sin build): mismo origen que /node y /mcp.
+            Mount("/", StaticFiles(directory=Path(__file__).parent / "console", html=True)),
         ],
     )
     app.state.gateway = gateway

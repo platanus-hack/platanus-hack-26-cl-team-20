@@ -33,6 +33,8 @@ services:
         sync: false
       - key: PCX_CONSOLE_TOKEN   # personas: aprobar confirmaciones de domótica; nunca a un agente
         sync: false
+      - key: PCX_OPEN_SESSIONS   # consola web en /: cada visita crea su propio usuario + espacio + nodo
+        value: "1"
       - key: PCX_NODE_ID
         value: demo-node
       - key: PCX_SPACE_ID

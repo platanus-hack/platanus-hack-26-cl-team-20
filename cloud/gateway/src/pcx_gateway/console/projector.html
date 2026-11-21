@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>pcx · proyector</title>
+    <style>
+      @font-face {
+        font-family: "Archivo";
+        font-weight: 100 900;
+        font-stretch: 62% 125%;
+        src: url("fonts/archivo.woff2") format("woff2-variations");
+      }
+      @font-face {
+        font-family: "Martian Mono";
+        font-weight: 100 800;
+        src: url("fonts/martian-mono.woff2") format("woff2-variations");
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+      #hint {
+        position: fixed;
+        inset: auto 0 6vh 0;
+        display: grid;
+        place-items: center;
+        pointer-events: none;
+      }
+      #hint button {
+        pointer-events: auto;
+        font: 600 clamp(16px, 2.2vw, 30px) "Archivo", system-ui, sans-serif;
+        color: #0b0c0a;
+        background: #f1eee4;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.7em 1.5em;
+        cursor: pointer;
+      }
+      #hint small {
+        margin-top: 1em;
+        font: 400 13px "Martian Mono", ui-monospace, monospace;
+        color: #8c897d;
+      }
+      :fullscreen #hint,
+      .quiet #hint {
+        display: none;
+      }
+      :fullscreen {
+        cursor: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="out"></canvas>
+    <div id="hint">
+      <button id="full">Pantalla completa aquí</button>
+      <small>o aprieta F · Esc para salir</small>
+    </div>
+    <script type="module" src="projector.js"></script>
+  </body>
+</html>

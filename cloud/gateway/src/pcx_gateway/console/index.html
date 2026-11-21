@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>pcx · consola</title>
+    <link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="marca" href="/">pcx<span>consola</span></a>
+      <div class="estado" id="estado" data-state="connecting">
+        <i></i><span id="estado-texto">Conectando…</span>
+        <button id="retomar" hidden>Usar aquí</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="paso" id="paso-camaras">
+        <div class="titulo">
+          <b>1</b>
+          <h2>Cámaras</h2>
+          <p id="camaras-nota">Buscando cámaras…</p>
+          <button class="btn" id="camaras-activar" hidden>Activar cámaras</button>
+        </div>
+        <div class="camaras" id="camaras"></div>
+      </section>
+
+      <section class="paso" id="paso-proyector">
+        <div class="titulo">
+          <b>2</b>
+          <h2>Proyector</h2>
+          <p id="proyector-nota">Elige la pantalla donde está el proyector.</p>
+        </div>
+        <div class="dos">
+          <div>
+            <div class="pantallas" id="pantallas"></div>
+            <div class="fila">
+              <button class="btn fuerte" id="lanzar">Lanzar proyección</button>
+              <button class="btn" id="detectar" hidden>Detectar monitores</button>
+              <button class="btn" id="cerrar" hidden>Cerrar</button>
+              <label class="check"><input type="checkbox" id="patron" checked /> Patrón de prueba</label>
+            </div>
+            <p class="chico" id="proyector-estado"></p>
+          </div>
+          <figure class="previa">
+            <canvas id="previa" width="960" height="540"></canvas>
+            <figcaption>Lo que sale por el proyector <span id="previa-mm"></span></figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="paso" id="paso-agente">
+        <div class="titulo">
+          <b>3</b>
+          <h2>Agente</h2>
+          <p>Pega esto en una terminal. Abre un agente ya conectado a tu cámara y tu proyector.</p>
+        </div>
+        <div class="dos">
+          <div>
+            <div class="tabs" id="tabs">
+              <button data-tab="claude" class="on">Claude Code</button>
+              <button data-tab="codex">Codex</button>
+              <button data-tab="mcp">Otro (MCP)</button>
+            </div>
+            <pre class="comando" id="comando"></pre>
+            <div class="fila">
+              <button class="btn fuerte" id="copiar">Copiar</button>
+              <button class="btn" id="nueva">Nueva sesión</button>
+            </div>
+            <p class="chico">El enlace vale solo para esta sesión. «Nueva sesión» lo invalida y crea otro.</p>
+          </div>
+          <div class="actividad">
+            <h3 id="agente-estado">Esperando al agente…</h3>
+            <ol id="actividad"></ol>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

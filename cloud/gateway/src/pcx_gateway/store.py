@@ -8,6 +8,7 @@ import hashlib
 import hmac
 import json
 import logging
+import secrets
 import time
 from dataclasses import dataclass
 
@@ -255,6 +256,31 @@ class Store:
                     )
                 elif (existing["user_id"], existing["space_id"]) != (s.user_id, s.space_id):
                     raise ValueError("El aprovisionamiento choca con tokens: el token pertenece a otro dueño")
+
+    async def create_session(self) -> dict:
+        """Sesión de la consola web: usuario, espacio y nodo nuevos con sus propios tokens (solo se guardan hashes)."""
+        sid = secrets.token_hex(5)
+        out = {
+            "session_id": sid,
+            "node_id": f"web-{sid}",
+            "node_token": secrets.token_urlsafe(32),
+            "user_token": secrets.token_urlsafe(32),
+        }
+        user_id, space_id = f"web-user-{sid}", f"web-space-{sid}"
+        async with self.engine.begin() as db:
+            await db.execute(insert(users).values(id=user_id))
+            await db.execute(insert(spaces).values(id=space_id, user_id=user_id))
+            await db.execute(
+                insert(nodes).values(
+                    id=out["node_id"], space_id=space_id, token_hash=digest(out["node_token"])
+                )
+            )
+            await db.execute(
+                insert(tokens).values(
+                    hash=digest(out["user_token"]), user_id=user_id, space_id=space_id, scope="mcp"
+                )
+            )
+        return out
 
     async def identity(self, token: str) -> Identity | None:
         async with self.engine.connect() as db:

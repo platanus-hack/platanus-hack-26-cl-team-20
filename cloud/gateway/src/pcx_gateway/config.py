@@ -20,6 +20,10 @@ class Settings:
     max_ws_frame: int = 8 * 1024 * 1024
     max_thumbnail: int = 512 * 1024
     max_pending_calls: int = 32
+    open_sessions: bool = False
+    """Consola web: `POST /api/sessions` crea usuario + espacio + nodo con tokens propios (una sesión por visita)."""
+    sessions_per_hour: int = 30
+    """Tope de sesiones nuevas por IP y hora."""
 
     @classmethod
     def from_env(cls):
@@ -33,4 +37,5 @@ class Settings:
             space_id=os.getenv("PCX_SPACE_ID", cls.space_id),
             node_id=os.getenv("PCX_NODE_ID", cls.node_id),
             retention_days=float(os.getenv("PCX_RETENTION_DAYS", cls.retention_days)),
+            open_sessions=os.getenv("PCX_OPEN_SESSIONS", "") in ("1", "true"),
         )
