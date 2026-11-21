@@ -4,11 +4,22 @@ Track: **Physical World**. Proyector + cámara que entiende el espacio y lo vuel
 
 Repo privado de trabajo mientras la organización entrega el oficial. Nombre de producto por definir.
 
+## Dos versiones del engine
+
+| Versión | Dónde | Para qué |
+|---|---|---|
+| **Original de Max** | `github.com/MAXMARDONES/sl-scanner` @ `b8fecff` | Es la que corre con el proyector y la cámara. No se toca. |
+| **Copia del equipo** | `engine/` de este repo (subtree del mismo commit) | La que se ordena, limpia y extiende. |
+
+Para traer cambios nuevos de Max: `git subtree pull --prefix=engine git@github.com:MAXMARDONES/sl-scanner.git master --squash`.
+
+Cómo correr el engine: `engine/README.md` (Python 3.12 o 3.13, no 3.14).
+
 ## Estructura
 
 | Carpeta | Qué va | Responsable |
 |---|---|---|
-| `engine/` | Calibración proyector-cámara, mapeo 3D, segmentación, tracking, salida al proyector | Max |
+| `engine/` | sl-scanner de Max: calibración, escena, efectos, API y MCP | Max (original), Manu (orden) |
 | `agent/` | Puente para que un agente controle el engine: API, tools/MCP, ejemplos | Manu, Daniel |
 | `experiences/` | Casos de uso y escenas que se muestran en la demo | Pablo, Matilda |
 | `hardware/` | Rig de proyector y cámara, piezas 3D (fuentes y STL), lista de equipos | 3D |

@@ -1,16 +1,22 @@
-# Contrato engine ↔ agente (borrador)
+# Contrato engine ↔ agente
 
-Objetivo: que un agente pueda ver qué hay en la superficie y decidir qué proyectar, sin conocer los detalles del engine.
+**Ya existe.** El engine de Max (`engine/playground/`) trae una API HTTP y un servidor MCP para que un agente controle lo que se proyecta. Partimos de ahí, no de cero.
 
-Propuesta inicial para discutir con Max:
+## API del runtime (puerto 8790)
+- `GET /api/state` — estado vivo: objetos de la escena, efectos activos.
+- `POST /api/command {cmd, args}` — comandos al runtime.
+- `GET /api/events` — eventos (SSE).
+- `GET /api/frame.png` — lo que está dibujando el proyector.
+- `GET /api/schema` — esquema de comandos.
 
-**Lo que el engine expone (lectura)**
-- `GET /scene` → superficies y objetos detectados: `id`, `label`, `bbox`/polígono en coordenadas de la superficie, `confidence`, `updated_at`.
-- `GET /events` (stream) → objeto aparece/desaparece/se mueve, toque en una zona.
+## Herramientas MCP (`engine/playground/mcp_server.py`)
+`pg_runtime`, `pg_state`, `pg_scene_objects`, `pg_find`, `pg_geometry`, `pg_list_effects`, `pg_spawn(effect, target, params)`, `pg_kill`, `pg_set_param`, y más (ver el archivo). Hay una skill en `engine/playground/skill/SKILL.md`.
 
-**Lo que el agente pide (escritura)**
-- `POST /layers` → crea o reemplaza una capa: anclada a una zona fija de la superficie o a un objeto (`anchor: object_id`), con contenido (texto, imagen, HTML o un componente de la librería).
-- `DELETE /layers/{id}`.
-- `POST /mode` → cambia el modo completo de la mesa.
+## Efectos
+Un archivo en `engine/playground/effects/` con una clase `Effect`; recarga en caliente al guardar. Un error no tumba el runtime.
 
-Pendiente: unidades y sistema de coordenadas, latencia esperada, formato del contenido, cómo se declara una zona tocable.
+## Lo que falta (trabajo de Manu y Daniel)
+- Conectar un agente (Claude Code) al MCP y que itere probando efectos sobre objetos reales.
+- Que el agente pueda **crear** efectos nuevos (escribir archivos en `effects/`) y no solo prender los existentes.
+- Toque y manos: revisar `engine/playground/hands` y `touchsynth`.
+- Escena automática (reconocer objetos sin preparar a mano): `engine/docs/ESCENA-AUTOMATICA.md`; requiere modelos locales.
