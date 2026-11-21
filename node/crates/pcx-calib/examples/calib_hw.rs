@@ -19,8 +19,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use pcx_calib::markers;
 use pcx_calib::{
-    CalibConfig, CalibError, CalibRun, Calibration, Frame, FrameGrab, GrayImage, MetricRef, Mode, Pattern, PatternSink, PrintedMarker,
-    SyncMode,
+    CalibConfig, CalibError, CalibRun, Calibration, Frame, FrameGrab, GrayImage, MetricRef, Mode, Pattern, PatternSink,
+    PrintedMarker, SyncMode,
 };
 
 fn now_ns() -> i64 {
@@ -113,7 +113,11 @@ fn npy_header(b: &[u8]) -> Option<(String, Vec<usize>, usize)> {
     if b.len() < 12 || &b[..6] != b"\x93NUMPY" {
         return None;
     }
-    let (hl, off) = if b[6] == 1 { (u16::from_le_bytes([b[8], b[9]]) as usize, 10) } else { (u32::from_le_bytes([b[8], b[9], b[10], b[11]]) as usize, 12) };
+    let (hl, off) = if b[6] == 1 {
+        (u16::from_le_bytes([b[8], b[9]]) as usize, 10)
+    } else {
+        (u32::from_le_bytes([b[8], b[9], b[10], b[11]]) as usize, 12)
+    };
     let h = std::str::from_utf8(b.get(off..off + hl)?).ok()?;
     let descr = h.split("'descr':").nth(1)?.split('\'').nth(1)?.to_string();
     let shape_s = h.split("'shape':").nth(1)?.split('(').nth(1)?.split(')').next()?;
@@ -151,7 +155,9 @@ impl FrameGrab for Shm {
                     let (h, w, c) = (shape[0], shape[1], *shape.get(2).unwrap_or(&1));
                     let px = b.get(o..o + w * h * c).ok_or_else(|| io("cuadro corto"))?;
                     let data = if c == 3 {
-                        px.chunks(3).map(|p| ((p[0] as u32 * 29 + p[1] as u32 * 150 + p[2] as u32 * 77) >> 8) as u8).collect()
+                        px.chunks(3)
+                            .map(|p| ((p[0] as u32 * 29 + p[1] as u32 * 150 + p[2] as u32 * 77) >> 8) as u8)
+                            .collect()
                     } else {
                         px.to_vec()
                     };
@@ -184,13 +190,17 @@ fn print_marker(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
-    let mode = match args.get(1).map(String::as_str) {
-        Some("quick") => Mode::Quick,
-        Some("precise") => Mode::Precise,
-        Some("verify") => Mode::Verify,
-        Some("print-marker") => return print_marker(&args),
-        _ => return Err("uso: calib_hw quick|precise|verify|print-marker [--out DIR] [--mm-per-px 0.43] [--marker ID:X:Y:LADO]".into()),
-    };
+    let mode =
+        match args.get(1).map(String::as_str) {
+            Some("quick") => Mode::Quick,
+            Some("precise") => Mode::Precise,
+            Some("verify") => Mode::Verify,
+            Some("print-marker") => return print_marker(&args),
+            _ => return Err(
+                "uso: calib_hw quick|precise|verify|print-marker [--out DIR] [--mm-per-px 0.43] [--marker ID:X:Y:LADO]"
+                    .into(),
+            ),
+        };
     let out = PathBuf::from(arg(&args, "--out").unwrap_or_else(|| "/tmp/mesa/pcx-calib".into()));
     let proj = arg(&args, "--proj").unwrap_or_else(|| "1920x1080".into());
     let (pw, ph) = proj.split_once('x').ok_or("--proj WxH")?;
@@ -202,17 +212,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         dir: PathBuf::from("/tmp/mesa"),
         n: 0,
     };
-    let mut grab = Shm { frame: "/tmp/mesa/cenital_shm.npy".into(), seq: "/tmp/mesa/cenital_seq.npy".into(), last: f64::NAN };
+    let mut grab =
+        Shm { frame: "/tmp/mesa/cenital_shm.npy".into(), seq: "/tmp/mesa/cenital_seq.npy".into(), last: f64::NAN };
     // marco table_mm: marcadores impresos (`--marker 60:100:80:60`, repetible) o escala fija (0,43 mm/px ≈ lienzo de Daniel)
     let mut printed = Vec::new();
     for (i, a) in args.iter().enumerate() {
         if a == "--marker" {
-            let v: Vec<f64> = args.get(i + 1).ok_or("--marker ID:X:Y:LADO")?.split(':').map(str::parse).collect::<Result<_, _>>()?;
+            let v: Vec<f64> =
+                args.get(i + 1).ok_or("--marker ID:X:Y:LADO")?.split(':').map(str::parse).collect::<Result<_, _>>()?;
             let [id, x, y, s] = v[..] else { return Err("--marker ID:X:Y:LADO".into()) };
-            printed.push(PrintedMarker { id: id as usize, corners_mm: [[x, y], [x + s, y], [x + s, y + s], [x, y + s]] });
+            printed
+                .push(PrintedMarker { id: id as usize, corners_mm: [[x, y], [x + s, y], [x + s, y + s], [x, y + s]] });
         }
     }
-    let metric = if printed.is_empty() { MetricRef::MmPerProjPx(arg(&args, "--mm-per-px").map_or(Ok(0.43), |s| s.parse())?) } else { MetricRef::PrintedMarkers(printed) };
+    let metric = if printed.is_empty() {
+        MetricRef::MmPerProjPx(arg(&args, "--mm-per-px").map_or(Ok(0.43), |s| s.parse())?)
+    } else {
+        MetricRef::PrintedMarkers(printed)
+    };
     let cfg = CalibConfig {
         metric,
         sync: if arg(&args, "--sync").as_deref() == Some("change") { SyncMode::Change } else { SyncMode::Marker },

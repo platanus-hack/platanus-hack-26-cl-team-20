@@ -61,7 +61,13 @@ async fn http() -> reqwest::Client {
 }
 
 async fn get(path: &str) -> Value {
-    let r = http().await.get(format!("{}{path}", base())).header("Authorization", format!("Bearer {TOKEN}")).send().await.unwrap();
+    let r = http()
+        .await
+        .get(format!("{}{path}", base()))
+        .header("Authorization", format!("Bearer {TOKEN}"))
+        .send()
+        .await
+        .unwrap();
     serde_json::from_str(&r.text().await.unwrap()).unwrap()
 }
 
@@ -193,7 +199,9 @@ async fn e2e_mcp_renderer_nube_y_reinicio() {
 
     // el renderer recibe el diff con la geometría resuelta
     let diff = loop {
-        let Some(Ok(Message::Text(t))) = tokio::time::timeout(Duration::from_secs(2), rws.next()).await.unwrap() else { panic!() };
+        let Some(Ok(Message::Text(t))) = tokio::time::timeout(Duration::from_secs(2), rws.next()).await.unwrap() else {
+            panic!()
+        };
         let d: Value = serde_json::from_str(&t).unwrap();
         if d["type"] == "scene_diff" && d["upsert"].as_array().is_some_and(|u| u.iter().any(|w| w["id"] == "hola")) {
             break d;
@@ -209,7 +217,8 @@ async fn e2e_mcp_renderer_nube_y_reinicio() {
         tokio::time::sleep(Duration::from_millis(300)).await;
         post("/debug/touch", json!({"widget_id": "hola"})).await
     });
-    let ev = data(&call(&c, "events_wait", json!({"cursor": cursor, "types": ["widget_pressed"], "timeout_s": 5})).await);
+    let ev =
+        data(&call(&c, "events_wait", json!({"cursor": cursor, "types": ["widget_pressed"], "timeout_s": 5})).await);
     assert_eq!(ev["events"][0]["payload"]["widget_id"], "hola");
     assert_eq!(ev["events"][0]["payload"]["value"], "saludo");
     assert_eq!(ev["stream_id"].as_str(), Some(stream_id.as_str()));
@@ -226,8 +235,17 @@ async fn e2e_mcp_renderer_nube_y_reinicio() {
     assert_eq!(h["renderers"].as_u64(), Some(1));
 
     // la nube: hello → snapshot → replay_done → en vivo (incluye widget_pressed)
-    until(|| session_has(&sessions, 0, |m| m["type"] == "event_batch" && m["replay"] == false
-        && m["events"].as_array().unwrap().iter().any(|e| e["type"] == "widget_pressed")), "widget_pressed en la nube").await;
+    until(
+        || {
+            session_has(&sessions, 0, |m| {
+                m["type"] == "event_batch"
+                    && m["replay"] == false
+                    && m["events"].as_array().unwrap().iter().any(|e| e["type"] == "widget_pressed")
+            })
+        },
+        "widget_pressed en la nube",
+    )
+    .await;
     {
         let s0 = sessions.lock().unwrap()[0].clone();
         let kinds: Vec<&str> = s0.iter().take(2).map(|m| m["type"].as_str().unwrap()).collect();
@@ -238,7 +256,11 @@ async fn e2e_mcp_renderer_nube_y_reinicio() {
 
     // reinicio: el seq continúa, el stream es el mismo y la nube reanuda desde su cursor
     let last = get("/state").await["cursor"].as_i64().unwrap();
-    until(|| session_has(&sessions, 0, |m| m["type"] == "event_batch" && m["cursor"].as_i64() == Some(last)), "nube al día").await;
+    until(
+        || session_has(&sessions, 0, |m| m["type"] == "event_batch" && m["cursor"].as_i64() == Some(last)),
+        "nube al día",
+    )
+    .await;
     drop(c);
     tokio::time::sleep(Duration::from_millis(500)).await; // snapshot del mundo: cada ≤250 ms
     drop(core); // SIGKILL: sin apagado limpio
@@ -249,7 +271,11 @@ async fn e2e_mcp_renderer_nube_y_reinicio() {
     {
         let s1 = sessions.lock().unwrap()[1].clone();
         assert_eq!(s1[0]["log_last_cursor"].as_i64(), Some(last));
-        assert!(s1.iter().filter(|m| m["type"] == "event_batch").all(|m| m["events"].as_array().unwrap().iter().all(|e| e["seq"].as_i64().unwrap() > last)));
+        assert!(s1.iter().filter(|m| m["type"] == "event_batch").all(|m| m["events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|e| e["seq"].as_i64().unwrap() > last)));
     }
     // el mundo se restauró y el próximo evento sigue la secuencia
     let st = get("/state").await;
@@ -257,7 +283,8 @@ async fn e2e_mcp_renderer_nube_y_reinicio() {
     assert!(st["widgets"].as_array().unwrap().iter().any(|w| w["id"] == "hola"));
     post("/debug/object", json!({"id": "frasco", "center_mm": [150, 300]})).await;
     let c = mcp().await;
-    let ev = data(&call(&c, "events_wait", json!({"cursor": last, "types": ["object_appeared"], "timeout_s": 2})).await);
+    let ev =
+        data(&call(&c, "events_wait", json!({"cursor": last, "types": ["object_appeared"], "timeout_s": 2})).await);
     assert_eq!(ev["events"][0]["seq"].as_i64(), Some(last + 1));
     assert_eq!(data(&call(&c, "project", project).await), r); // idempotencia persistente
     drop(c);

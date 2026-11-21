@@ -11,8 +11,8 @@ use std::time::Duration;
 
 use indexmap::IndexMap;
 use pcx_contracts::{
-    Anchor, Blank, Button, OnPress, Panel, PointMM, RectMM, SceneDiff, SceneSnapshot, Surface, ToRenderer, Transform, Trigger,
-    Widget, WidgetCommon,
+    Anchor, Blank, Button, OnPress, Panel, PointMM, RectMM, SceneDiff, SceneSnapshot, Surface, ToRenderer, Transform,
+    Trigger, Widget, WidgetCommon,
 };
 use serde_json::{json, Value};
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
@@ -64,7 +64,12 @@ pub struct WorldConfig {
 
 impl Default for WorldConfig {
     fn default() -> Self {
-        WorldConfig { node_id: "mesa-1".into(), surface_mm: (800.0, 500.0), tick_hz: 20.0, home_policy: HomePolicy::default() }
+        WorldConfig {
+            node_id: "mesa-1".into(),
+            surface_mm: (800.0, 500.0),
+            tick_hz: 20.0,
+            home_policy: HomePolicy::default(),
+        }
     }
 }
 
@@ -302,7 +307,9 @@ impl World {
         self.dirty = true;
         let done = |v: Value| Ok(CmdOut::Done(v));
         match cmd {
-            Command::Project { widgets, .. } => done(json!({"ids": self.project(widgets, owner.is_none(), owner)?, "rev": 0})),
+            Command::Project { widgets, .. } => {
+                done(json!({"ids": self.project(widgets, owner.is_none(), owner)?, "rev": 0}))
+            }
             Command::Update { id, set, .. } => done(json!({"updated": self.update(&id, &set)?, "rev": 0})),
             Command::Remove { ids, .. } => done(json!({"removed": self.remove(&ids), "rev": 0})),
             Command::Clear { .. } => {
@@ -316,7 +323,16 @@ impl World {
                 Ok(CmdOut::Wait(self.ask(request_id, question, options, timeout_s, anchor)?))
             }
             Command::Emit { request_id, event, data } => {
-                self.emit(Event::FlowEmitted { flow_id: owner.map(Into::into), request_id: Some(request_id), event: event.clone(), data }, "core", None);
+                self.emit(
+                    Event::FlowEmitted {
+                        flow_id: owner.map(Into::into),
+                        request_id: Some(request_id),
+                        event: event.clone(),
+                        data,
+                    },
+                    "core",
+                    None,
+                );
                 done(json!({"emitted": event}))
             }
             Command::RunFlow { request_id, flow } => done(self.flow_start(flow, request_id)?),
@@ -408,7 +424,14 @@ impl World {
 
     // ------------------------------------------------------------ ask
 
-    fn ask(&mut self, request_id: String, question: String, options: Vec<String>, timeout_s: f64, anchor: Option<Anchor>) -> Result<oneshot::Receiver<Value>, String> {
+    fn ask(
+        &mut self,
+        request_id: String,
+        question: String,
+        options: Vec<String>,
+        timeout_s: f64,
+        anchor: Option<Anchor>,
+    ) -> Result<oneshot::Receiver<Value>, String> {
         self.ask_n += 1;
         let aid = format!("ask-{}", self.ask_n);
         let n = options.len() as f64;
@@ -419,13 +442,18 @@ impl World {
         if let Some(a) = &anchor {
             if let Some(o) = a.object_id.as_ref().and_then(|i| self.objects.get(i)) {
                 let bb = geom::bbox_of(o);
-                x0 = if bb.0 + bb.2 + 20.0 + total_w <= sw { bb.0 + bb.2 + 20.0 } else { (bb.0 - 20.0 - total_w).max(5.0) };
+                x0 = if bb.0 + bb.2 + 20.0 + total_w <= sw {
+                    bb.0 + bb.2 + 20.0
+                } else {
+                    (bb.0 - 20.0 - total_w).max(5.0)
+                };
                 y0 = bb.1.max(5.0).min(sh - 130.0);
             } else if let Some(p) = a.point_mm {
                 (x0, y0) = (p.0, p.1);
             }
         }
-        let common = |id: String, z: i64, on_press: Option<OnPress>| WidgetCommon { id, anchor: None, z, ttl_s: None, on_press };
+        let common =
+            |id: String, z: i64, on_press: Option<OnPress>| WidgetCommon { id, anchor: None, z, ttl_s: None, on_press };
         let mut ws = vec![Widget::Panel(Panel {
             common: common(format!("{aid}-q"), 10, None),
             rect_mm: Some(RectMM(x0, y0, total_w, 60.0)),
@@ -437,7 +465,11 @@ impl World {
         for (i, opt) in options.iter().enumerate() {
             let bid = format!("{aid}-b{i}");
             bids.push(bid.clone());
-            let op = OnPress { value: Some(opt.clone()), triggers: vec![Trigger::Dwell, Trigger::Pinch, Trigger::Api], dwell_ms: 800 };
+            let op = OnPress {
+                value: Some(opt.clone()),
+                triggers: vec![Trigger::Dwell, Trigger::Pinch, Trigger::Api],
+                dwell_ms: 800,
+            };
             ws.push(Widget::Button(Button {
                 common: common(bid, 11, Some(op)),
                 rect_mm: Some(RectMM(x0 + i as f64 * (bw + gap), y0 + 70.0, bw, bh)),
@@ -451,7 +483,14 @@ impl World {
         let (tx, rx) = oneshot::channel();
         self.asks.insert(
             aid,
-            AskState { request_id, options, button_ids: bids, widget_ids: wids, deadline_ns: now_ns() + (timeout_s * 1e9) as i64, reply: Some(tx) },
+            AskState {
+                request_id,
+                options,
+                button_ids: bids,
+                widget_ids: wids,
+                deadline_ns: now_ns() + (timeout_s * 1e9) as i64,
+                reply: Some(tx),
+            },
         );
         Ok(rx)
     }
@@ -461,7 +500,12 @@ impl World {
         self.remove(&a.widget_ids);
         let answer = idx.map(|i| a.options[i].clone());
         self.emit(
-            Event::AskAnswered { request_id: a.request_id.clone(), answer: answer.clone(), index: idx.map(|i| i as i64), timed_out: idx.is_none() },
+            Event::AskAnswered {
+                request_id: a.request_id.clone(),
+                answer: answer.clone(),
+                index: idx.map(|i| i as i64),
+                timed_out: idx.is_none(),
+            },
             "core",
             None,
         );
@@ -475,33 +519,78 @@ impl World {
 
     pub fn home_call(&mut self, call: HomeCallBody, request_id: &str, flow_id: Option<&str>) -> HomeCallResult {
         let decision = decide(&self.home_policy, &call);
-        self.home_calls.push(json!({"domain": call.domain, "service": call.service, "data": call.data, "flow_id": flow_id,
+        self.home_calls
+            .push(json!({"domain": call.domain, "service": call.service, "data": call.data, "flow_id": flow_id,
                                     "request_id": request_id, "decision": format!("{decision:?}").to_lowercase()}));
-        let mut res = HomeCallResult { request_id: request_id.into(), status: HomeCallStatus::Denied, confirmation_id: None, action_digest: None, expires_ns: None, error: None };
+        let mut res = HomeCallResult {
+            request_id: request_id.into(),
+            status: HomeCallStatus::Denied,
+            confirmation_id: None,
+            action_digest: None,
+            expires_ns: None,
+            error: None,
+        };
         match decision {
             Decision::Deny => {
-                res.error = Some(format!("{}.{} no está permitido por la política del nodo", call.domain, call.service));
-                self.emit(Event::HomeCallDone { request_id: request_id.into(), confirmation_id: None, status: HomeDoneStatus::Denied, error: res.error.clone() }, "core", None);
+                res.error =
+                    Some(format!("{}.{} no está permitido por la política del nodo", call.domain, call.service));
+                self.emit(
+                    Event::HomeCallDone {
+                        request_id: request_id.into(),
+                        confirmation_id: None,
+                        status: HomeDoneStatus::Denied,
+                        error: res.error.clone(),
+                    },
+                    "core",
+                    None,
+                );
             }
             Decision::Allow => {
                 let r = self.home_exec(&call);
                 res.status = if r.is_ok() { HomeCallStatus::Done } else { HomeCallStatus::Failed };
                 res.error = r.clone().err();
                 let st = if r.is_ok() { HomeDoneStatus::Done } else { HomeDoneStatus::Failed };
-                self.emit(Event::HomeCallDone { request_id: request_id.into(), confirmation_id: None, status: st, error: r.err() }, "core", None);
+                self.emit(
+                    Event::HomeCallDone {
+                        request_id: request_id.into(),
+                        confirmation_id: None,
+                        status: st,
+                        error: r.err(),
+                    },
+                    "core",
+                    None,
+                );
             }
             Decision::Confirm => {
                 self.confirm_n += 1;
                 let cid = format!("cf-{}-{}", now_ns() % 1_000_000, self.confirm_n);
                 let digest = action_digest(&call);
                 let expires = now_ns() + (self.home_policy.confirm_timeout_s * 1e9) as i64;
-                let summary = format!("{}.{} {}", call.domain, call.service, call.data.get("entity_id").and_then(Value::as_str).unwrap_or(""));
-                self.store.confirmation_put(&cid, request_id, &digest, &serde_json::to_value(&call).unwrap_or_default(), expires, "pending");
+                let summary = format!(
+                    "{}.{} {}",
+                    call.domain,
+                    call.service,
+                    call.data.get("entity_id").and_then(Value::as_str).unwrap_or("")
+                );
+                self.store.confirmation_put(
+                    &cid,
+                    request_id,
+                    &digest,
+                    &serde_json::to_value(&call).unwrap_or_default(),
+                    expires,
+                    "pending",
+                );
                 let mut wids = vec![];
                 if self.home_policy.confirm_via.contains(&ConfirmVia::Touch) {
                     let (x, y) = (self.surface.width_mm - 250.0, 20.0);
                     let panel = Widget::Panel(Panel {
-                        common: WidgetCommon { id: format!("pcx:confirm-q:{cid}"), anchor: None, z: 50, ttl_s: None, on_press: None },
+                        common: WidgetCommon {
+                            id: format!("pcx:confirm-q:{cid}"),
+                            anchor: None,
+                            z: 50,
+                            ttl_s: None,
+                            on_press: None,
+                        },
                         rect_mm: Some(RectMM(x, y, 230.0, 60.0)),
                         title: "¿Confirmas?".into(),
                         body: summary.trim().to_string(),
@@ -513,7 +602,11 @@ impl World {
                             anchor: None,
                             z: 51,
                             ttl_s: None,
-                            on_press: Some(OnPress { value: Some("confirm".into()), triggers: vec![Trigger::Dwell, Trigger::Pinch], dwell_ms: 1200 }),
+                            on_press: Some(OnPress {
+                                value: Some("confirm".into()),
+                                triggers: vec![Trigger::Dwell, Trigger::Pinch],
+                                dwell_ms: 1200,
+                            }),
                         },
                         rect_mm: Some(RectMM(x, y + 70.0, 230.0, 50.0)),
                         label: "Confirmar".into(),
@@ -525,7 +618,16 @@ impl World {
                         self.widgets.insert(w.id().to_string(), w);
                     }
                 }
-                self.confirms.insert(cid.clone(), PendingConfirm { request_id: request_id.into(), digest: digest.clone(), call, expires_ns: expires, widget_ids: wids });
+                self.confirms.insert(
+                    cid.clone(),
+                    PendingConfirm {
+                        request_id: request_id.into(),
+                        digest: digest.clone(),
+                        call,
+                        expires_ns: expires,
+                        widget_ids: wids,
+                    },
+                );
                 self.emit(
                     Event::ConfirmationRequested {
                         confirmation_id: cid.clone(),
@@ -555,9 +657,22 @@ impl World {
     fn resolve_confirm(&mut self, cid: &str, approved: bool, via: ResolvedVia) {
         let Some(p) = self.confirms.shift_remove(cid) else { return };
         self.remove(&p.widget_ids);
-        self.store.confirmation_put(cid, &p.request_id, &p.digest, &Value::Null, p.expires_ns, if approved { "approved" } else { "rejected" });
+        self.store.confirmation_put(
+            cid,
+            &p.request_id,
+            &p.digest,
+            &Value::Null,
+            p.expires_ns,
+            if approved { "approved" } else { "rejected" },
+        );
         self.emit(
-            Event::ConfirmationResolved { confirmation_id: cid.into(), request_id: p.request_id.clone(), action_digest: p.digest.clone(), approved, via },
+            Event::ConfirmationResolved {
+                confirmation_id: cid.into(),
+                request_id: p.request_id.clone(),
+                action_digest: p.digest.clone(),
+                approved,
+                via,
+            },
             "core",
             None,
         );
@@ -569,12 +684,19 @@ impl World {
                 Err(e) => (HomeDoneStatus::Failed, Some(e)),
             }
         };
-        self.emit(Event::HomeCallDone { request_id: p.request_id, confirmation_id: Some(cid.into()), status, error }, "core", None);
+        self.emit(
+            Event::HomeCallDone { request_id: p.request_id, confirmation_id: Some(cid.into()), status, error },
+            "core",
+            None,
+        );
     }
 
     /// Consola (local por HTTP o de la nube como `CloudMessage`) → nodo. Debe repetir el `action_digest`.
     pub fn confirm_action(&mut self, c: &ConfirmAction) -> Result<(), String> {
-        let p = self.confirms.get(&c.confirmation_id).ok_or_else(|| format!("confirmación desconocida: {}", c.confirmation_id))?;
+        let p = self
+            .confirms
+            .get(&c.confirmation_id)
+            .ok_or_else(|| format!("confirmación desconocida: {}", c.confirmation_id))?;
         if p.digest != c.action_digest {
             return Err("action_digest no coincide".into());
         }
@@ -613,7 +735,9 @@ impl World {
                 Event::ObjectMoved { object_id, center_mm, polygon_mm } => {
                     let Some(o) = self.objects.get_mut(&object_id) else { return Ok(Value::Null) };
                     let (dx, dy) = (center_mm.0 - o.center_mm.0, center_mm.1 - o.center_mm.1);
-                    let poly = polygon_mm.clone().unwrap_or_else(|| o.polygon_mm.iter().map(|q| PointMM(q.0 + dx, q.1 + dy)).collect());
+                    let poly = polygon_mm
+                        .clone()
+                        .unwrap_or_else(|| o.polygon_mm.iter().map(|q| PointMM(q.0 + dx, q.1 + dy)).collect());
                     o.bbox_mm = match (o.bbox_mm, &polygon_mm) {
                         (Some(b), None) => Some(RectMM(b.0 + dx, b.1 + dy, b.2, b.3)),
                         _ => None,
@@ -682,7 +806,11 @@ impl World {
         self.emit(ev, source, tc);
         let target = hit.filter(geom::pressable);
         let triggers: Vec<Trigger> = match &target {
-            Some(w) => w.common().on_press.as_ref().map(|o| o.triggers.clone()).unwrap_or(vec![Trigger::Dwell, Trigger::Pinch, Trigger::Api]),
+            Some(w) => w.common().on_press.as_ref().map(|o| o.triggers.clone()).unwrap_or(vec![
+                Trigger::Dwell,
+                Trigger::Pinch,
+                Trigger::Api,
+            ]),
             None => vec![Trigger::Dwell, Trigger::Pinch, Trigger::Api],
         };
         if let Some(w) = &target {
@@ -714,7 +842,10 @@ impl World {
                 if let Some(d) = other {
                     self.set_progress(&d.widget_id, 0.0);
                 }
-                self.dwell.insert(t.id.clone(), DwellState { widget_id: target.id().into(), start_ns: now_ns(), point: t.point_mm, fired: false });
+                self.dwell.insert(
+                    t.id.clone(),
+                    DwellState { widget_id: target.id().into(), start_ns: now_ns(), point: t.point_mm, fired: false },
+                );
             }
         }
         t
@@ -763,7 +894,8 @@ impl World {
         for k in late {
             self.finish_ask(&k, None);
         }
-        let late: Vec<String> = self.confirms.iter().filter(|(_, c)| t >= c.expires_ns).map(|(k, _)| k.clone()).collect();
+        let late: Vec<String> =
+            self.confirms.iter().filter(|(_, c)| t >= c.expires_ns).map(|(k, _)| k.clone()).collect();
         for k in late {
             self.resolve_confirm(&k, false, ResolvedVia::Timeout);
         }
@@ -786,8 +918,10 @@ impl World {
 
     fn flush_scene(&mut self) {
         let new = self.resolved();
-        let new_json: HashMap<String, String> = new.iter().map(|(k, v)| (k.clone(), serde_json::to_string(v).unwrap_or_default())).collect();
-        let upsert: Vec<Widget> = new.iter().filter(|(k, _)| self.scene_json.get(*k) != new_json.get(*k)).map(|(_, v)| v.clone()).collect();
+        let new_json: HashMap<String, String> =
+            new.iter().map(|(k, v)| (k.clone(), serde_json::to_string(v).unwrap_or_default())).collect();
+        let upsert: Vec<Widget> =
+            new.iter().filter(|(k, _)| self.scene_json.get(*k) != new_json.get(*k)).map(|(_, v)| v.clone()).collect();
         let remove: Vec<String> = self.scene.keys().filter(|k| !new_json.contains_key(*k)).cloned().collect();
         let tj = serde_json::to_string(&self.transforms).unwrap_or_default();
         let tchanged = tj != self.transforms_json;
@@ -835,7 +969,16 @@ impl World {
 
     pub fn on_blanked(&mut self, b: pcx_contracts::Blanked) {
         let proj = self.blanks.remove(&b.request_id).unwrap_or_else(|| "main".into());
-        self.emit(Event::Blanked { request_id: b.request_id, projector_id: proj, t_start_ms: b.t_start_ms, t_end_ms: b.t_end_ms }, "renderer", None);
+        self.emit(
+            Event::Blanked {
+                request_id: b.request_id,
+                projector_id: proj,
+                t_start_ms: b.t_start_ms,
+                t_end_ms: b.t_end_ms,
+            },
+            "renderer",
+            None,
+        );
     }
 
     pub fn snapshot(&self) -> WorldState {
@@ -951,7 +1094,13 @@ impl WorldHandle {
     }
 
     /// Long-poll: eventos con `seq > cursor` (filtrados por tipo) hasta `timeout_s`.
-    pub async fn events_wait(&self, cursor: i64, types: Vec<String>, timeout_s: f64, max_events: i64) -> EventsWaitResult {
+    pub async fn events_wait(
+        &self,
+        cursor: i64,
+        types: Vec<String>,
+        timeout_s: f64,
+        max_events: i64,
+    ) -> EventsWaitResult {
         let mut seq_rx = self.seq.clone();
         let deadline = tokio::time::Instant::now() + Duration::from_secs_f64(timeout_s.clamp(0.0, 50.0));
         let mut cursor = if cursor > self.last_seq() { 0 } else { cursor.max(0) };

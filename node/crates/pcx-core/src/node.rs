@@ -83,7 +83,11 @@ impl Settings {
         }
         s.zmq_enabled = e("PCX_ZMQ").as_deref() != Some("0");
         if let Some(v) = e("PCX_SURFACE_MM") {
-            let (w, h) = v.to_lowercase().split_once('x').map(|(a, b)| (a.to_string(), b.to_string())).ok_or_else(|| anyhow::anyhow!("PCX_SURFACE_MM: WxH"))?;
+            let (w, h) = v
+                .to_lowercase()
+                .split_once('x')
+                .map(|(a, b)| (a.to_string(), b.to_string()))
+                .ok_or_else(|| anyhow::anyhow!("PCX_SURFACE_MM: WxH"))?;
             s.surface_mm = (w.parse()?, h.parse()?);
         }
         s.cloud_url = e("PCX_CLOUD_URL");
@@ -120,12 +124,25 @@ impl Core {
         settings.check()?;
         let store = Arc::new(Store::open(settings.data_dir.as_deref())?);
         let world = World::spawn(
-            WorldConfig { node_id: settings.node_id.clone(), surface_mm: settings.surface_mm, tick_hz: settings.tick_hz, home_policy: settings.home_policy.clone() },
+            WorldConfig {
+                node_id: settings.node_id.clone(),
+                surface_mm: settings.surface_mm,
+                tick_hz: settings.tick_hz,
+                home_policy: settings.home_policy.clone(),
+            },
             store,
         );
-        let frames: Arc<dyn FrameSource> = frames.unwrap_or_else(|| Arc::new(SyntheticFrameSource::new(world.state.clone())));
+        let frames: Arc<dyn FrameSource> =
+            frames.unwrap_or_else(|| Arc::new(SyntheticFrameSource::new(world.state.clone())));
         for cam in frames.cameras() {
-            let d = Device { id: cam, kind: DeviceKind::Camera, adapter: "synthetic".into(), caps: vec!["frames".into()], status: DeviceStatus::Online, meta: Json::new() };
+            let d = Device {
+                id: cam,
+                kind: DeviceKind::Camera,
+                adapter: "synthetic".into(),
+                caps: vec!["frames".into()],
+                status: DeviceStatus::Online,
+                meta: Json::new(),
+            };
             world.post(move |w| {
                 w.devices.insert(d.id.clone(), d);
             });

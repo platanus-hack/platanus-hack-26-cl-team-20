@@ -282,7 +282,15 @@ impl CalibRun {
     pub fn new(mode: Mode, cfg: CalibConfig, prior: Option<Calibration>) -> Self {
         let plan = match mode {
             Mode::Quick => vec![Step::QuickGrid, Step::Metric, Step::Done],
-            Mode::Precise => vec![Step::QuickGrid, Step::Metric, Step::ChooseBits, Step::GrayCapture, Step::Decode, Step::BuildLut, Step::Done],
+            Mode::Precise => vec![
+                Step::QuickGrid,
+                Step::Metric,
+                Step::ChooseBits,
+                Step::GrayCapture,
+                Step::Decode,
+                Step::BuildLut,
+                Step::Done,
+            ],
             Mode::Verify => vec![Step::VerifySquares, Step::Done],
         };
         let out = CalibOutcome {

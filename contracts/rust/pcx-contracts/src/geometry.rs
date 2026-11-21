@@ -164,10 +164,12 @@ impl Transform {
         match select_projector_transform(transforms, projector_id)? {
             (_, Transform::Homography(h)) => Some(h.matrix),
             (_, Transform::Lut(l)) => l.approx_matrix.or_else(|| {
-                best_of(transforms, projector_id, |t| matches!(t, Transform::Homography(_))).and_then(|(_, t)| match t {
-                    Transform::Homography(h) => Some(h.matrix),
-                    Transform::Lut(_) => None,
-                })
+                best_of(transforms, projector_id, |t| matches!(t, Transform::Homography(_))).and_then(
+                    |(_, t)| match t {
+                        Transform::Homography(h) => Some(h.matrix),
+                        Transform::Lut(_) => None,
+                    },
+                )
             }),
         }
     }
@@ -195,7 +197,10 @@ fn best_of<'a>(
 /// Transformación `table_mm → proj:<projector_id>` que usa el renderer: LUT > homografía; dentro de cada tipo la
 /// de mayor `version` (empate: la primera). Devuelve `(índice, transformación)`. Misma regla que Python;
 /// casos compartidos en `fixtures/selection_cases.json`.
-pub fn select_projector_transform<'a>(transforms: &'a [Transform], projector_id: &str) -> Option<(usize, &'a Transform)> {
+pub fn select_projector_transform<'a>(
+    transforms: &'a [Transform],
+    projector_id: &str,
+) -> Option<(usize, &'a Transform)> {
     best_of(transforms, projector_id, |t| matches!(t, Transform::Lut(_)))
         .or_else(|| best_of(transforms, projector_id, |t| matches!(t, Transform::Homography(_))))
 }

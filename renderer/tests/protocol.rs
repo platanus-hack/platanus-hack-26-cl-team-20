@@ -41,7 +41,8 @@ fn wait_for(ws: &mut Ws, what: &str, pred: impl Fn(&Value) -> bool) -> Value {
                 }
             }
             Ok(_) => {}
-            Err(tungstenite::Error::Io(e)) if matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut) => {}
+            Err(tungstenite::Error::Io(e))
+                if matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut) => {}
             Err(e) => panic!("ws: {e}"),
         }
     }
@@ -76,8 +77,11 @@ fn protocolo_con_core_falso() {
     let (done_tx, done_rx) = mpsc::channel::<Result<(), String>>();
     use base64::Engine as _;
     let mut png = std::io::Cursor::new(Vec::new());
-    image::RgbaImage::from_pixel(1, 1, image::Rgba([255, 255, 255, 255])).write_to(&mut png, image::ImageFormat::Png).unwrap();
-    let pattern_uri = format!("data:image/png;base64,{}", base64::engine::general_purpose::STANDARD.encode(png.into_inner()));
+    image::RgbaImage::from_pixel(1, 1, image::Rgba([255, 255, 255, 255]))
+        .write_to(&mut png, image::ImageFormat::Png)
+        .unwrap();
+    let pattern_uri =
+        format!("data:image/png;base64,{}", base64::engine::general_purpose::STANDARD.encode(png.into_inner()));
     let server = std::thread::spawn(move || {
         let r = std::panic::catch_unwind(move || {
             let mut ws = accept(&listener);

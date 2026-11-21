@@ -57,6 +57,8 @@ Repo privado del equipo: `github.com/satelerd/platanus-hack-26` (local: `~/code/
 
 Créditos disponibles según Daniel: Vercel, Render, Anthropic. Anthropic se canjea en `hack.platan.us/26-cl/hacker/anthropic` (Matilda, sáb 00:36). Montos sin verificar.
 
+Seguimiento de uso de LLM («token maxxing») del evento: por persona en `hack.platan.us/26-cl/hacker/llm`, general en `hack.platan.us/26-cl/llm` (Matilda, sáb 02:58). Cada uno se conecta con su sesión.
+
 ## Demo y pitch
 - **La demo de 5 minutos es lo que más pesa:** nadie revisa el código; se busca factor wow en cada paso. La categoría importa menos que la presentación.
 - Scope ambicioso con «room to grow»: si algo no queda perfecto (por ejemplo el tracking), igual se muestra.
@@ -133,3 +135,43 @@ Agent Wrapped, panel de decisiones, Meet Proxy Maxing, Token Maxing. El «Superh
 2. Max comparte el repo o el estado del engine para saber qué existe.
 3. 3D: medir proyector y cámara y diseñar el rig.
 4. Resolver dashboard y bases (código previo, entregables, hora de corte).
+
+### Update Manu sáb 03:23 (pcx)
+Nodo local en Rust (cámaras, manos, objetos, calibración, renderer GPU) + cerebro en Render (MCP, memoria). 8 módulos, 112 tests verdes; seguidor v4 portado a Rust; LUT corrige paralaje en simulación. Hardware real: renderer 60 fps, latencia punta a punta 215 ms (original 313 ms). Próximo: `pcx up` y prueba completa calibrar → Claude proyecta por MCP → cámara verifica. **Sigue pidiendo el caso de demo.**
+
+## Plan sábado 21 (cierre de la noche 04:01)
+
+Fuente: `notas/2026-11-21-0401-cierre-noche.md`. Enviado al grupo a las 04:21.
+
+🗺️ *Plan para el sábado* (cierre de la noche, 04:01)
+
+*Casos de uso: 3 escenas de ~1 min cada una*
+1. *Vibecoders Desk*: escritorio normal (teclado, mouse, libreta, un juguete). Aparece la actividad de tus agentes; si piden decidir sí o no, pones la mano al lado del mouse; en la libreta física escribes y abajo te proyecta las decisiones
+2. *Edu*: maqueta del sistema solar de plumavit que se vuelve universo, con un personaje que le explica al niño («agarra Júpiter… no, ese es Marte»). Alternativas: anatomía (cráneo) o caligrafía sobre papel. Se decide mañana
+3. *Lab*: pipeta, jeringa y tubos; la IA guía a alguien sin experiencia paso a paso, y una cámara lateral ve el nivel del líquido
+
+*Prioridades técnicas*
+1. 🔴 *Re-segmentar en menos de 1 s* cuando se mueve un objeto (lo más importante)
+2. 🟠 *Setup de ~3 s*: dejar los objetos pre-escaneados en memoria para no escanear en la demo
+3. 🟡 *Multi-cámara*: cenital + lateral (libreta y nivel del líquido)
+4. 🟡 *Montaje físico* que se pueda llevar y armar en el escenario
+
+📌 *Pendiente*
+• Pitch: guion de video de 5 min, etapa por etapa (quedó para esta noche)
+• Marca: ni Jarvis ni el morado típico de IA; idea fuerza «los agentes ya tienen ojos y manos, ahora les damos pinceles»
+• Métricas de impacto dentro del relato (tiempo o plata ahorrada)
+• Manu: plataforma pcx calibrando el techo (29 s, 0,8 px) y la landing en propuesta. *Necesita:* el caso de demo (↑ estas 3 escenas), el nombre del producto y saber si el proyector de Max es el T749
+• Mesa de Daniel = demo de respaldo
+
+🎒 *Qué traer mañana desde la casa*
+• Trípode grande para el proyector (un papá tendría uno) o algo para colgarlo
+• Mesa plegable liviana + mantel blanco
+• Escritorio: teclado, mouse, libreta y un juguete
+• Edu: bolas de plumavit (sistema solar) y/o un cráneo
+• Lab: pipeta, jeringa, tubos de ensayo, vaso precipitado y colorante
+• Extensiones, zapatillas y cables HDMI y USB largos
+• Cámaras extra (webcam o celular) con su soporte
+
+🖨️ *Impresión 3D (A2L, solo filamento naranjo)*
+¿Qué imprimimos? Propuesta: soportes de cámara y proyector, gradilla para tubos, pipeta y jeringa de utilería, planetas o anillos de Saturno, y fichas o marcadores para la mesa. El naranjo puede ser parte de la marca. Cada uno tire ideas y las imprimimos mañana temprano
+

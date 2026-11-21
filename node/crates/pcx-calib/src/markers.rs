@@ -325,9 +325,8 @@ fn decode(cont: &FloatMap, q: &[Pt; 4]) -> Option<Detection> {
         let Some(h) = dlt(&canonical(), &qs) else { continue };
         let Some(vals) = sample_cells(cont, &h) else { continue };
         // nivel: entre la media del anillo (tinta) y el fondo justo afuera
-        let ring: Vec<f64> = (0..CELLS)
-            .flat_map(|i| [vals[0][i], vals[CELLS - 1][i], vals[i][0], vals[i][CELLS - 1]])
-            .collect();
+        let ring: Vec<f64> =
+            (0..CELLS).flat_map(|i| [vals[0][i], vals[CELLS - 1][i], vals[i][0], vals[i][CELLS - 1]]).collect();
         let ring_mean = ring.iter().sum::<f64>() / ring.len() as f64;
         let outside = sample_outside(cont, &h)?;
         let level = (ring_mean + outside) / 2.0;

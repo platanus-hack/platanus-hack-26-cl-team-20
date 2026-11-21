@@ -52,7 +52,11 @@ fn adaptive_dark(g: &GrayImage, r: i64) -> (Vec<bool>, FloatMap) {
 }
 
 fn mean_img(a: &GrayImage, b: &GrayImage) -> GrayImage {
-    GrayImage { width: a.width, height: a.height, data: a.data.iter().zip(&b.data).map(|(&x, &y)| ((x as u16 + y as u16) / 2) as u8).collect() }
+    GrayImage {
+        width: a.width,
+        height: a.height,
+        data: a.data.iter().zip(&b.data).map(|(&x, &y)| ((x as u16 + y as u16) / 2) as u8).collect(),
+    }
 }
 
 /// Rellena un cuadrilátero convexo (px del proyector, centros enteros).
@@ -85,12 +89,19 @@ impl CalibRun {
         MarkerGrid::new(self.proj, self.cfg.grid_cols, self.cfg.grid_rows, cell)
     }
 
-    pub(super) fn quick_grid(&mut self, sink: &mut dyn PatternSink, grab: &mut dyn FrameGrab, compute: &mut f64) -> Result<String, CalibError> {
+    pub(super) fn quick_grid(
+        &mut self,
+        sink: &mut dyn PatternSink,
+        grab: &mut dyn FrameGrab,
+        compute: &mut f64,
+    ) -> Result<String, CalibError> {
         let grid = self.grid();
         let prev = self.current(grab)?;
         let cp = ChangeParams::default();
-        let (fp, _) = sync::show_and_wait(sink, grab, &Pattern::new("markers", grid.rasterize(false)), &prev.image, None, &cp)?;
-        let (fi, _) = sync::show_and_wait(sink, grab, &Pattern::new("markers_inv", grid.rasterize(true)), &fp.image, None, &cp)?;
+        let (fp, _) =
+            sync::show_and_wait(sink, grab, &Pattern::new("markers", grid.rasterize(false)), &prev.image, None, &cp)?;
+        let (fi, _) =
+            sync::show_and_wait(sink, grab, &Pattern::new("markers_inv", grid.rasterize(true)), &fp.image, None, &cp)?;
         self.remember(&fi);
         let t = Instant::now();
         let (ink, cont) = sign_ink(&fp.image, &fi.image);
@@ -112,7 +123,8 @@ impl CalibRun {
             return Err(CalibError::NotEnough(format!("{seen} marcadores legibles")));
         }
         let (src, dst): (Vec<Pt>, Vec<Pt>) = pairs.iter().copied().unzip();
-        let fit = ransac(&src, &dst, self.cfg.ransac_thr_proj_px, 400, 7).ok_or_else(|| CalibError::NotEnough("homografía degenerada".into()))?;
+        let fit = ransac(&src, &dst, self.cfg.ransac_thr_proj_px, 400, 7)
+            .ok_or_else(|| CalibError::NotEnough("homografía degenerada".into()))?;
         self.corners = pairs.iter().zip(&fit.inliers).filter(|(_, ok)| **ok).map(|(p, _)| *p).collect();
         self.h_cp = Some(fit.h);
         let res: Vec<f64> = fit.residuals.iter().zip(&fit.inliers).filter(|(_, ok)| **ok).map(|(r, _)| *r).collect();
@@ -131,7 +143,9 @@ impl CalibRun {
         let t = Instant::now();
         let h_cp = self.h_cp.ok_or(CalibError::MissingPrior)?;
         let (h_tp, note) = match &self.cfg.metric {
-            MetricRef::MmPerProjPx(s) => (Mat3::new(1.0 / s, 0.0, 0.0, 0.0, 1.0 / s, 0.0, 0.0, 0.0, 1.0), format!("escala fija {s} mm/px")),
+            MetricRef::MmPerProjPx(s) => {
+                (Mat3::new(1.0 / s, 0.0, 0.0, 0.0, 1.0 / s, 0.0, 0.0, 0.0, 1.0), format!("escala fija {s} mm/px"))
+            }
             MetricRef::PrintedMarkers(list) => {
                 let g = self.sum_img.as_ref().ok_or(CalibError::MissingPrior)?;
                 let (ink, cont) = adaptive_dark(g, 15);
@@ -147,18 +161,18 @@ impl CalibRun {
                 match dlt(&cam, &mm).and_then(|h_ct| h_ct.try_inverse()) {
                     Some(h_tc) => (h_cp * h_tc, format!("marcadores impresos {ids:?} de {}", list.len())),
                     None => match &self.prior {
-                        Some(p) => (h_cp * p.h_ct().try_inverse().unwrap_or_else(Mat3::identity), "marcadores impresos no vistos: marco previo".into()),
+                        Some(p) => (
+                            h_cp * p.h_ct().try_inverse().unwrap_or_else(Mat3::identity),
+                            "marcadores impresos no vistos: marco previo".into(),
+                        ),
                         None => return Err(CalibError::NotEnough("no veo los marcadores impresos".into())),
                     },
                 }
             }
         };
         let h_pt = h_tp.try_inverse().ok_or_else(|| CalibError::NotEnough("H mesa→proyector singular".into()))?;
-        let mm: Vec<f64> = self
-            .corners
-            .iter()
-            .map(|(c, p)| d2(apply(&h_cp, *c), *p).sqrt() * local_scale(&h_pt, *p))
-            .collect();
+        let mm: Vec<f64> =
+            self.corners.iter().map(|(c, p)| d2(apply(&h_cp, *c), *p).sqrt() * local_scale(&h_pt, *p)).collect();
         let st = ErrStats::of(&mm);
         if let Some(q) = self.out.report.quick.as_mut() {
             q.residual_mm = st;
@@ -207,15 +221,25 @@ impl CalibRun {
         Ok(format!("{mx:.2}×{my:.2} px de cámara por px de proyector → omito {:?} bits", self.skip))
     }
 
-    pub(super) fn gray_capture(&mut self, sink: &mut dyn PatternSink, grab: &mut dyn FrameGrab) -> Result<String, CalibError> {
+    pub(super) fn gray_capture(
+        &mut self,
+        sink: &mut dyn PatternSink,
+        grab: &mut dyn FrameGrab,
+    ) -> Result<String, CalibError> {
         let specs = graycode::sequence(self.proj, self.skip);
         let pats: Vec<Pattern> = specs
             .iter()
-            .map(|s| Pattern::new(format!("gray_{}{}_{}", if s.axis == 0 { 'x' } else { 'y' }, s.bit, s.inverse as u8), graycode::rasterize(*s, self.proj)))
+            .map(|s| {
+                Pattern::new(
+                    format!("gray_{}{}_{}", if s.axis == 0 { 'x' } else { 'y' }, s.bit, s.inverse as u8),
+                    graycode::rasterize(*s, self.proj),
+                )
+            })
             .collect();
         let frames = match (self.cfg.sync, self.h_cp.and_then(|h| h.try_inverse())) {
             (SyncMode::Marker, Some(h_pc)) => {
-                let (f, rep) = sync::stream(sink, grab, &pats, &SyncPatches::new(self.proj), &h_pc, &StreamParams::default())?;
+                let (f, rep) =
+                    sync::stream(sink, grab, &pats, &SyncPatches::new(self.proj), &h_pc, &StreamParams::default())?;
                 self.out.report.precise.get_or_insert_with(Default::default).stream = Some(rep);
                 f
             }
@@ -247,7 +271,8 @@ impl CalibRun {
         if self.cfg.sync == SyncMode::Marker {
             prm.exclude.push(SyncPatches::new(self.proj).guard());
         }
-        let d = graycode::decode(&frames, self.proj, self.skip, &prm).ok_or_else(|| CalibError::NotEnough("faltan patrones".into()))?;
+        let d = graycode::decode(&frames, self.proj, self.skip, &prm)
+            .ok_or_else(|| CalibError::NotEnough("faltan patrones".into()))?;
         let note = format!("{} px válidos de {} iluminados; bloque {:?}", d.stats.valid, d.stats.lit, d.step());
         let pr = self.out.report.precise.get_or_insert_with(Default::default);
         pr.skip_bits = d.skip;
@@ -270,7 +295,8 @@ impl CalibRun {
         let lut = DenseLut::build(&grid, self.proj, self.cfg.lut_grid_step);
         let approx = ransac(&ps, &cs, 2.0_f64.max(0.5 * grid.cam_step as f64), 300, 11).map(|f| f.h);
         let canvas = Poly2::fit_robust(&ps, &cs, 1.0);
-        let path = self.cfg.out_dir.join(format!("lut_proj_{}_to_cam_{}.npy", self.cfg.projector_id, self.cfg.camera_id));
+        let path =
+            self.cfg.out_dir.join(format!("lut_proj_{}_to_cam_{}.npy", self.cfg.projector_id, self.cfg.camera_id));
         let sha = lut.write_npy(&path).map_err(|e| CalibError::Io(e.to_string()))?;
         // control independiente: esquinas de los marcadores (otros cuadros) contra la LUT
         let h_ct = self.calib.as_ref().map(|c| c.h_ct());
@@ -321,7 +347,13 @@ impl CalibRun {
             approx_matrix: approx.map(|h| to_row_major(&h)),
         }));
         self.out.transforms = ts;
-        let note = format!("LUT {}x{} cobertura {:.1} %, {} bloques rellenados", lut.width, lut.height, lut.coverage() * 100.0, filled);
+        let note = format!(
+            "LUT {}x{} cobertura {:.1} %, {} bloques rellenados",
+            lut.width,
+            lut.height,
+            lut.coverage() * 100.0,
+            filled
+        );
         self.out.approx_h_pc = approx;
         self.out.canvas = canvas;
         self.out.grid = Some(grid);
@@ -330,7 +362,12 @@ impl CalibRun {
         Ok(note)
     }
 
-    pub(super) fn verify(&mut self, sink: &mut dyn PatternSink, grab: &mut dyn FrameGrab, compute: &mut f64) -> Result<String, CalibError> {
+    pub(super) fn verify(
+        &mut self,
+        sink: &mut dyn PatternSink,
+        grab: &mut dyn FrameGrab,
+        compute: &mut f64,
+    ) -> Result<String, CalibError> {
         let cal = self.prior.clone().ok_or(CalibError::MissingPrior)?;
         let (h_tp, h_ct) = (cal.h_tp(), cal.h_ct());
         let h_pt = h_tp.try_inverse().ok_or(CalibError::MissingPrior)?;
@@ -342,7 +379,8 @@ impl CalibRun {
             for i in 0..4 {
                 let p = [w * (0.14 + 0.24 * i as f64), h * (0.2 + 0.3 * j as f64)];
                 let x = apply(&h_pt, p);
-                let q: [Pt; 4] = [[-1.0, -1.0], [1.0, -1.0], [1.0, 1.0], [-1.0, 1.0]].map(|d| apply(&h_tp, [x[0] + d[0] * side / 2.0, x[1] + d[1] * side / 2.0]));
+                let q: [Pt; 4] = [[-1.0, -1.0], [1.0, -1.0], [1.0, 1.0], [-1.0, 1.0]]
+                    .map(|d| apply(&h_tp, [x[0] + d[0] * side / 2.0, x[1] + d[1] * side / 2.0]));
                 fill_quad(&mut img, &q, 255);
                 targets.push(x);
             }
@@ -355,10 +393,18 @@ impl CalibRun {
         self.remember(&fi);
         let t = Instant::now();
         let (ink, cont) = sign_ink(&fp.image, &fi.image);
-        let centers: Vec<Pt> = markers::quads(&ink, &cont, 6.0).iter().filter_map(markers::diagonal_center).map(|c| apply(&h_ct, c)).collect();
+        let centers: Vec<Pt> = markers::quads(&ink, &cont, 6.0)
+            .iter()
+            .filter_map(markers::diagonal_center)
+            .map(|c| apply(&h_ct, c))
+            .collect();
         let mut squares = Vec::new();
         for tgt in &targets {
-            let best = centers.iter().copied().min_by(|a, b| d2(*a, *tgt).total_cmp(&d2(*b, *tgt))).filter(|m| d2(*m, *tgt).sqrt() < side);
+            let best = centers
+                .iter()
+                .copied()
+                .min_by(|a, b| d2(*a, *tgt).total_cmp(&d2(*b, *tgt)))
+                .filter(|m| d2(*m, *tgt).sqrt() < side);
             squares.push(SquareResult {
                 target_mm: *tgt,
                 measured_mm: best,
@@ -379,7 +425,13 @@ impl CalibRun {
                 threshold_mm: self.cfg.drift_threshold_mm,
             });
         }
-        self.out.report.verify = Some(VerifyReport { squares, err_mm: st, err_proj_px: ErrStats::of(&epx), threshold_mm: self.cfg.drift_threshold_mm, ok });
+        self.out.report.verify = Some(VerifyReport {
+            squares,
+            err_mm: st,
+            err_proj_px: ErrStats::of(&epx),
+            threshold_mm: self.cfg.drift_threshold_mm,
+            ok,
+        });
         self.calib = Some(cal);
         *compute += ms(t);
         Ok(format!("{}/12 cuadrados, mediana {:.2} mm → {}", st.n, st.p50, if ok { "ok" } else { "DERIVA" }))

@@ -48,7 +48,11 @@ fn render(eng: &mut Engine, state: &SceneState, t: f64) -> image::RgbaImage {
 /// Fracción de píxeles cuyo canal difiere más de `tol`.
 fn diff_frac(a: &image::RgbaImage, b: &image::RgbaImage, tol: u8) -> f64 {
     assert_eq!(a.dimensions(), b.dimensions());
-    let bad = a.pixels().zip(b.pixels()).filter(|(p, q)| p.0.iter().zip(q.0.iter()).any(|(x, y)| x.abs_diff(*y) > tol)).count();
+    let bad = a
+        .pixels()
+        .zip(b.pixels())
+        .filter(|(p, q)| p.0.iter().zip(q.0.iter()).any(|(x, y)| x.abs_diff(*y) > tol))
+        .count();
     bad as f64 / (a.width() * a.height()) as f64
 }
 
@@ -197,8 +201,9 @@ fn pattern_native_pixels_without_warp_or_widgets() {
     eng.wait_idle();
     rt.after_present(now_epoch_ms());
     let actual = eng.readback(&target);
-    let expected =
-        image::RgbaImage::from_fn(320, 180, |x, y| if x < 160 && y < 90 { *checker.get_pixel(x, y) } else { image::Rgba([0, 0, 0, 255]) });
+    let expected = image::RgbaImage::from_fn(320, 180, |x, y| {
+        if x < 160 && y < 90 { *checker.get_pixel(x, y) } else { image::Rgba([0, 0, 0, 255]) }
+    });
     assert_eq!(actual, expected, "no debe escalar, filtrar ni aplicar warp");
     check_golden("pattern", &actual);
     assert_eq!(rt.state.unpresented, vec![12], "el patrón no presenta la escena");

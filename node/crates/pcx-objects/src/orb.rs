@@ -22,7 +22,14 @@ pub struct OrbParams {
 
 impl Default for OrbParams {
     fn default() -> Self {
-        OrbParams { n_features: 800, scale_factor: 1.2, n_levels: 6, edge_threshold: 11, patch_size: 21, fast_threshold: 20 }
+        OrbParams {
+            n_features: 800,
+            scale_factor: 1.2,
+            n_levels: 6,
+            edge_threshold: 11,
+            patch_size: 21,
+            fast_threshold: 20,
+        }
     }
 }
 
@@ -66,7 +73,11 @@ pub fn detect_and_compute(img: &GrayImage, mask: Option<&Mask>, p: &OrbParams) -
     let first = p.n_features as f32 * (1.0 - f) / (1.0 - f.powi(p.n_levels as i32));
     let mut acc = 0usize;
     for l in 0..p.n_levels {
-        let n = if l + 1 == p.n_levels { p.n_features.saturating_sub(acc) } else { (first * f.powi(l as i32)).round() as usize };
+        let n = if l + 1 == p.n_levels {
+            p.n_features.saturating_sub(acc)
+        } else {
+            (first * f.powi(l as i32)).round() as usize
+        };
         acc += n;
         per_level.push(n);
     }
@@ -78,7 +89,8 @@ pub fn detect_and_compute(img: &GrayImage, mask: Option<&Mask>, p: &OrbParams) -
             break;
         }
         let lvl = if l == 0 { img.clone() } else { imageops::resize(img, w, h, imageops::FilterType::Triangle) };
-        let lmask = mask.map(|m| if l == 0 { m.clone() } else { imageops::resize(m, w, h, imageops::FilterType::Nearest) });
+        let lmask =
+            mask.map(|m| if l == 0 { m.clone() } else { imageops::resize(m, w, h, imageops::FilterType::Nearest) });
         let mut corners: Vec<_> = imageproc::corners::corners_fast9(&lvl, p.fast_threshold)
             .into_iter()
             .filter(|c| c.x >= border && c.y >= border && c.x < w - border && c.y < h - border)

@@ -41,9 +41,12 @@ pub struct Effects {
 pub fn validate(src: &str) -> Result<String, String> {
     let full = format!("{PRELUDE}{src}");
     let module = wgpu::naga::front::wgsl::parse_str(&full).map_err(|e| e.emit_to_string(&full))?;
-    wgpu::naga::valid::Validator::new(wgpu::naga::valid::ValidationFlags::all(), wgpu::naga::valid::Capabilities::all())
-        .validate(&module)
-        .map_err(|e| e.emit_to_string(&full))?;
+    wgpu::naga::valid::Validator::new(
+        wgpu::naga::valid::ValidationFlags::all(),
+        wgpu::naga::valid::Capabilities::all(),
+    )
+    .validate(&module)
+    .map_err(|e| e.emit_to_string(&full))?;
     Ok(full)
 }
 
@@ -80,7 +83,8 @@ impl Effects {
             bind_group_layouts: &[Some(&bgl)],
             immediate_size: 0,
         });
-        let mut fx = Self { dir, format, bgl, layout, shaders: HashMap::new(), errors: HashMap::new(), seen: HashMap::new() };
+        let mut fx =
+            Self { dir, format, bgl, layout, shaders: HashMap::new(), errors: HashMap::new(), seen: HashMap::new() };
         fx.poll(device);
         fx
     }
@@ -107,7 +111,8 @@ impl Effects {
                     eprintln!("[fx] {name} cargado");
                 }
                 Err(err) => {
-                    let keep = if self.shaders.contains_key(&name) { "sigo con el anterior" } else { "sin versión previa" };
+                    let keep =
+                        if self.shaders.contains_key(&name) { "sigo con el anterior" } else { "sin versión previa" };
                     eprintln!("[fx] {name} rechazado ({keep}):\n{err}");
                     self.errors.insert(name.clone(), err.clone());
                 }
@@ -117,7 +122,13 @@ impl Effects {
         out
     }
 
-    fn load(&mut self, device: &wgpu::Device, name: &str, path: &Path, mtime: Option<SystemTime>) -> Result<(), String> {
+    fn load(
+        &mut self,
+        device: &wgpu::Device,
+        name: &str,
+        path: &Path,
+        mtime: Option<SystemTime>,
+    ) -> Result<(), String> {
         let src = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
         let full = validate(&src)?;
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -135,7 +146,12 @@ impl Effects {
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(name),
             layout: Some(&self.layout),
-            vertex: wgpu::VertexState { module: &module, entry_point: Some("vs_main"), compilation_options: Default::default(), buffers: &[] },
+            vertex: wgpu::VertexState {
+                module: &module,
+                entry_point: Some("vs_main"),
+                compilation_options: Default::default(),
+                buffers: &[],
+            },
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
@@ -143,7 +159,11 @@ impl Effects {
                 module: &module,
                 entry_point: Some("fs_main"),
                 compilation_options: Default::default(),
-                targets: &[Some(wgpu::ColorTargetState { format: self.format, blend: Some(blend), write_mask: wgpu::ColorWrites::ALL })],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: self.format,
+                    blend: Some(blend),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
             }),
             multiview_mask: None,
             cache: None,
@@ -185,9 +205,8 @@ impl Effects {
             y1 = y1.max(p[1]);
         }
         let m = margin as f64;
-        let mut u: Vec<f32> = vec![
-            (x0 - m) as f32, (y0 - m) as f32, (x1 - x0 + 2.0 * m) as f32, (y1 - y0 + 2.0 * m) as f32,
-        ];
+        let mut u: Vec<f32> =
+            vec![(x0 - m) as f32, (y0 - m) as f32, (x1 - x0 + 2.0 * m) as f32, (y1 - y0 + 2.0 * m) as f32];
         u.extend_from_slice(&color);
         u.extend_from_slice(&params);
         u.extend_from_slice(&[t as f32, ppmm as f32, pts.len() as f32, margin]);

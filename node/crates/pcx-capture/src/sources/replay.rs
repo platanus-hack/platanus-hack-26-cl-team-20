@@ -1,8 +1,8 @@
 //! `replay`: carpeta de imágenes (jpg/png) o archivo MJPEG (JPEG concatenados), al ritmo real, en bucle.
 //! Los cuadros se guardan codificados y se decodifican al emitirlos (memoria acotada). Video (mp4) no: sin ffmpeg.
 
-use crate::frame::{decode, fit, BoxError, Frame, LatestTx};
 use crate::contracts::now_ns;
+use crate::frame::{decode, fit, BoxError, Frame, LatestTx};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
@@ -21,7 +21,9 @@ pub fn load(path: &Path) -> Result<Vec<Vec<u8>>, BoxError> {
         let mut files: Vec<PathBuf> = std::fs::read_dir(path)?
             .filter_map(|e| e.ok().map(|e| e.path()))
             .filter(|p| {
-                p.extension().and_then(|e| e.to_str()).is_some_and(|e| IMAGE_EXT.contains(&e.to_ascii_lowercase().as_str()))
+                p.extension()
+                    .and_then(|e| e.to_str())
+                    .is_some_and(|e| IMAGE_EXT.contains(&e.to_ascii_lowercase().as_str()))
             })
             .collect();
         files.sort();
