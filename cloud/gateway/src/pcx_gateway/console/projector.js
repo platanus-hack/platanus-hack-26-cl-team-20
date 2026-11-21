@@ -1,5 +1,5 @@
 // Ventana del proyector: dibuja lo que manda la consola (mismo origen, BroadcastChannel) y le devuelve toques.
-import { drawScene, hit } from "./render.js";
+import { drawHands, drawScene, hit, trackTrails } from "./render.js";
 
 const sid = new URLSearchParams(location.search).get("s");
 const bus = new BroadcastChannel(`pcx-proj-${sid}`);
@@ -8,6 +8,8 @@ const ctx = canvas.getContext("2d");
 let world = null;
 let pattern = true;
 let calib = null;
+let hands = null; // {hands, hover, progress, fired, opts} + at
+const trails = [];
 let bounds = new Map();
 
 function size() {
@@ -32,11 +34,18 @@ bus.onmessage = ({ data }) => {
     world = data.world;
     pattern = data.pattern;
     calib = data.calib;
+  } else if (data.t === "hands") {
+    hands = { ...data, at: performance.now() };
+    trackTrails(trails, hands, hands.at);
   } else if (data.t === "close") window.close();
 };
 
 function frame(t) {
-  if (world) bounds = drawScene(ctx, canvas.width, canvas.height, world, t, { pattern, calib });
+  if (world) {
+    bounds = drawScene(ctx, canvas.width, canvas.height, world, t, { pattern, calib });
+    const now = performance.now();
+    if (hands && !calib && now - hands.at < 300) drawHands(ctx, canvas.width, world, hands, trails, bounds, now);
+  }
   requestAnimationFrame(frame);
 }
 

@@ -1,6 +1,8 @@
 // Consola de pcx: detecta cámaras y monitores, lanza la ventana del proyector y entrega el comando para un agente.
 import { BrowserNode } from "./node.js";
-import { drawScene, hit } from "./render.js";
+import { apply, solveH } from "./calib.js";
+import { HandTracker } from "./hands.js";
+import { drawHands, drawScene, hit, trackTrails } from "./render.js";
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -76,6 +78,7 @@ function paintCams() {
   $("camaras-nota").textContent = n
     ? `${n} ${n === 1 ? "cámara conectada" : "cámaras conectadas"}. El agente mira por la principal si no pide otra.`
     : "No hay cámaras conectadas. Enchufa una y aparece sola.";
+  ensureCalib();
   syncDevices();
 }
 
@@ -309,7 +312,10 @@ function paintProjector() {
       : `Ventana abierta a ${proj.w}×${proj.h}. Falta la pantalla completa: aprieta el botón de esa ventana (o F).`;
   const c = node.calib;
   if (c && !$("calibrar").disabled)
-    $("calib-estado").textContent = `Calibrada con ${c.camera_id}: ${c.points} marcas, error ${c.residual_mm} mm. El agente ya puede apuntar en píxeles de la foto.`;
+    $("calib-estado").textContent =
+      c.source === "manual"
+        ? `Calibración manual de 4 puntos sobre ${c.camera_id}. «Calibrar» la reemplaza por una automática.`
+        : `Calibrada con ${c.camera_id}: ${c.points} marcas, error ${c.residual_mm} mm. El agente ya puede apuntar en píxeles de la foto.`;
   else if (!c && !$("calib-estado").textContent)
     $("calib-estado").textContent = "Sin calibrar: el agente ve la foto, pero no sabe dónde cae cada punto de la mesa.";
   const { width_mm, height_mm } = node.world.surface;
@@ -350,6 +356,8 @@ function frame(t) {
   const h = Math.round((previa.width * height_mm) / width_mm);
   if (previa.height !== h) previa.height = h;
   bounds = drawScene(pctx, previa.width, previa.height, node.world, t, { pattern: $("patron").checked, calib: calibDots });
+  if (!calibDots && performance.now() - handView.at < 300)
+    drawHands(pctx, previa.width, node.world, handView, handTrails, bounds, performance.now());
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -360,7 +368,131 @@ previa.onclick = (e) => {
   const w = hit(node.world, bounds, pt);
   if (w) node.press(w, pt);
 };
-node.addEventListener("world", () => (pushWorld(), paintProjector()));
+node.addEventListener("world", () => (pushWorld(), paintProjector(), syncHands()));
+
+// ------------------------------------------------------------------ calibración manual (por defecto)
+// Medida a mano el 21-nov con la webcam cenital (foto de look a 1280×720). Vale hasta que corra calibrate.
+const DEFAULT_PAIRS = "771, 602 > 100, 100\n322, 527 > 900, 100\n352, 318 > 900, 463\n803, 400 > 100, 463";
+$("manual-pares").value = store.get("manualPairs") || DEFAULT_PAIRS;
+
+function manualCalib(cameraId) {
+  const rows = $("manual-pares").value.split("\n").map((l) => l.match(/-?\d+(\.\d+)?/g)?.map(Number)).filter((r) => r?.length === 4);
+  const matrix = rows.length >= 4 && solveH(rows.map((r) => [r[0], r[1]]), rows.map((r) => [r[2], r[3]]));
+  if (!matrix) throw new Error("Se necesitan 4 pares «px_x, px_y > mm_x, mm_y» que no estén en línea.");
+  return { camera_id: cameraId, matrix, image_px: [1280, 720], residual_mm: 0, points: rows.length, version: (node.calib?.version ?? 0) + 1, source: "manual" };
+}
+
+/** Sin calibración automática, la manual se aplica a la cámara cenital (y la sigue si se elige otra). */
+function ensureCalib(force = false) {
+  const cam = cams.get(mainCam);
+  if (SIM || !cam) return;
+  const c = node.calib;
+  if (!force && c && (c.source !== "manual" || c.camera_id === cam.id)) return;
+  try {
+    const calib = manualCalib(cam.id);
+    node.setCalib(calib);
+    store.set("calib", { session_id: ses.session_id, calib });
+  } catch (err) {
+    $("calib-estado").textContent = err.message;
+  }
+}
+$("manual-aplicar").onclick = () => {
+  store.set("manualPairs", $("manual-pares").value);
+  ensureCalib(true);
+  paintProjector();
+};
+
+// ------------------------------------------------------------------ manos
+// Modo manos: lo prende un widget {type: "effect", shader: "hands"} (el agente con project, o la casilla «Manos»).
+const DWELL_MS = 400;
+const handTrails = [];
+const smooth = [];
+let handView = { hands: [], at: 0 };
+let dwell = null;
+let lastHandSnap = 0;
+const handsWidget = () => node.world.widgets.find((w) => w.type === "effect" && w.shader === "hands");
+const mainVideo = () => cams.get(mainCam)?.video;
+
+function onHands(found) {
+  const cfg = handsWidget();
+  const c = node.calib;
+  if (!cfg || !c) return;
+  const [iw, ih] = c.image_px; // MediaPipe entrega 0..1: se escala al marco de la foto de look, sea cual sea su resolución
+  smooth.length = found.length;
+  const hands = found.map((h, i) => {
+    const px = h.lm.map((p) => [p.x * iw, p.y * ih]);
+    let mm = px.map((p) => apply(c.matrix, p));
+    if (smooth[i]) mm = mm.map((p, k) => [smooth[i][k][0] + 0.55 * (p[0] - smooth[i][k][0]), smooth[i][k][1] + 0.55 * (p[1] - smooth[i][k][1])]);
+    smooth[i] = mm;
+    const palm = Math.hypot(px[0][0] - px[9][0], px[0][1] - px[9][1]) || 1;
+    return { px, mm, handed: h.handed, pinch: Math.hypot(px[4][0] - px[8][0], px[4][1] - px[8][1]) / palm < 0.3 };
+  });
+  const now = performance.now();
+  let hover = null;
+  let tip = null;
+  for (const h of hands) {
+    hover = hit(node.world, bounds, h.mm[8]);
+    if (hover) {
+      tip = h.mm[8];
+      break;
+    }
+  }
+  if (!hover) dwell = null;
+  else {
+    if (dwell?.id !== hover.id) dwell = { id: hover.id, t0: now, fired: false };
+    if (!dwell.fired && now - dwell.t0 >= (hover.on_press?.dwell_ms ?? DWELL_MS)) {
+      dwell.fired = true; // un toque por visita: hay que sacar el dedo para repetir
+      node.press(hover, tip.map(Math.round), "dwell");
+    }
+  }
+  handView = {
+    hands: hands.map((h) => h.mm),
+    hover: hover?.id ?? null,
+    progress: hover ? Math.min(1, (now - dwell.t0) / (hover.on_press?.dwell_ms ?? DWELL_MS)) : 0,
+    fired: !!dwell?.fired,
+    opts: cfg.params || {},
+    at: now,
+  };
+  trackTrails(handTrails, handView, now);
+  bus.postMessage({ t: "hands", ...handView });
+  // scene (include_hands) se actualiza a 2 Hz: el dibujo va directo a la ventana del proyector, sin pasar por la nube.
+  if (now - lastHandSnap > 500 && (hands.length || node.world.hands.length)) {
+    lastHandSnap = now;
+    const camera_id = cams.get(mainCam)?.id ?? c.camera_id;
+    node.setHands(
+      hands.map((h, i) => ({
+        id: `hand-${i + 1}`,
+        camera_id,
+        handedness: { Left: "left", Right: "right" }[h.handed] ?? "unknown",
+        landmarks_px: h.px.map((p) => p.map(Math.round)),
+        tip_mm: h.mm[8].map(Math.round),
+        pinch: h.pinch,
+        t_capture_ns: Date.now() * 1e6,
+      })),
+    );
+  }
+}
+window.pcx = { node, feedHands: onHands, tracker: () => tracker }; // para depurar y probar sin cámara
+
+const tracker = new HandTracker(mainVideo, onHands, (msg) => paintHands(msg));
+function paintHands(msg) {
+  const on = !!handsWidget();
+  $("manos").checked = on;
+  $("manos-estado").textContent = !on
+    ? ""
+    : (msg ??
+      (!node.calib
+        ? "Manos: falta calibrar para saber dónde cae cada dedo."
+        : `Manos: ${tracker.fps} cuadros/s, ${handView.hands.length && performance.now() - handView.at < 500 ? handView.hands.length : 0} en la mesa. Deja esta pestaña a la vista.`));
+}
+function syncHands() {
+  const on = !!handsWidget();
+  if (on && !tracker.running) tracker.start();
+  if (!on && tracker.running) tracker.stop();
+  if (on !== $("manos").checked) paintHands();
+}
+$("manos").onchange = () =>
+  $("manos").checked ? node.put([{ type: "effect", id: "manos", shader: "hands", params: {} }]) : node.drop(node.world.widgets.filter((w) => w.shader === "hands").map((w) => w.id));
 
 // ------------------------------------------------------------------ agente
 const PROMPT =
@@ -369,6 +501,7 @@ const PROMPT =
   "Después proyecta con project un saludo corto al centro y vuelve a mirar con look para confirmar que se ve. " +
   "Si look dice calibrated=false, llama a calibrate (unos 10 s, proyecta marcas). Ya calibrado, look trae una grilla en mm y " +
   "puedes anclar widgets a lo que ves con anchor.point_px (píxeles de la foto de look). " +
+  "Para manos en vivo proyecta un widget effect con shader hands: dibuja el esqueleto sobre la mano y un dedo quieto 0,4 s sobre un button dispara widget_pressed. " +
   "Cuéntame qué ves y pregúntame qué hacemos.";
 const mcpUrl = `${location.origin}/mcp`;
 const commands = (token) => ({

@@ -154,14 +154,14 @@ export class BrowserNode extends EventTarget {
   }
 
   /** Toque sobre un widget (clic en la ventana del proyector o en la vista previa). */
-  press(widget, point_mm) {
+  press(widget, point_mm, trigger = "api") {
     const m = /^pcx:ask:(.+):(\d+)$/.exec(widget.id);
     if (m && this.asks.has(m[1])) return this.asks.get(m[1]).resolve(Number(m[2]));
     this.emit({
       type: "widget_pressed",
       widget_id: widget.id,
       value: widget.on_press?.value ?? null,
-      trigger: "api",
+      trigger,
       point_mm,
     });
   }
@@ -292,6 +292,12 @@ export class BrowserNode extends EventTarget {
         "Homografía guardada: píxeles de la foto de look → mm de la mesa. look ahora trae la grilla en mm; en project puedes usar " +
         "anchor.point_px (y polygon_px en halo, from_px/to_px en arrow) con píxeles de esa foto. Si mueven la cámara o el proyector, calibra de nuevo.",
     };
+  }
+
+  /** Manos vistas por la cámara cenital (para `scene` con include_hands). */
+  setHands(hands) {
+    this.world.hands = hands;
+    this.changed();
   }
 
   put(widgets) {

@@ -203,6 +203,7 @@ const draw = {
 
   // El navegador no corre los shaders WGSL del compositor: muestra un pulso de luz en la misma zona.
   effect(ctx, w, world, s, t) {
+    if (w.shader === "hands") return null; // modo manos: lo dibuja drawHands con los datos en vivo
     const r = w.rect_mm || [0, 0, world.surface.width_mm, world.surface.height_mm];
     ctx.save();
     ctx.beginPath();
@@ -300,4 +301,75 @@ export function hit(world, bounds, pt) {
     if (b && pt[0] >= b[0] && pt[0] <= b[0] + b[2] && pt[1] >= b[1] && pt[1] <= b[1] + b[3]) return w;
   }
   return null;
+}
+
+const BONES = [
+  [0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12],
+  [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17],
+];
+
+/** Estela de la punta del índice por mano: guarda los últimos ~0,5 s. */
+export function trackTrails(trails, view, now) {
+  view.hands.forEach((pts, i) => (trails[i] ||= []).push({ p: pts[8], t: now }));
+  trails.length = Math.max(trails.length, view.hands.length);
+  for (let i = 0; i < trails.length; i++) {
+    trails[i] = (trails[i] || []).filter((q) => now - q.t < 500);
+    if (i >= view.hands.length && !trails[i].length) trails.length = i;
+  }
+}
+
+/** Modo manos: esqueleto con brillo sobre la mano real, estela del índice y el widget bajo el dedo resaltado. */
+export function drawHands(ctx, W, world, view, trails, bounds, now) {
+  const s = W / world.surface.width_mm;
+  const o = view.opts || {};
+  const color = typeof o.color === "string" ? o.color : "#FFF6E6";
+  const accent = "#FF5B24";
+  ctx.save();
+  ctx.lineCap = ctx.lineJoin = "round";
+  const b = view.hover && bounds.get(view.hover);
+  if (b) {
+    ctx.strokeStyle = view.fired ? "#FFFFFF" : accent;
+    ctx.fillStyle = view.fired ? "#FFFFFF55" : `rgba(255, 91, 36, ${0.4 * view.progress})`;
+    ctx.lineWidth = 5 * s;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 18 * s;
+    ctx.beginPath();
+    ctx.roundRect((b[0] - 8) * s, (b[1] - 8) * s, (b[2] + 16) * s, (b[3] + 16) * s, 14 * s);
+    ctx.fill();
+    ctx.stroke();
+  }
+  if (o.trail !== false)
+    for (const trail of trails) {
+      for (let i = 1; i < trail.length; i++) {
+        const k = 1 - (now - trail[i].t) / 500;
+        ctx.strokeStyle = accent;
+        ctx.globalAlpha = Math.max(0, k);
+        ctx.lineWidth = (3 + 9 * k) * s;
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.moveTo(trail[i - 1].p[0] * s, trail[i - 1].p[1] * s);
+        ctx.lineTo(trail[i].p[0] * s, trail[i].p[1] * s);
+        ctx.stroke();
+      }
+    }
+  ctx.globalAlpha = 1;
+  for (const pts of view.hands) {
+    if (o.skeleton !== false) {
+      ctx.strokeStyle = ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 14 * s;
+      ctx.lineWidth = 4 * s;
+      ctx.beginPath();
+      for (const [a, c] of BONES) (ctx.moveTo(pts[a][0] * s, pts[a][1] * s), ctx.lineTo(pts[c][0] * s, pts[c][1] * s));
+      ctx.stroke();
+      for (const p of pts) (ctx.beginPath(), ctx.arc(p[0] * s, p[1] * s, 4.5 * s, 0, Math.PI * 2), ctx.fill());
+    }
+    ctx.fillStyle = accent;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 20 * s;
+    ctx.beginPath();
+    ctx.arc(pts[8][0] * s, pts[8][1] * s, 9 * s, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 }

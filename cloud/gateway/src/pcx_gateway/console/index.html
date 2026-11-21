@@ -42,9 +42,17 @@
               <button class="btn" id="cerrar" hidden>Cerrar</button>
               <button class="btn" id="calibrar">Calibrar</button>
               <label class="check"><input type="checkbox" id="patron" checked /> Patrón de prueba</label>
+              <label class="check"><input type="checkbox" id="manos" /> Manos</label>
             </div>
             <p class="chico" id="proyector-estado"></p>
             <p class="chico" id="calib-estado"></p>
+            <p class="chico" id="manos-estado"></p>
+            <details class="manual">
+              <summary>Calibración manual (4 puntos)</summary>
+              <p class="chico">Píxeles de la foto de la cámara cenital → mm de la mesa. Un par por línea: <code>px_x, px_y &gt; mm_x, mm_y</code>.</p>
+              <textarea id="manual-pares" rows="4" spellcheck="false"></textarea>
+              <div class="fila"><button class="btn" id="manual-aplicar">Usar estos puntos</button></div>
+            </details>
           </div>
           <figure class="previa">
             <canvas id="previa" width="960" height="540"></canvas>
