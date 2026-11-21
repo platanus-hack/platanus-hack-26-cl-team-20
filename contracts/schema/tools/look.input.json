@@ -2,7 +2,11 @@
   "type": "object",
   "properties": {
     "camera_id": {
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
     },
     "annotate": {
       "type": "boolean",

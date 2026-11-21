@@ -1,10 +1,12 @@
 //! Widgets proyectados (unión discriminada por `type`). Medidas en mm; colores `#RRGGBB` o `#RRGGBBAA`.
+//! Restricciones validadas al deserializar (iguales a Python): color, progress/opacity en [0,1], polígonos ≥ 3.
 //! Hacia el renderer la geometría llega resuelta (mm absolutos); `ttl_s` y `on_press` los gestiona el core.
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::geometry::{PointMM, PolygonMM, RectMM};
+use crate::validate as v;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -89,9 +91,9 @@ pub struct Label {
     pub text: String,
     #[serde(default = "f12")]
     pub size_mm: f64,
-    #[serde(default = "white")]
+    #[serde(default = "white", deserialize_with = "v::color")]
     pub color: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "v::opt_color")]
     pub bg: Option<String>,
 }
 
@@ -99,9 +101,9 @@ pub struct Label {
 pub struct Halo {
     #[serde(flatten)]
     pub common: WidgetCommon,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "v::opt_polygon")]
     pub polygon_mm: Option<PolygonMM>,
-    #[serde(default = "cyan")]
+    #[serde(default = "cyan", deserialize_with = "v::color")]
     pub color: String,
     #[serde(default = "f4")]
     pub width_mm: f64,
@@ -117,7 +119,7 @@ pub struct Arrow {
     pub from_mm: Option<PointMM>,
     #[serde(default)]
     pub to_mm: Option<PointMM>,
-    #[serde(default = "yellow")]
+    #[serde(default = "yellow", deserialize_with = "v::color")]
     pub color: String,
     #[serde(default = "f5")]
     pub width_mm: f64,
@@ -133,7 +135,7 @@ pub struct Panel {
     pub title: String,
     #[serde(default)]
     pub body: String,
-    #[serde(default = "white")]
+    #[serde(default = "white", deserialize_with = "v::color")]
     pub color: String,
 }
 
@@ -145,9 +147,9 @@ pub struct Button {
     pub rect_mm: Option<RectMM>,
     #[serde(default)]
     pub label: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "v::unit")]
     pub progress: f64,
-    #[serde(default = "green")]
+    #[serde(default = "green", deserialize_with = "v::color")]
     pub color: String,
 }
 
@@ -158,7 +160,7 @@ pub struct Image {
     #[serde(default)]
     pub rect_mm: Option<RectMM>,
     pub src: String,
-    #[serde(default = "f1")]
+    #[serde(default = "f1", deserialize_with = "v::unit")]
     pub opacity: f64,
 }
 
@@ -172,7 +174,7 @@ pub struct Effect {
     pub params: Map<String, Value>,
     #[serde(default)]
     pub rect_mm: Option<RectMM>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "v::opt_polygon")]
     pub polygon_mm: Option<PolygonMM>,
 }
 

@@ -7,8 +7,10 @@
         "home_assistant",
         "midi",
         "phone",
-        "projector"
-      ]
+        "projector",
+        null
+      ],
+      "default": null
     }
   }
 }

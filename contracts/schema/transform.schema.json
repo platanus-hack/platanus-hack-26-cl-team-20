@@ -1,0 +1,177 @@
+{
+  "anyOf": [
+    {
+      "$ref": "#/$defs/HomographyTransform"
+    },
+    {
+      "$ref": "#/$defs/LutTransform"
+    }
+  ],
+  "discriminator": {
+    "propertyName": "kind",
+    "mapping": {
+      "homography": "#/$defs/HomographyTransform",
+      "lut": "#/$defs/LutTransform"
+    }
+  },
+  "$defs": {
+    "HomographyTransform": {
+      "title": "HomographyTransform",
+      "description": "`matrix` lleva puntos de `from_frame` a `to_frame` (coordenadas homogéneas, fila mayor).",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "homography"
+          ]
+        },
+        "from_frame": {
+          "type": "string"
+        },
+        "to_frame": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "default": 1
+        },
+        "residual_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "matrix": {
+          "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 9,
+          "minItems": 9
+        }
+      },
+      "required": [
+        "kind",
+        "from_frame",
+        "to_frame",
+        "matrix"
+      ]
+    },
+    "LutTransform": {
+      "title": "LutTransform",
+      "description": "LUT precisa (gray code). `approx_matrix`: homografía aproximada opcional para consumidores sin LUT.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "lut"
+          ]
+        },
+        "from_frame": {
+          "type": "string"
+        },
+        "to_frame": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "default": 1
+        },
+        "residual_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lut": {
+          "$ref": "#/$defs/LutDescriptor"
+        },
+        "approx_matrix": {
+          "anyOf": [
+            {
+              "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "kind",
+        "from_frame",
+        "to_frame",
+        "lut"
+      ]
+    },
+    "LutDescriptor": {
+      "title": "LutDescriptor",
+      "description": "LUT densa en un archivo `.npy`.\n\n    - `format`: `npy_f32_hw2` = array float32 de forma `(height, width, 2)`, C-order.\n    - Índice: `lut[v, u]` corresponde a la muestra del marco de entrada (`from_frame`) cuyo **centro** está en las\n      coordenadas enteras `(u * grid_step, v * grid_step)` (convención `integer_centers`: el centro del px (0,0) es\n      (0,0), no (0.5,0.5)). `grid_step` está en unidades de `from_frame` (px, o mm si es `table_mm`).\n    - Valor: `(x, y)` en **px de salida** (`to_frame`, que debe ser `proj:*` o `cam:*`). NaN = sin dato.\n    - `path`: ruta local o `shm:` del nodo; `sha256`: del archivo `.npy` completo (verificar antes de usar).",
+      "type": "object",
+      "properties": {
+        "format": {
+          "enum": [
+            "npy_f32_hw2"
+          ],
+          "default": "npy_f32_hw2"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "units": {
+          "enum": [
+            "output_px"
+          ],
+          "default": "output_px"
+        },
+        "sampling": {
+          "enum": [
+            "integer_centers"
+          ],
+          "default": "integer_centers"
+        },
+        "grid_step": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1.0
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "path",
+        "sha256"
+      ]
+    }
+  }
+}

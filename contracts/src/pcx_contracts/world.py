@@ -18,9 +18,9 @@ class ObjectState(Struct, kw_only=True):
     polygon_mm: PolygonMM
     center_mm: PointMM
     bbox_mm: RectMM | None = None
-    since: int
+    since_ns: int
     """ns de época en que apareció."""
-    last_seen: int
+    last_seen_ns: int
     """ns de época de la última detección."""
 
 

@@ -1,0 +1,11 @@
+# Workspace Rust de pcx: contratos, nodo (core, captura, percepción, calibración) y renderer.
+[workspace]
+resolver = "2"
+members = [
+    "contracts/rust/pcx-contracts",
+    "node/crates/*",
+]
+
+[workspace.package]
+edition = "2021"
+license = "MIT"

@@ -11,6 +11,8 @@ from .cloud import CloudMessage
 from .commands import Command, Flow
 from .envelope import CONTRACT_VERSION, Envelope
 from .events import Event
+from .geometry import Transform
+from .home import ConfirmAction, HomeCallResult, HomePolicy
 from .render import FromRenderer, ToRenderer
 from .widgets import Widget
 from .world import WorldState
@@ -30,6 +32,10 @@ ROOTS: dict[str, Any] = {
     "cloud": CloudMessage,
     "world": WorldState,
     "flow": Flow,
+    "transform": Transform,
+    "home_policy": HomePolicy,
+    "home_call_result": HomeCallResult,
+    "confirm_action": ConfirmAction,
 }
 
 # Fixture -> tipo con el que se decodifica.
@@ -39,13 +45,25 @@ FIXTURES: dict[str, Any] = {
     "flow_guia_3_pasos.json": Command,
     "tool_call.json": CloudMessage,
     "envelope_widget_pressed.json": Envelope,
+    "blank.json": Command,
 }
 
 json_encoder = msgspec.json.Encoder()
+
+
+def ns_to_str(data: Any) -> Any:
+    """JSON hacia clientes TS: convierte a cadena decimal todo entero de un campo `*_ns` (TS: `BigInt(s)`).
+    Python y Rust siguen usando enteros; solo el gateway/consola aplica esto (ver README, «Tiempos»)."""
+    if isinstance(data, dict):
+        return {k: (str(v) if k.endswith("_ns") and isinstance(v, int) and not isinstance(v, bool) else ns_to_str(v))
+                for k, v in data.items()}
+    if isinstance(data, list):
+        return [ns_to_str(x) for x in data]
+    return data
 
 
 def decoder(tp: Any) -> msgspec.json.Decoder:
     return msgspec.json.Decoder(tp)
 
 
-__all__ = ["CONTRACT_VERSION", "FIXTURES", "ROOTS", "decoder", "json_encoder"]
+__all__ = ["CONTRACT_VERSION", "FIXTURES", "ROOTS", "decoder", "json_encoder", "ns_to_str"]

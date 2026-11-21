@@ -1,0 +1,459 @@
+[
+ {
+  "name": "solo homografía",
+  "projector_id": "main",
+  "transforms": [
+   {
+    "kind": "homography",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "matrix": [
+     1,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     1
+    ],
+    "version": 1
+   }
+  ],
+  "selected_index": 0,
+  "matrix": [
+   1,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "name": "LUT sin aproximación antes que homografía: LUT elegida, matriz por fallback",
+  "projector_id": "main",
+  "transforms": [
+   {
+    "kind": "lut",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "lut": {
+     "format": "npy_f32_hw2",
+     "width": 800,
+     "height": 500,
+     "units": "output_px",
+     "sampling": "integer_centers",
+     "grid_step": 1.0,
+     "path": "/var/lib/pcx/calib/x.npy",
+     "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "version": 1
+   },
+   {
+    "kind": "homography",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "matrix": [
+     1,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     1
+    ],
+    "version": 1
+   }
+  ],
+  "selected_index": 0,
+  "matrix": [
+   1,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "name": "LUT con aproximación gana a la homografía",
+  "projector_id": "main",
+  "transforms": [
+   {
+    "kind": "homography",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "matrix": [
+     1,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     1
+    ],
+    "version": 1
+   },
+   {
+    "kind": "lut",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "lut": {
+     "format": "npy_f32_hw2",
+     "width": 800,
+     "height": 500,
+     "units": "output_px",
+     "sampling": "integer_centers",
+     "grid_step": 1.0,
+     "path": "/var/lib/pcx/calib/x.npy",
+     "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "version": 1,
+    "approx_matrix": [
+     2,
+     0,
+     0,
+     0,
+     2,
+     0,
+     0,
+     0,
+     1
+    ]
+   }
+  ],
+  "selected_index": 1,
+  "matrix": [
+   2,
+   0,
+   0,
+   0,
+   2,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "name": "homografía de mayor versión",
+  "projector_id": "main",
+  "transforms": [
+   {
+    "kind": "homography",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "matrix": [
+     1,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     1
+    ],
+    "version": 1
+   },
+   {
+    "kind": "homography",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "matrix": [
+     2,
+     0,
+     0,
+     0,
+     2,
+     0,
+     0,
+     0,
+     1
+    ],
+    "version": 3
+   }
+  ],
+  "selected_index": 1,
+  "matrix": [
+   2,
+   0,
+   0,
+   0,
+   2,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "name": "empate de versión: la primera",
+  "projector_id": "main",
+  "transforms": [
+   {
+    "kind": "homography",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "matrix": [
+     2,
+     0,
+     0,
+     0,
+     2,
+     0,
+     0,
+     0,
+     1
+    ],
+    "version": 2
+   },
+   {
+    "kind": "homography",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "matrix": [
+     1,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     1
+    ],
+    "version": 2
+   }
+  ],
+  "selected_index": 0,
+  "matrix": [
+   2,
+   0,
+   0,
+   0,
+   2,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "name": "LUT de mayor versión",
+  "projector_id": "main",
+  "transforms": [
+   {
+    "kind": "lut",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "lut": {
+     "format": "npy_f32_hw2",
+     "width": 800,
+     "height": 500,
+     "units": "output_px",
+     "sampling": "integer_centers",
+     "grid_step": 1.0,
+     "path": "/var/lib/pcx/calib/x.npy",
+     "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "version": 2,
+    "approx_matrix": [
+     1,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "kind": "lut",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "lut": {
+     "format": "npy_f32_hw2",
+     "width": 800,
+     "height": 500,
+     "units": "output_px",
+     "sampling": "integer_centers",
+     "grid_step": 1.0,
+     "path": "/var/lib/pcx/calib/x.npy",
+     "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "version": 5,
+    "approx_matrix": [
+     2,
+     0,
+     0,
+     0,
+     2,
+     0,
+     0,
+     0,
+     1
+    ]
+   }
+  ],
+  "selected_index": 1,
+  "matrix": [
+   2,
+   0,
+   0,
+   0,
+   2,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "name": "otro proyector no cuenta",
+  "projector_id": "main",
+  "transforms": [
+   {
+    "kind": "homography",
+    "from_frame": "table_mm",
+    "to_frame": "proj:side",
+    "matrix": [
+     2,
+     0,
+     0,
+     0,
+     2,
+     0,
+     0,
+     0,
+     1
+    ],
+    "version": 1
+   }
+  ],
+  "selected_index": null,
+  "matrix": null
+ },
+ {
+  "name": "elige por projector_id",
+  "projector_id": "side",
+  "transforms": [
+   {
+    "kind": "homography",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "matrix": [
+     1,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     1
+    ],
+    "version": 1
+   },
+   {
+    "kind": "homography",
+    "from_frame": "table_mm",
+    "to_frame": "proj:side",
+    "matrix": [
+     2,
+     0,
+     0,
+     0,
+     2,
+     0,
+     0,
+     0,
+     1
+    ],
+    "version": 1
+   }
+  ],
+  "selected_index": 1,
+  "matrix": [
+   2,
+   0,
+   0,
+   0,
+   2,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "name": "from_frame distinto de table_mm no cuenta",
+  "projector_id": "main",
+  "transforms": [
+   {
+    "kind": "homography",
+    "from_frame": "cam:top",
+    "to_frame": "proj:main",
+    "matrix": [
+     1,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     1
+    ],
+    "version": 1
+   }
+  ],
+  "selected_index": null,
+  "matrix": null
+ },
+ {
+  "name": "LUT sin aproximación y sin homografía: sin matriz",
+  "projector_id": "main",
+  "transforms": [
+   {
+    "kind": "lut",
+    "from_frame": "table_mm",
+    "to_frame": "proj:main",
+    "lut": {
+     "format": "npy_f32_hw2",
+     "width": 800,
+     "height": 500,
+     "units": "output_px",
+     "sampling": "integer_centers",
+     "grid_step": 1.0,
+     "path": "/var/lib/pcx/calib/x.npy",
+     "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "version": 1
+   }
+  ],
+  "selected_index": 0,
+  "matrix": null
+ },
+ {
+  "name": "vacío",
+  "projector_id": "main",
+  "transforms": [],
+  "selected_index": null,
+  "matrix": null
+ }
+]

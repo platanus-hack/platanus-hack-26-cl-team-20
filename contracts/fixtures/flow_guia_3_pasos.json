@@ -41,7 +41,7 @@
         "on_enter": [
           {"type": "update", "id": "g-panel", "set": {"title": "Paso 3 de 3", "body": "Sirve el agua. Enciendo la luz."}},
           {"type": "home_call", "domain": "light", "service": "turn_on",
-           "data": {"entity_id": "light.cocina", "brightness_pct": 80}, "requires_confirmation": false}
+           "data": {"entity_id": "light.cocina", "brightness_pct": 80}}
         ],
         "transitions": [
           {"on": {"event": "widget_pressed", "where": {"widget_id": "g-next"}}, "to": "fin"},

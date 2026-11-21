@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Pcx",
-  "description": "Contratos pcx v1",
+  "description": "Contratos pcx v2",
   "type": "object",
   "properties": {
     "widget": {
@@ -75,6 +75,9 @@
         },
         {
           "$ref": "#/definitions/HomeCall"
+        },
+        {
+          "$ref": "#/definitions/Blank"
         }
       ],
       "discriminator": {
@@ -90,7 +93,8 @@
           "stop_flow": "#/$defs/StopFlow",
           "calibrate": "#/$defs/Calibrate",
           "set_transform": "#/$defs/SetTransform",
-          "home_call": "#/$defs/HomeCall"
+          "home_call": "#/$defs/HomeCall",
+          "blank": "#/$defs/Blank"
         }
       }
     },
@@ -137,6 +141,18 @@
         },
         {
           "$ref": "#/definitions/DeviceChanged"
+        },
+        {
+          "$ref": "#/definitions/ConfirmationRequested"
+        },
+        {
+          "$ref": "#/definitions/ConfirmationResolved"
+        },
+        {
+          "$ref": "#/definitions/HomeCallDone"
+        },
+        {
+          "$ref": "#/definitions/Blanked"
         }
       ],
       "discriminator": {
@@ -155,7 +171,11 @@
           "flow_state_changed": "#/$defs/FlowStateChanged",
           "flow_emitted": "#/$defs/FlowEmitted",
           "frame_meta": "#/$defs/FrameMeta",
-          "device_changed": "#/$defs/DeviceChanged"
+          "device_changed": "#/$defs/DeviceChanged",
+          "confirmation_requested": "#/$defs/ConfirmationRequested",
+          "confirmation_resolved": "#/$defs/ConfirmationResolved",
+          "home_call_done": "#/$defs/HomeCallDone",
+          "blanked": "#/$defs/Blanked"
         }
       }
     },
@@ -169,13 +189,17 @@
         },
         {
           "$ref": "#/definitions/SceneDiff"
+        },
+        {
+          "$ref": "#/definitions/RenderBlank"
         }
       ],
       "discriminator": {
         "propertyName": "type",
         "mapping": {
           "scene": "#/$defs/SceneSnapshot",
-          "scene_diff": "#/$defs/SceneDiff"
+          "scene_diff": "#/$defs/SceneDiff",
+          "blank": "#/$defs/RenderBlank"
         }
       }
     },
@@ -186,13 +210,17 @@
         },
         {
           "$ref": "#/definitions/Stats"
+        },
+        {
+          "$ref": "#/definitions/RenderBlanked"
         }
       ],
       "discriminator": {
         "propertyName": "type",
         "mapping": {
           "presented": "#/$defs/Presented",
-          "stats": "#/$defs/Stats"
+          "stats": "#/$defs/Stats",
+          "blanked": "#/$defs/RenderBlanked"
         }
       }
     },
@@ -205,10 +233,19 @@
           "$ref": "#/definitions/Welcome"
         },
         {
+          "$ref": "#/definitions/HelloRejected"
+        },
+        {
           "$ref": "#/definitions/StateSnapshot"
         },
         {
+          "$ref": "#/definitions/HistoryGap"
+        },
+        {
           "$ref": "#/definitions/EventBatch"
+        },
+        {
+          "$ref": "#/definitions/ReplayDone"
         },
         {
           "$ref": "#/definitions/ToolCall"
@@ -225,8 +262,11 @@
         "mapping": {
           "hello": "#/$defs/Hello",
           "welcome": "#/$defs/Welcome",
+          "hello_rejected": "#/$defs/HelloRejected",
           "state_snapshot": "#/$defs/StateSnapshot",
+          "history_gap": "#/$defs/HistoryGap",
           "event_batch": "#/$defs/EventBatch",
+          "replay_done": "#/$defs/ReplayDone",
           "tool_call": "#/$defs/ToolCall",
           "tool_result": "#/$defs/ToolResult",
           "heartbeat": "#/$defs/Heartbeat"
@@ -238,6 +278,32 @@
     },
     "flow": {
       "$ref": "#/definitions/Flow"
+    },
+    "transform": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/HomographyTransform"
+        },
+        {
+          "$ref": "#/definitions/LutTransform"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "kind",
+        "mapping": {
+          "homography": "#/$defs/HomographyTransform",
+          "lut": "#/$defs/LutTransform"
+        }
+      }
+    },
+    "home_policy": {
+      "$ref": "#/definitions/HomePolicy"
+    },
+    "home_call_result": {
+      "$ref": "#/definitions/HomeCallResult"
+    },
+    "confirm_action": {
+      "$ref": "#/definitions/ConfirmAction"
     }
   },
   "definitions": {
@@ -367,7 +433,7 @@
     },
     "PointMM": {
       "title": "PointMM",
-      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]`.",
+      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]` (exactamente 2 números).",
       "type": "array",
       "items": [
         {
@@ -378,7 +444,8 @@
         }
       ],
       "additionalItems": false,
-      "minItems": 2
+      "minItems": 2,
+      "maxItems": 2
     },
     "OnPress": {
       "title": "OnPress",
@@ -468,7 +535,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/definitions/PointMM"
@@ -688,7 +755,8 @@
         }
       ],
       "additionalItems": false,
-      "minItems": 4
+      "minItems": 4,
+      "maxItems": 4
     },
     "Button": {
       "title": "Button",
@@ -922,7 +990,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/definitions/PointMM"
@@ -945,7 +1013,6 @@
     },
     "Project": {
       "title": "Project",
-      "description": "Crea o reemplaza widgets (por `id`).",
       "type": "object",
       "properties": {
         "type": {
@@ -953,16 +1020,362 @@
             "project"
           ]
         },
+        "widgets": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/Label"
+              },
+              {
+                "$ref": "#/definitions/Halo"
+              },
+              {
+                "$ref": "#/definitions/Arrow"
+              },
+              {
+                "$ref": "#/definitions/Panel"
+              },
+              {
+                "$ref": "#/definitions/Button"
+              },
+              {
+                "$ref": "#/definitions/Image"
+              },
+              {
+                "$ref": "#/definitions/Effect"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "label": "#/$defs/Label",
+                "halo": "#/$defs/Halo",
+                "arrow": "#/$defs/Arrow",
+                "panel": "#/$defs/Panel",
+                "button": "#/$defs/Button",
+                "image": "#/$defs/Image",
+                "effect": "#/$defs/Effect"
+              }
+            }
+          }
+        },
         "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        }
+      },
+      "required": [
+        "type",
+        "widgets",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "Update": {
+      "title": "Update",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "update"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "set": {
+          "type": "object"
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "set",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "Remove": {
+      "title": "Remove",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "remove"
+          ]
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        }
+      },
+      "required": [
+        "type",
+        "ids",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "Clear": {
+      "title": "Clear",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "clear"
+          ]
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        }
+      },
+      "required": [
+        "type",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "Ask": {
+      "title": "Ask",
+      "description": "Proyecta una pregunta con un botón por opción; responde con `ask_answered{request_id}` o vence.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "ask"
+          ]
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "question": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 6,
+          "minItems": 1
+        },
+        "timeout_s": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 600,
+          "default": 60.0
+        },
+        "anchor": {
           "anyOf": [
             {
-              "type": "string"
+              "$ref": "#/definitions/Anchor"
             },
             {
               "type": "null"
             }
           ],
           "default": null
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "question",
+        "options"
+      ],
+      "additionalProperties": false
+    },
+    "Emit": {
+      "title": "Emit",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "emit"
+          ]
+        },
+        "event": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "default": {}
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        }
+      },
+      "required": [
+        "type",
+        "event",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "RunFlow": {
+      "title": "RunFlow",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "run_flow"
+          ]
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "flow": {
+          "$ref": "#/definitions/Flow"
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "flow"
+      ],
+      "additionalProperties": false
+    },
+    "Flow": {
+      "title": "Flow",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "initial": {
+          "type": "string"
+        },
+        "states": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FlowState"
+          },
+          "minItems": 1
+        },
+        "cleanup": {
+          "type": "boolean",
+          "default": true
+        },
+        "timeout_s": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 86400
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "initial",
+        "states"
+      ],
+      "additionalProperties": false
+    },
+    "FlowState": {
+      "title": "FlowState",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "on_enter": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/ProjectAction"
+              },
+              {
+                "$ref": "#/definitions/UpdateAction"
+              },
+              {
+                "$ref": "#/definitions/RemoveAction"
+              },
+              {
+                "$ref": "#/definitions/ClearAction"
+              },
+              {
+                "$ref": "#/definitions/EmitAction"
+              },
+              {
+                "$ref": "#/definitions/HomeCallAction"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "project": "#/$defs/ProjectAction",
+                "update": "#/$defs/UpdateAction",
+                "remove": "#/$defs/RemoveAction",
+                "clear": "#/$defs/ClearAction",
+                "emit": "#/$defs/EmitAction",
+                "home_call": "#/$defs/HomeCallAction"
+              }
+            }
+          },
+          "default": []
+        },
+        "transitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Transition"
+          },
+          "default": []
+        },
+        "final": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "ProjectAction": {
+      "title": "ProjectAction",
+      "description": "Crea o reemplaza widgets (por `id`).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "project"
+          ]
         },
         "widgets": {
           "type": "array",
@@ -1011,8 +1424,8 @@
       ],
       "additionalProperties": false
     },
-    "Update": {
-      "title": "Update",
+    "UpdateAction": {
+      "title": "UpdateAction",
       "description": "Cambia solo algunos campos de un widget existente (merge superficial).",
       "type": "object",
       "properties": {
@@ -1020,17 +1433,6 @@
           "enum": [
             "update"
           ]
-        },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         },
         "id": {
           "type": "string"
@@ -1046,25 +1448,14 @@
       ],
       "additionalProperties": false
     },
-    "Remove": {
-      "title": "Remove",
+    "RemoveAction": {
+      "title": "RemoveAction",
       "type": "object",
       "properties": {
         "type": {
           "enum": [
             "remove"
           ]
-        },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         },
         "ids": {
           "type": "array",
@@ -1079,25 +1470,14 @@
       ],
       "additionalProperties": false
     },
-    "Clear": {
-      "title": "Clear",
+    "ClearAction": {
+      "title": "ClearAction",
       "type": "object",
       "properties": {
         "type": {
           "enum": [
             "clear"
           ]
-        },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         }
       },
       "required": [
@@ -1105,65 +1485,8 @@
       ],
       "additionalProperties": false
     },
-    "Ask": {
-      "title": "Ask",
-      "description": "Proyecta una pregunta con un botón por opción; responde con el evento `ask_answered` o vence.",
-      "type": "object",
-      "properties": {
-        "type": {
-          "enum": [
-            "ask"
-          ]
-        },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
-        "question": {
-          "type": "string"
-        },
-        "options": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "maxItems": 6,
-          "minItems": 1
-        },
-        "timeout_s": {
-          "type": "number",
-          "minimum": 1,
-          "maximum": 600,
-          "default": 60.0
-        },
-        "anchor": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Anchor"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        }
-      },
-      "required": [
-        "type",
-        "question",
-        "options"
-      ],
-      "additionalProperties": false
-    },
-    "Emit": {
-      "title": "Emit",
+    "EmitAction": {
+      "title": "EmitAction",
       "description": "Emite un evento propio (`flow_emitted`), p. ej. para avisar al agente que un flujo terminó.",
       "type": "object",
       "properties": {
@@ -1171,17 +1494,6 @@
           "enum": [
             "emit"
           ]
-        },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         },
         "event": {
           "type": "string"
@@ -1197,139 +1509,9 @@
       ],
       "additionalProperties": false
     },
-    "RunFlow": {
-      "title": "RunFlow",
-      "type": "object",
-      "properties": {
-        "type": {
-          "enum": [
-            "run_flow"
-          ]
-        },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
-        "flow": {
-          "$ref": "#/definitions/Flow"
-        }
-      },
-      "required": [
-        "type",
-        "flow"
-      ],
-      "additionalProperties": false
-    },
-    "Flow": {
-      "title": "Flow",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "initial": {
-          "type": "string"
-        },
-        "states": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/FlowState"
-          }
-        },
-        "cleanup": {
-          "type": "boolean",
-          "default": true
-        },
-        "timeout_s": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        }
-      },
-      "required": [
-        "id",
-        "initial",
-        "states"
-      ],
-      "additionalProperties": false
-    },
-    "FlowState": {
-      "title": "FlowState",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "on_enter": {
-          "type": "array",
-          "items": {
-            "anyOf": [
-              {
-                "$ref": "#/definitions/Project"
-              },
-              {
-                "$ref": "#/definitions/Update"
-              },
-              {
-                "$ref": "#/definitions/Remove"
-              },
-              {
-                "$ref": "#/definitions/Clear"
-              },
-              {
-                "$ref": "#/definitions/Emit"
-              },
-              {
-                "$ref": "#/definitions/HomeCall"
-              }
-            ],
-            "discriminator": {
-              "propertyName": "type",
-              "mapping": {
-                "project": "#/$defs/Project",
-                "update": "#/$defs/Update",
-                "remove": "#/$defs/Remove",
-                "clear": "#/$defs/Clear",
-                "emit": "#/$defs/Emit",
-                "home_call": "#/$defs/HomeCall"
-              }
-            }
-          },
-          "default": []
-        },
-        "transitions": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Transition"
-          },
-          "default": []
-        },
-        "final": {
-          "type": "boolean",
-          "default": false
-        }
-      },
-      "required": [
-        "id"
-      ],
-      "additionalProperties": false
-    },
-    "HomeCall": {
-      "title": "HomeCall",
-      "description": "Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).",
+    "HomeCallAction": {
+      "title": "HomeCallAction",
+      "description": "Llamada a un servicio de Home Assistant (`light.turn_on`, etc.).\n\n    Quien llama **no** decide si se confirma: lo decide la `HomePolicy` del nodo (ver `home.py`). Si requiere\n    confirmación, el resultado es `pending{confirmation_id}` y la acción se ejecuta solo tras un toque físico o la\n    consola. Campos desconocidos (p. ej. el antiguo `requires_confirmation`) se rechazan.",
       "type": "object",
       "properties": {
         "type": {
@@ -1337,30 +1519,17 @@
             "home_call"
           ]
         },
-        "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
         "domain": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
         },
         "service": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
         },
         "data": {
           "type": "object",
           "default": {}
-        },
-        "requires_confirmation": {
-          "type": "boolean",
-          "default": true
         }
       },
       "required": [
@@ -1372,7 +1541,7 @@
     },
     "Transition": {
       "title": "Transition",
-      "description": "Se dispara por `on` (evento) o por `after_s` (segundos en el estado). Ejecuta `actions` y pasa a `to`.",
+      "description": "Exactamente uno de `on` (evento) o `after_s` (segundos en el estado, ≥ 0). Ejecuta `actions` y pasa a `to`.",
       "type": "object",
       "properties": {
         "on": {
@@ -1389,7 +1558,9 @@
         "after_s": {
           "anyOf": [
             {
-              "type": "number"
+              "type": "number",
+              "minimum": 0,
+              "maximum": 86400
             },
             {
               "type": "null"
@@ -1405,33 +1576,33 @@
           "items": {
             "anyOf": [
               {
-                "$ref": "#/definitions/Project"
+                "$ref": "#/definitions/ProjectAction"
               },
               {
-                "$ref": "#/definitions/Update"
+                "$ref": "#/definitions/UpdateAction"
               },
               {
-                "$ref": "#/definitions/Remove"
+                "$ref": "#/definitions/RemoveAction"
               },
               {
-                "$ref": "#/definitions/Clear"
+                "$ref": "#/definitions/ClearAction"
               },
               {
-                "$ref": "#/definitions/Emit"
+                "$ref": "#/definitions/EmitAction"
               },
               {
-                "$ref": "#/definitions/HomeCall"
+                "$ref": "#/definitions/HomeCallAction"
               }
             ],
             "discriminator": {
               "propertyName": "type",
               "mapping": {
-                "project": "#/$defs/Project",
-                "update": "#/$defs/Update",
-                "remove": "#/$defs/Remove",
-                "clear": "#/$defs/Clear",
-                "emit": "#/$defs/Emit",
-                "home_call": "#/$defs/HomeCall"
+                "project": "#/$defs/ProjectAction",
+                "update": "#/$defs/UpdateAction",
+                "remove": "#/$defs/RemoveAction",
+                "clear": "#/$defs/ClearAction",
+                "emit": "#/$defs/EmitAction",
+                "home_call": "#/$defs/HomeCallAction"
               }
             }
           },
@@ -1471,15 +1642,10 @@
           ]
         },
         "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         },
         "flow_id": {
           "type": "string"
@@ -1487,6 +1653,7 @@
       },
       "required": [
         "type",
+        "request_id",
         "flow_id"
       ],
       "additionalProperties": false
@@ -1501,15 +1668,10 @@
           ]
         },
         "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         },
         "mode": {
           "enum": [
@@ -1543,7 +1705,8 @@
         }
       },
       "required": [
-        "type"
+        "type",
+        "request_id"
       ],
       "additionalProperties": false
     },
@@ -1557,70 +1720,51 @@
           ]
         },
         "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
         },
         "transform": {
-          "$ref": "#/definitions/Transform"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/HomographyTransform"
+            },
+            {
+              "$ref": "#/definitions/LutTransform"
+            }
+          ],
+          "discriminator": {
+            "propertyName": "kind",
+            "mapping": {
+              "homography": "#/$defs/HomographyTransform",
+              "lut": "#/$defs/LutTransform"
+            }
+          }
         }
       },
       "required": [
         "type",
+        "request_id",
         "transform"
       ],
       "additionalProperties": false
     },
-    "Transform": {
-      "title": "Transform",
-      "description": "Transformación con nombre y versión entre dos marcos.\n\n    `homography`: `matrix` = 9 floats en fila mayor (lleva puntos de `from_frame` a `to_frame`).\n    `lut`: `lut_ref` apunta a la LUT (p. ej. `shm:lut/proj:main/v3` o una ruta de asset); `matrix` es opcional\n    (aproximación). `residual_mm`: error medido en la última verificación.",
+    "HomographyTransform": {
+      "title": "HomographyTransform",
+      "description": "`matrix` lleva puntos de `from_frame` a `to_frame` (coordenadas homogéneas, fila mayor).",
       "type": "object",
       "properties": {
+        "kind": {
+          "enum": [
+            "homography"
+          ]
+        },
         "from_frame": {
           "type": "string"
         },
         "to_frame": {
           "type": "string"
-        },
-        "kind": {
-          "enum": [
-            "homography",
-            "lut"
-          ],
-          "default": "homography"
-        },
-        "matrix": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "type": "number"
-              },
-              "maxItems": 9,
-              "minItems": 9
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
-        "lut_ref": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
         },
         "version": {
           "type": "integer",
@@ -1636,11 +1780,214 @@
             }
           ],
           "default": null
+        },
+        "matrix": {
+          "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 9,
+          "minItems": 9
         }
       },
       "required": [
+        "kind",
         "from_frame",
-        "to_frame"
+        "to_frame",
+        "matrix"
+      ],
+      "additionalProperties": false
+    },
+    "LutTransform": {
+      "title": "LutTransform",
+      "description": "LUT precisa (gray code). `approx_matrix`: homografía aproximada opcional para consumidores sin LUT.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "lut"
+          ]
+        },
+        "from_frame": {
+          "type": "string"
+        },
+        "to_frame": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "default": 1
+        },
+        "residual_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lut": {
+          "$ref": "#/definitions/LutDescriptor"
+        },
+        "approx_matrix": {
+          "anyOf": [
+            {
+              "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "kind",
+        "from_frame",
+        "to_frame",
+        "lut"
+      ],
+      "additionalProperties": false
+    },
+    "LutDescriptor": {
+      "title": "LutDescriptor",
+      "description": "LUT densa en un archivo `.npy`.\n\n    - `format`: `npy_f32_hw2` = array float32 de forma `(height, width, 2)`, C-order.\n    - Índice: `lut[v, u]` corresponde a la muestra del marco de entrada (`from_frame`) cuyo **centro** está en las\n      coordenadas enteras `(u * grid_step, v * grid_step)` (convención `integer_centers`: el centro del px (0,0) es\n      (0,0), no (0.5,0.5)). `grid_step` está en unidades de `from_frame` (px, o mm si es `table_mm`).\n    - Valor: `(x, y)` en **px de salida** (`to_frame`, que debe ser `proj:*` o `cam:*`). NaN = sin dato.\n    - `path`: ruta local o `shm:` del nodo; `sha256`: del archivo `.npy` completo (verificar antes de usar).",
+      "type": "object",
+      "properties": {
+        "format": {
+          "enum": [
+            "npy_f32_hw2"
+          ],
+          "default": "npy_f32_hw2"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "units": {
+          "enum": [
+            "output_px"
+          ],
+          "default": "output_px"
+        },
+        "sampling": {
+          "enum": [
+            "integer_centers"
+          ],
+          "default": "integer_centers"
+        },
+        "grid_step": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1.0
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "path",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "HomeCall": {
+      "title": "HomeCall",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "home_call"
+          ]
+        },
+        "domain": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "service": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "data": {
+          "type": "object",
+          "default": {}
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        }
+      },
+      "required": [
+        "type",
+        "domain",
+        "service",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "Blank": {
+      "title": "Blank",
+      "description": "Apaga la salida del proyector `ms` milisegundos (p. ej. ~300 ms para una «foto limpia» de la cámara).\n\n    El renderer responde `blanked{request_id, t_start_ms, t_end_ms}` con el intervalo realmente oscuro; el nodo lo\n    republica como evento `blanked` para que la percepción elija cuadros con `t_capture` dentro del intervalo.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "blank"
+          ]
+        },
+        "request_id": {
+          "description": "Clave de idempotencia (obligatoria)",
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "reason": {
+          "type": "string"
+        },
+        "projector_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "ms",
+        "reason"
       ],
       "additionalProperties": false
     },
@@ -1677,7 +2024,7 @@
           "type": "number"
         },
         "polygon_mm": {
-          "description": "Polígono cerrado en mm: [[x,y],...]",
+          "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
           "type": "array",
           "items": {
             "$ref": "#/definitions/PointMM"
@@ -1698,10 +2045,10 @@
           ],
           "default": null
         },
-        "since": {
+        "since_ns": {
           "type": "integer"
         },
-        "last_seen": {
+        "last_seen_ns": {
           "type": "integer"
         }
       },
@@ -1711,8 +2058,8 @@
         "confidence",
         "polygon_mm",
         "center_mm",
-        "since",
-        "last_seen"
+        "since_ns",
+        "last_seen_ns"
       ],
       "additionalProperties": false
     },
@@ -1734,7 +2081,7 @@
         "polygon_mm": {
           "anyOf": [
             {
-              "description": "Polígono cerrado en mm: [[x,y],...]",
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
               "type": "array",
               "items": {
                 "$ref": "#/definitions/PointMM"
@@ -1962,7 +2309,9 @@
           "$ref": "#/definitions/PointMM"
         },
         "progress": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
         },
         "widget_id": {
           "anyOf": [
@@ -2004,15 +2353,7 @@
           ]
         },
         "request_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "type": "string"
         },
         "answer": {
           "anyOf": [
@@ -2042,7 +2383,8 @@
         }
       },
       "required": [
-        "type"
+        "type",
+        "request_id"
       ],
       "additionalProperties": false
     },
@@ -2089,6 +2431,9 @@
         "flow_id": {
           "type": "string"
         },
+        "request_id": {
+          "type": "string"
+        },
         "from_state": {
           "anyOf": [
             {
@@ -2125,7 +2470,8 @@
       },
       "required": [
         "type",
-        "flow_id"
+        "flow_id",
+        "request_id"
       ],
       "additionalProperties": false
     },
@@ -2139,6 +2485,17 @@
           ]
         },
         "flow_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "request_id": {
           "anyOf": [
             {
               "type": "string"
@@ -2264,6 +2621,177 @@
       ],
       "additionalProperties": false
     },
+    "ConfirmationRequested": {
+      "title": "ConfirmationRequested",
+      "description": "El nodo espera confirmación física o de consola para una acción (ver `home.py`).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "confirmation_requested"
+          ]
+        },
+        "confirmation_id": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "via": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "console",
+              "touch"
+            ]
+          }
+        },
+        "expires_ns": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "confirmation_id",
+        "request_id",
+        "action_digest",
+        "summary",
+        "via",
+        "expires_ns"
+      ],
+      "additionalProperties": false
+    },
+    "ConfirmationResolved": {
+      "title": "ConfirmationResolved",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "confirmation_resolved"
+          ]
+        },
+        "confirmation_id": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "approved": {
+          "type": "boolean"
+        },
+        "via": {
+          "enum": [
+            "console",
+            "timeout",
+            "touch"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "confirmation_id",
+        "request_id",
+        "action_digest",
+        "approved",
+        "via"
+      ],
+      "additionalProperties": false
+    },
+    "HomeCallDone": {
+      "title": "HomeCallDone",
+      "description": "Desenlace final de un `home_call` (inmediato o tras la confirmación).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "home_call_done"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "confirmation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": [
+            "denied",
+            "done",
+            "expired",
+            "failed",
+            "rejected"
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "Blanked": {
+      "title": "Blanked",
+      "description": "El proyector estuvo oscuro en [t_start_ms, t_end_ms] (ms de época, reportado por el renderer).\n    Un cuadro de cámara es limpio si su `t_capture` cae dentro, descontando la latencia proyector→cámara.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "blanked"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "projector_id": {
+          "type": "string"
+        },
+        "t_start_ms": {
+          "type": "number"
+        },
+        "t_end_ms": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "projector_id",
+        "t_start_ms",
+        "t_end_ms"
+      ],
+      "additionalProperties": false
+    },
     "Envelope": {
       "title": "Envelope",
       "type": "object",
@@ -2272,8 +2800,7 @@
           "type": "string"
         },
         "v": {
-          "type": "integer",
-          "default": 1
+          "type": "integer"
         },
         "seq": {
           "type": "integer"
@@ -2334,6 +2861,9 @@
               "$ref": "#/definitions/HomeCall"
             },
             {
+              "$ref": "#/definitions/Blank"
+            },
+            {
               "$ref": "#/definitions/ObjectAppeared"
             },
             {
@@ -2374,6 +2904,18 @@
             },
             {
               "$ref": "#/definitions/DeviceChanged"
+            },
+            {
+              "$ref": "#/definitions/ConfirmationRequested"
+            },
+            {
+              "$ref": "#/definitions/ConfirmationResolved"
+            },
+            {
+              "$ref": "#/definitions/HomeCallDone"
+            },
+            {
+              "$ref": "#/definitions/Blanked"
             }
           ],
           "discriminator": {
@@ -2390,6 +2932,7 @@
               "calibrate": "#/$defs/Calibrate",
               "set_transform": "#/$defs/SetTransform",
               "home_call": "#/$defs/HomeCall",
+              "blank": "#/$defs/Blank",
               "object_appeared": "#/$defs/ObjectAppeared",
               "object_moved": "#/$defs/ObjectMoved",
               "object_removed": "#/$defs/ObjectRemoved",
@@ -2403,13 +2946,18 @@
               "flow_state_changed": "#/$defs/FlowStateChanged",
               "flow_emitted": "#/$defs/FlowEmitted",
               "frame_meta": "#/$defs/FrameMeta",
-              "device_changed": "#/$defs/DeviceChanged"
+              "device_changed": "#/$defs/DeviceChanged",
+              "confirmation_requested": "#/$defs/ConfirmationRequested",
+              "confirmation_resolved": "#/$defs/ConfirmationResolved",
+              "home_call_done": "#/$defs/HomeCallDone",
+              "blanked": "#/$defs/Blanked"
             }
           }
         }
       },
       "required": [
         "type",
+        "v",
         "seq",
         "t_pub_ns",
         "source",
@@ -2447,7 +2995,21 @@
         "transforms": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Transform"
+            "anyOf": [
+              {
+                "$ref": "#/definitions/HomographyTransform"
+              },
+              {
+                "$ref": "#/definitions/LutTransform"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "homography": "#/$defs/HomographyTransform",
+                "lut": "#/$defs/LutTransform"
+              }
+            }
           },
           "default": []
         },
@@ -2495,10 +3057,13 @@
         "homography": {
           "anyOf": [
             {
+              "description": "Homografía 3x3 en fila mayor (exactamente 9 números)",
               "type": "array",
               "items": {
                 "type": "number"
-              }
+              },
+              "maxItems": 9,
+              "minItems": 9
             },
             {
               "type": "null"
@@ -2611,7 +3176,21 @@
             {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/Transform"
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/HomographyTransform"
+                  },
+                  {
+                    "$ref": "#/definitions/LutTransform"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "kind",
+                  "mapping": {
+                    "homography": "#/$defs/HomographyTransform",
+                    "lut": "#/$defs/LutTransform"
+                  }
+                }
               }
             },
             {
@@ -2625,6 +3204,36 @@
         "type",
         "rev",
         "base_rev"
+      ],
+      "additionalProperties": false
+    },
+    "RenderBlank": {
+      "title": "RenderBlank",
+      "description": "Salida completamente negra durante `ms` desde el próximo vsync (encima de la escena, que sigue viva).\n    Un `blank` nuevo mientras hay uno activo lo reemplaza (extiende o acorta desde ese momento).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "blank"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "ms",
+        "reason"
       ],
       "additionalProperties": false
     },
@@ -2684,6 +3293,34 @@
       ],
       "additionalProperties": false
     },
+    "RenderBlanked": {
+      "title": "RenderBlanked",
+      "description": "Intervalo en que la salida estuvo realmente negra: `t_start_ms` = presentación del primer cuadro negro,\n    `t_end_ms` = presentación del primer cuadro con escena otra vez (ms de época, como `presented`).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "blanked"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "t_start_ms": {
+          "type": "number"
+        },
+        "t_end_ms": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "t_start_ms",
+        "t_end_ms"
+      ],
+      "additionalProperties": false
+    },
     "Hello": {
       "title": "Hello",
       "type": "object",
@@ -2708,14 +3345,56 @@
         },
         "version": {
           "type": "string"
+        },
+        "contract_versions": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 1
+        },
+        "stream_id": {
+          "type": "string"
+        },
+        "log_first_cursor": {
+          "type": "integer"
+        },
+        "log_last_cursor": {
+          "type": "integer"
+        },
+        "retention": {
+          "$ref": "#/definitions/LogRetention"
         }
       },
       "required": [
         "type",
         "node_id",
         "token",
-        "version"
+        "version",
+        "contract_versions",
+        "stream_id",
+        "log_first_cursor",
+        "log_last_cursor"
       ],
+      "additionalProperties": false
+    },
+    "LogRetention": {
+      "title": "LogRetention",
+      "description": "Cuánto historial retiene el nodo para replay (se descarta lo que exceda cualquiera de los dos).",
+      "type": "object",
+      "properties": {
+        "max_events": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 10000
+        },
+        "max_age_s": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 3600.0
+        }
+      },
+      "required": [],
       "additionalProperties": false
     },
     "Welcome": {
@@ -2729,6 +3408,20 @@
         },
         "session_id": {
           "type": "string"
+        },
+        "contract_version": {
+          "type": "integer"
+        },
+        "last_stream_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "last_cursor": {
           "anyOf": [
@@ -2744,18 +3437,64 @@
       },
       "required": [
         "type",
-        "session_id"
+        "session_id",
+        "contract_version"
+      ],
+      "additionalProperties": false
+    },
+    "HelloRejected": {
+      "title": "HelloRejected",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "hello_rejected"
+          ]
+        },
+        "reason": {
+          "enum": [
+            "auth",
+            "other",
+            "version"
+          ]
+        },
+        "supported_versions": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "default": []
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "reason"
       ],
       "additionalProperties": false
     },
     "StateSnapshot": {
       "title": "StateSnapshot",
+      "description": "Estado recuperado. No implica historial completo (ver `replay_done`).",
       "type": "object",
       "properties": {
         "type": {
           "enum": [
             "state_snapshot"
           ]
+        },
+        "stream_id": {
+          "type": "string"
         },
         "cursor": {
           "type": "integer"
@@ -2766,6 +3505,7 @@
       },
       "required": [
         "type",
+        "stream_id",
         "cursor",
         "world"
       ],
@@ -2854,7 +3594,21 @@
         "transforms": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Transform"
+            "anyOf": [
+              {
+                "$ref": "#/definitions/HomographyTransform"
+              },
+              {
+                "$ref": "#/definitions/LutTransform"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "homography": "#/$defs/HomographyTransform",
+                "lut": "#/$defs/LutTransform"
+              }
+            }
           },
           "default": []
         },
@@ -2925,7 +3679,7 @@
     },
     "PointPX": {
       "title": "PointPX",
-      "description": "Punto en px de una imagen (cámara o proyector). En el cable: `[x, y]`.",
+      "description": "Punto en px de una imagen (cámara o proyector). En el cable: `[x, y]` (exactamente 2 números).",
       "type": "array",
       "items": [
         {
@@ -2936,7 +3690,50 @@
         }
       ],
       "additionalItems": false,
-      "minItems": 2
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "HistoryGap": {
+      "title": "HistoryGap",
+      "description": "Eventos `seq` en [from, to] (inclusive) de `stream_id` que no se pueden reenviar.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "history_gap"
+          ]
+        },
+        "stream_id": {
+          "type": "string"
+        },
+        "from": {
+          "type": "integer"
+        },
+        "to": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "enum": [
+            "retention",
+            "stream_reset"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "stream_id",
+        "from",
+        "to",
+        "reason"
+      ],
+      "additionalProperties": false
     },
     "EventBatch": {
       "title": "EventBatch",
@@ -2947,6 +3744,9 @@
             "event_batch"
           ]
         },
+        "stream_id": {
+          "type": "string"
+        },
         "cursor": {
           "type": "integer"
         },
@@ -2955,12 +3755,44 @@
           "items": {
             "$ref": "#/definitions/Envelope"
           }
+        },
+        "replay": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
         "type",
+        "stream_id",
         "cursor",
         "events"
+      ],
+      "additionalProperties": false
+    },
+    "ReplayDone": {
+      "title": "ReplayDone",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "replay_done"
+          ]
+        },
+        "stream_id": {
+          "type": "string"
+        },
+        "cursor": {
+          "type": "integer"
+        },
+        "history_complete": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "stream_id",
+        "cursor",
+        "history_complete"
       ],
       "additionalProperties": false
     },
@@ -3013,6 +3845,17 @@
         },
         "call_id": {
           "type": "string"
+        },
+        "request_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "ok": {
           "type": "boolean"
@@ -3126,6 +3969,144 @@
       "required": [
         "type",
         "t_ms"
+      ],
+      "additionalProperties": false
+    },
+    "HomePolicy": {
+      "title": "HomePolicy",
+      "description": "Política del nodo. Patrones `domain.service` con comodines (`light.*`, `*`).",
+      "type": "object",
+      "properties": {
+        "allow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "confirm": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "confirm_via": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "console",
+              "touch"
+            ]
+          }
+        },
+        "confirm_timeout_s": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 600,
+          "default": 30.0
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "HomeCallResult": {
+      "title": "HomeCallResult",
+      "description": "Resultado inmediato de un `home_call` (va en `ToolResult.structured` de la tool `home`).",
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "denied",
+            "done",
+            "failed",
+            "pending"
+          ]
+        },
+        "confirmation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "action_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "expires_ns": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "request_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "ConfirmAction": {
+      "title": "ConfirmAction",
+      "description": "Consola local → nodo. Aprueba o rechaza una confirmación pendiente; debe repetir el `action_digest`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "confirm_action"
+          ]
+        },
+        "confirmation_id": {
+          "type": "string"
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "approve": {
+          "type": "boolean"
+        },
+        "operator": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "confirmation_id",
+        "action_digest",
+        "approve",
+        "operator"
       ],
       "additionalProperties": false
     }
