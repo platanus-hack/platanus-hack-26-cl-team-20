@@ -59,3 +59,19 @@ Nueva versión técnica: **contexto físico para agentes de IA**. Nodo local en 
 
 - Fin del hacking: domingo 22-nov, 08:30–09:00 (por confirmar en el dashboard).
 - Demo: 5 minutos.
+
+## Dónde está cada cosa (cierre viernes → sábado 04:30)
+
+| Qué | Dónde |
+|---|---|
+| Plan vivo y prioridades del sábado | `docs/PLAN.md` |
+| Tracks y rúbrica | `docs/TRACKS.md`, `docs/RUBRICA.md` |
+| Transcripciones curadas de reuniones | `docs/transcripciones/` |
+| Investigación (arte previo, dolor, ICP) | `docs/investigacion/` |
+| Estado de cada frente (engine, impresión, riemann) | `docs/estado/` |
+| Bitácora del orquestador y encargos a agentes | `docs/orquestador/` |
+| Cases 3D (badge, soporte pantalla Waveshare) | `hardware/3d/` (el `.stp` de referencia de Waveshare, 25 MB, se baja del sitio del fabricante) |
+| Engine (copia) | `engine/` — original en `MAXMARDONES/sl-scanner`; efectos de la mesa de Daniel en la rama `hack/daniel-mesa` |
+| Mesa (anfitrión, micrófono, objetos) | rama `mesa` |
+| Plataforma pcx de Manu | rama `manu/plataforma` |
+| Scripts auxiliares (dashboard hacker, proxy de tokens) | `herramientas/` |

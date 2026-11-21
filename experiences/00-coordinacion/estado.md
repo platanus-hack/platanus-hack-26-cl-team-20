@@ -27,7 +27,7 @@ Responsable: Pablo y Matilda; asistente como apoyo.
 
 ## Decisiones
 
-La estructura de trabajo y la rúbrica están registradas. No hay propósito, ICP, caso principal, marca ni guion acordados en esta sesión. Las hipótesis de investigación deben alimentar la conversación, no sustituirla.
+La dirección de producto es **Superhuman Desk**, con tres modos preparados: Dev Mode, Lab y Educación. Su propósito es unir el entorno físico con el digital y darle a la IA capacidad de percibir e interactuar en el espacio real. La presentación dura cinco minutos y el cambio entre modos se hace con escenas configuradas de antemano.
 
 ## Avance de esta etapa
 
@@ -35,4 +35,5 @@ La estructura de trabajo y la rúbrica están registradas. No hay propósito, IC
 - Investigación documental de 30 referencias preparada: [índice](../01-investigacion/README.md).
 - Panorama, comunicación, oportunidades, relación con la rúbrica y límites documentados.
 - Guía de conversación por voz preparada: [exploración](../06-conversaciones/guia-exploracion.md).
-- Pendiente: conversación con Pablo; después contrastar con Matilda y convertir lo rescatado en hipótesis y pruebas. El montaje y la demanda no se validaron en esta etapa.
+- El [brief para Matilda](2026-11-21-reunion-superhuman-desk.md) describe los tres modos, el guion de cinco minutos, el margen para transiciones y la relación con la rúbrica.
+- Pendiente: acordar roles y objetos, verificar cada interacción física en el montaje y ensayar los cambios de modo. El ICP inicial, la identidad gráfica y el valor en uso siguen abiertos.
