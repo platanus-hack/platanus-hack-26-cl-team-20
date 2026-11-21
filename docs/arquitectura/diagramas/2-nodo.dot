@@ -1,0 +1,50 @@
+// UML Component Diagram (detalle del nodo local). Regenerar: ./render.sh
+digraph nodo {
+  graph [rankdir=LR, fontname="Helvetica", fontsize=12, nodesep=0.5, ranksep=0.55, splines=ortho, pad=0.4, newrank=true,
+         label=<<table border="0" cellborder="1" cellspacing="0" bgcolor="#f2f2f2" cellpadding="6"><tr><td align="left">UML Component Diagram · 2/2<br/><b>pcx · nodo local (Rust)</b><br/>21-nov-2026 · Platanus Hack 26</td></tr></table>>, labelloc=t, labeljust=l];
+  node [fontname="Helvetica", fontsize=11, shape=component, style=filled, fillcolor=white, color="#222222", penwidth=1.2, margin="0.2,0.12"];
+  edge [fontname="Helvetica", fontsize=10, color="#222222", arrowhead=none, penwidth=1.1];
+
+  cam [label="<<device>>\nCámara", shape=box3d];
+  agente [label="<<application>>\nagente local\n(Claude Code, Codex…)"];
+
+  subgraph cluster_nodo { label="Nodo local · macOS / Windows / Linux"; labeljust=l;
+    node [shape=circle, width=0.22, height=0.22, fixedsize=true, label=""];
+    i_uvc [xlabel="USB UVC / RTSP"]; i_shm [xlabel="memoria compartida"]; i_zmq [xlabel="ZeroMQ (eventos)"];
+    i_render [xlabel="WS /render"]; i_mcp [xlabel="MCP local"];
+    node [shape=component, fixedsize=false, width=0, height=0, label="\N"];
+    cap [label="<<worker>>\npcx-capture\nwebcam · RTSP · celular"];
+    subgraph cluster_percep { label="percepción (procesos aislados)"; labeljust=l; style=dashed;
+      hands [label="<<worker>>\npcx-hands\nmanos · toque (ONNX)"];
+      obj [label="<<worker>>\npcx-objects\ncascada de objetos"]; }
+    subgraph cluster_serve { label="proceso: pcx serve"; labeljust=l; style=dashed;
+      core [label="<<component>>\npcx-core\nmundo · widgets · flujos · MCP"];
+      calib [label="<<component>>\npcx-calib"];
+      db [label="<<datastore>>\nSQLite", shape=cylinder]; }
+    rend [label="<<application>>\npcx-renderer\nwgpu · homografía / LUT"];
+    sup [label="<<application>>\npcx up (supervisor)"];
+  }
+
+  node [shape=circle, width=0.22, height=0.22, fixedsize=true, label=""];
+  i_hdmi [xlabel="HDMI"]; i_wss [xlabel="WSS"]; i_https [xlabel="HTTPS"];
+  node [shape=component, fixedsize=false, width=0, height=0];
+  proy [label="<<device>>\nProyector", shape=box3d];
+  gw [label="<<service>>\npcx-gateway (Render)"];
+  claude [label="<<service>>\nClaude API"];
+
+  cam -> i_uvc -> cap -> i_shm;
+  i_shm -> hands; i_shm -> obj; i_shm -> core;
+  hands -> i_zmq; obj -> i_zmq; i_zmq -> core;
+  core -> calib [style=dashed, arrowhead=vee];
+  core -> db;
+  core -> i_render -> rend -> i_hdmi -> proy;
+  core -> i_wss -> gw;
+  agente -> i_mcp -> core;
+  obj -> i_https -> claude;
+  sup -> core [style=dotted, arrowhead=vee, xlabel="lanza y vigila"];
+
+  {rank=same; cam; agente}
+  {rank=same; hands; obj}
+  {rank=same; core; sup}
+  {rank=same; proy; gw; claude}
+}

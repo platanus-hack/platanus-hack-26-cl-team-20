@@ -1,0 +1,41 @@
+// UML Component Diagram (nivel sistema). Regenerar: ./render.sh
+digraph sistema {
+  graph [rankdir=LR, fontname="Helvetica", fontsize=12, nodesep=0.5, ranksep=1.1, splines=spline, pad=0.4, newrank=true,
+         label=<<table border="0" cellborder="1" cellspacing="0" bgcolor="#f2f2f2" cellpadding="6"><tr><td align="left">UML Component Diagram · 1/2<br/><b>pcx · sistema completo</b><br/>21-nov-2026 · Platanus Hack 26</td></tr></table>>, labelloc=t, labeljust=l];
+  node [fontname="Helvetica", fontsize=11, shape=component, style=filled, fillcolor=white, color="#222222", penwidth=1.2, margin="0.2,0.12"];
+  edge [fontname="Helvetica", fontsize=10, color="#222222", arrowhead=none, penwidth=1.1];
+  node [shape=circle, width=0.22, height=0.22, fixedsize=true, label=""] ;
+  i_mcp [xlabel="MCP\nStreamable HTTP"]; i_rest [xlabel="REST / WS"]; i_wss [xlabel="WSS\n(nodo↔nube)"];
+  i_https [xlabel="HTTPS"]; i_hdmi [xlabel="HDMI"]; i_uvc [xlabel="USB / RTSP"]; i_ha [xlabel="REST / WS"]; i_qr [xlabel="WebSocket"];
+  node [shape=component, fixedsize=false, width=0, height=0];
+
+  subgraph cluster_agentes { label="Agentes de IA"; labeljust=l;
+    cc [label="<<application>>\nClaude Code"]; cx [label="<<application>>\nCodex"];
+    oc [label="<<application>>\nOpenCode"]; cd [label="<<application>>\nClaude Desktop"]; }
+
+  subgraph cluster_render { label="Render (nube) · cerebro"; labeljust=l;
+    gw [label="<<service>>\npcx-gateway\nMCP remoto · API · memoria"];
+    ag [label="<<worker>>\npcx-agent"];
+    web [label="<<application>>\npcx-web\nlanding + consola"];
+    pg [label="<<datastore>>\nPostgres", shape=cylinder]; kv [label="<<datastore>>\nKey Value", shape=cylinder]; }
+
+  subgraph cluster_casa { label="Casa / oficina del usuario"; labeljust=l;
+    nodo [label="<<subsystem>>\npcx nodo local (Rust)\npercepción · estado · render"];
+    cam [label="<<device>>\nCámara", shape=box3d]; proy [label="<<device>>\nProyector", shape=box3d];
+    cel [label="<<device>>\nCelular", shape=box3d];
+    ha [label="<<service>>\nHome Assistant"]; }
+
+  claude [label="<<service>>\nClaude API"];
+
+  {cc cx oc cd} -> i_mcp; i_mcp -> gw;
+  web -> i_rest; i_rest -> gw;
+  ag -> gw [style=dashed, label="tools"];
+  gw -> pg [label="SQL"]; gw -> kv;
+  ag -> i_https; i_https -> claude;
+  nodo -> i_wss; i_wss -> gw;
+  nodo -> i_hdmi; i_hdmi -> proy;
+  cam -> i_uvc; i_uvc -> nodo;
+  cel -> i_qr; i_qr -> nodo;
+  nodo -> i_ha; i_ha -> ha;
+  {rank=same; i_mcp; i_rest}
+}
