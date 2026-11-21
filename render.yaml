@@ -8,7 +8,7 @@ services:
     branch: daniel/consola
     autoDeployTrigger: commit # esta rama no tiene checks de CI; volver a checksPass al integrar en manu/plataforma
     region: virginia
-    plan: starter            # alias válido de 0.5c-512mb: pago, no se duerme
+    plan: free               # temporal sin tarjeta: se duerme tras 15 min sin tráfico; volver a starter cuando llegue el crédito
     numInstances: 1          # sin autoscaling: el estado de conexiones es local al proceso
     healthCheckPath: /health # 503 si la DB no responde
     maxShutdownDelaySeconds: 30
@@ -46,16 +46,14 @@ services:
   - type: keyvalue
     name: pcx-events
     region: virginia
-    plan: 256mb
+    plan: free               # temporal: en memoria
     ipAllowList: []          # solo red privada de Render
     maxmemoryPolicy: noeviction
 databases:
   - name: pcx-db
     region: virginia
-    plan: basic-256mb        # alias válido de 0.1c-256mb
+    plan: free               # temporal: expira a los 30 días
     postgresMajorVersion: "16"
-    diskSizeGB: 1
-    storageAutoscalingEnabled: false
     databaseName: pcx
     user: pcx
     ipAllowList: []          # solo red privada de Render
