@@ -96,6 +96,21 @@ Sede: Roger de Flor 2725, Torre 3, piso 15 (MUT, Buk). Equipo: Daniel, Max Mardo
 - Repo de entrega y dónde se despliega: sin verificar. Créditos según Daniel: Vercel, Render, Anthropic; Pablo compartió `hack.platan.us/26-cl/llm` (probable página de créditos de LLM).
 - Quiénes son el jurado.
 
+## Cámaras «enchufar y listo» (idea de Daniel, sáb 00:20)
+Agregar cámaras debería ser trivial: cada cámara nueva se ubica sola en el mundo 3D con el escaneo de luz estructurada, y el sistema sabe dónde está respecto del proyector. El celular de cualquiera debería poder sumarse como cámara, también como contexto para los agentes («mira, así está apuntando el proyector»).
+
+Lo que ya trae el engine de Max:
+- Calibración cámara-proyector por gray code y autocalib multivista (`engine/docs/P2-AUTOCALIB.md`, `--motion rigid --views 3`).
+- Varias fuentes de cámara: Osmo por USB, Quest 3 por HTTP (`playground/quest_cam.py`, puerto 8787) y webcam remota servida por HTTP (`windows/camserve.py`, puerto 8794).
+- No hay todavía: celular como cámara, ni registrar una cámara nueva «en caliente» sin repetir todo el escaneo.
+
+Caminos para el celular, de más simple a más ambicioso:
+1. iPhone como webcam del Mac por Continuity Camera: sin código; aparece como cámara más.
+2. Página web desde el dashboard que use la cámara del celular y mande cuadros al Mac, imitando `camserve`. Sirve para contexto del agente y para cualquier teléfono.
+3. Registrar esa cámara en el mundo 3D proyectando patrones mientras el celular mira: es el núcleo de «enchufar y listo» y un buen punto técnico para la rúbrica (25 %).
+
+Frente: Manu y Daniel (puente agente ↔ engine), con Max para el paso 3.
+
 ## Ideas de Daniel para más adelante (vie 23:46, sin prioridad sobre engine y demo)
 - **Domótica:** integrar el sistema con Apple HomeKit, Google Home, Nest y televisores, para que el agente también actúe sobre la casa y lo muestre.
 - **Agente observador:** una cámara apuntando al equipo y otras en la hackathon, analizando audio y video de forma continua para decidir qué puede aportar o qué necesita la gente. Ojo: grabar a otros asistentes requiere su consentimiento y el de la organización.
