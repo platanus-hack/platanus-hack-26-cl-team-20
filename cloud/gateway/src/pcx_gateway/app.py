@@ -89,7 +89,7 @@ class Guard:
             return await JSONResponse({"error": "Cuerpo demasiado grande"}, status_code=413)(
                 scope, receive, send
             )
-        if (path.startswith("/mcp") or path.startswith("/api/")) and not path.startswith("/api/node/"):
+        if path.startswith(("/mcp", "/api/")) and not path.startswith("/api/node/"):
             token = bearer(scope)
             identity = await self.store.identity(token) if token else None
             if identity is None or (path.startswith("/mcp") and identity.scope != "mcp"):
@@ -269,7 +269,7 @@ def create_app(settings: Settings | None = None):
         try:
             hello = await receive_cloud(ws, 10, settings.max_ws_frame)
             if not isinstance(hello, Hello):
-                raise ValueError("Se espera hello")
+                raise ValueError("Se espera hello")  # noqa: TRY004 (error de protocolo, no de tipo)
             version = gateway.pick_version(hello.contract_versions)
             if version is None:
                 rejected = HelloRejected(reason="version", supported_versions=list(SUPPORTED_VERSIONS))
