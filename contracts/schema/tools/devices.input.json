@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "enum": [
+        "camera",
+        "home_assistant",
+        "midi",
+        "phone",
+        "projector",
+        null
+      ],
+      "default": null
+    }
+  }
+}

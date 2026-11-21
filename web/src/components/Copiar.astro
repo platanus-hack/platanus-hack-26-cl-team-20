@@ -1,0 +1,37 @@
+---
+interface Props { comando: string; etiqueta: string; prompt?: string }
+const { comando, etiqueta, prompt = "$" } = Astro.props;
+---
+
+<div class="copiar group relative flex items-start gap-3 border border-linea bg-mesa-2 py-3.5 pl-4 pr-2">
+  <span class="term select-none text-luz-3" aria-hidden="true">{prompt}</span>
+  <pre class="term min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-all text-luz"><code>{comando}</code></pre>
+  <button
+    type="button"
+    data-copy={comando}
+    class="shrink-0 border border-transparent px-3 py-1 text-xs text-luz-2 hover:border-linea hover:text-luz"
+    aria-label={`Copiar comando: ${etiqueta}`}
+  >Copiar</button>
+</div>
+
+<script>
+  const vivo = document.getElementById("aviso-copia") ?? Object.assign(document.body.appendChild(document.createElement("p")), {
+    id: "aviso-copia",
+    className: "sr-only",
+  });
+  vivo.setAttribute("aria-live", "polite");
+  document.querySelectorAll<HTMLButtonElement>("button[data-copy]").forEach((b) => {
+    if (b.dataset.listo) return;
+    b.dataset.listo = "1";
+    b.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(b.dataset.copy!);
+        b.textContent = "Copiado";
+        vivo.textContent = "Comando copiado";
+      } catch {
+        b.textContent = "Selecciónalo";
+      }
+      setTimeout(() => (b.textContent = "Copiar"), 1600);
+    });
+  });
+</script>

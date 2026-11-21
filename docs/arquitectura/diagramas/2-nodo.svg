@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1760" height="1248" viewBox="0 0 1760 1248">
+  <title>pcx · UML Component Diagram 2/2 · nodo local</title>
+  <!-- SVG escrito a mano (grilla de 8 px). Fuente del diagrama; regenerar PNG/PDF con ./render.sh -->
+  <defs>
+    <marker id="open" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M 1 1 L 11 6 L 1 11" fill="none" stroke="#50555E" stroke-width="1.4"/>
+    </marker>
+    <marker id="open-plan" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M 1 1 L 11 6 L 1 11" fill="none" stroke="#8C9099" stroke-width="1.4"/>
+    </marker>
+  </defs>
+  <rect width="1760" height="1248" fill="#FFFFFF"/>
+  <g id="zone">
+
+  <!-- nodo de despliegue: Computador del usuario -->
+  <polygon points="232,176 248,160 1600,160 1584,176" fill="#D9EEDF" stroke="#4C9867" stroke-width="1.4" stroke-linejoin="round"/>
+  <polygon points="1584,176 1600,160 1600,984 1584,1000" fill="#D9EEDF" stroke="#4C9867" stroke-width="1.4" stroke-linejoin="round"/>
+  <rect x="232" y="176" width="1352" height="824" fill="#EDF7F0" stroke="#4C9867" stroke-width="1.4"/>
+  <text x="248" y="198" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#215E37">«device»</text>
+  <text x="248" y="218" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#215E37">Computador del usuario</text>
+  <text x="248" y="236" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">macOS · Windows · Linux · todo en Rust, sin OpenCV del sistema</text>
+  <rect x="592" y="296" width="224" height="440" rx="6" fill="#FFFFFF" fill-opacity="0.6" stroke="#4C9867" stroke-width="1" stroke-opacity="0.7"/>
+  <text x="604" y="316" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#215E37">percepción</text>
+  <text x="604" y="332" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#215E37">procesos aislados</text>
+  <rect x="960" y="296" width="304" height="544" rx="6" fill="#FFFFFF" fill-opacity="0.6" stroke="#4C9867" stroke-width="1" stroke-opacity="0.7"/>
+  <text x="972" y="316" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#215E37">«process» pcx serve</text>
+  </g>
+  <g id="line">
+  <path d="M 136 528 L 145 528" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M 163 528 L 264 528" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M 456 528 L 473 528" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M 491 528 L 568 528" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M 568 416 L 568 640" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <circle cx="568" cy="528" r="3.5" fill="#D9502A"/>
+  <path d="M 568 416 L 616 416" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M 568 640 L 616 640" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M 792 416 L 840 416 L 840 640 L 792 640" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <circle cx="840" cy="528" r="3.5" fill="#D9502A"/>
+  <path d="M 840 528 L 973 528" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M 991 528 L 1000 528" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M 424 624 L 424 760 L 840 760 L 840 640" fill="none" stroke="#50555E" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M 1240 528 L 1281 528" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M 1299 528 L 1400 528" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M 1560 528 L 1613 528" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M 1631 528 L 1640 528" fill="none" stroke="#D9502A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M 760 360 L 760 263" fill="none" stroke="#50555E" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M 760 245 L 760 112" fill="none" stroke="#50555E" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M 1160 120 L 1160 233" fill="none" stroke="#50555E" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M 1160 251 L 1160 400" fill="none" stroke="#50555E" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M 1240 432 L 1520 432 L 1520 263" fill="none" stroke="#50555E" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M 1520 245 L 1520 120" fill="none" stroke="#50555E" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M 1048 624 L 1048 710" fill="none" stroke="#50555E" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#open)" stroke-linejoin="round"/>
+  <path d="M 1192 624 L 1192 704" fill="none" stroke="#50555E" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M 360 888 L 360 626" fill="none" stroke="#50555E" stroke-width="1.4" stroke-dasharray="2 4" marker-end="url(#open)" stroke-linejoin="round"/>
+  <path d="M 520 928 L 1480 928" fill="none" stroke="#50555E" stroke-width="1.4" stroke-dasharray="2 4" stroke-linejoin="round"/>
+  <circle cx="704" cy="928" r="3.5" fill="#50555E"/>
+  <circle cx="1112" cy="928" r="3.5" fill="#50555E"/>
+  <path d="M 704 928 L 704 768 A 8 8 0 0 0 704 752 L 704 738" fill="none" stroke="#50555E" stroke-width="1.4" stroke-dasharray="2 4" marker-end="url(#open)"/>
+  <path d="M 1112 928 L 1112 842" fill="none" stroke="#50555E" stroke-width="1.4" stroke-dasharray="2 4" marker-end="url(#open)" stroke-linejoin="round"/>
+  <path d="M 1480 928 L 1480 594" fill="none" stroke="#50555E" stroke-width="1.4" stroke-dasharray="2 4" marker-end="url(#open)" stroke-linejoin="round"/>
+  </g>
+  <g id="box">
+
+  <!-- cuadro de título -->
+  <rect x="32" y="32" width="560" height="88" rx="4" fill="#FFFFFF" stroke="#1E2127" stroke-width="1.4"/>
+  <path d="M 32 64 L 592 64" stroke="#1E2127" stroke-width="1"/>
+  <text x="48" y="54" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1E2127">UML Component Diagram · pcx · 21-nov-2026 · Platanus Hack 26</text>
+  <text x="48" y="90" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="19" font-weight="700" fill="#1E2127">2/2 · Nodo local (Rust)</text>
+  <text x="48" y="110" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">Flujo de izquierda a derecha: de la cámara al proyector</text>
+
+  <!-- componente: Claude API -->
+  <rect x="616" y="40" width="288" height="72" rx="5" fill="#FFFFFF" stroke="#85878C" stroke-width="1.6"/>
+  <rect x="880" y="49" width="14" height="18" fill="#FFFFFF" stroke="#85878C" stroke-width="1.2"/>
+  <rect x="876" y="52" width="8" height="4" fill="#FFFFFF" stroke="#85878C" stroke-width="1.2"/>
+  <rect x="876" y="59" width="8" height="4" fill="#FFFFFF" stroke="#85878C" stroke-width="1.2"/>
+  <text x="630" y="62" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#3F4147">«service» · externo</text>
+  <text x="630" y="83" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1E2127">Claude API</text>
+
+  <!-- componente: Agentes de IA -->
+  <rect x="1016" y="40" width="288" height="80" rx="5" fill="#FFFFFF" stroke="#7A68C2" stroke-width="1.6"/>
+  <rect x="1280" y="49" width="14" height="18" fill="#FFFFFF" stroke="#7A68C2" stroke-width="1.2"/>
+  <rect x="1276" y="52" width="8" height="4" fill="#FFFFFF" stroke="#7A68C2" stroke-width="1.2"/>
+  <rect x="1276" y="59" width="8" height="4" fill="#FFFFFF" stroke="#7A68C2" stroke-width="1.2"/>
+  <text x="1030" y="62" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#45358F">«application» · locales</text>
+  <text x="1030" y="83" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1E2127">Agentes de IA</text>
+  <text x="1030" y="101" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">Claude Code · Codex · OpenCode · Desktop</text>
+
+  <!-- componente: pcx-gateway -->
+  <rect x="1376" y="40" width="288" height="80" rx="5" fill="#FFFFFF" stroke="#4C7BC0" stroke-width="1.6"/>
+  <rect x="1640" y="49" width="14" height="18" fill="#FFFFFF" stroke="#4C7BC0" stroke-width="1.2"/>
+  <rect x="1636" y="52" width="8" height="4" fill="#FFFFFF" stroke="#4C7BC0" stroke-width="1.2"/>
+  <rect x="1636" y="59" width="8" height="4" fill="#FFFFFF" stroke="#4C7BC0" stroke-width="1.2"/>
+  <circle cx="1395" cy="58" r="5" fill="#4C7BC0" stroke="#4C7BC0" stroke-width="1.3"/>
+  <text x="1406" y="62" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#22477E">«service» · Render</text>
+  <text x="1390" y="83" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" font-weight="700" fill="#1E2127">pcx-gateway</text>
+  <text x="1390" y="101" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">MCP remoto · memoria · historial</text>
+
+  <!-- dispositivo: Cámara -->
+  <polygon points="24,480 32,472 136,472 128,480" fill="#F4E3C6" stroke="#B5843A" stroke-width="1.4" stroke-linejoin="round"/>
+  <polygon points="128,480 136,472 136,584 128,592" fill="#F4E3C6" stroke="#B5843A" stroke-width="1.4" stroke-linejoin="round"/>
+  <rect x="24" y="480" width="104" height="112" fill="#FFFFFF" stroke="#B5843A" stroke-width="1.6"/>
+  <text x="36" y="501" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#6F4B12">«device»</text>
+  <text x="36" y="521" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#1E2127">Cámara</text>
+  <text x="36" y="538" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">webcam USB</text>
+  <text x="36" y="555" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">ESP32-CAM ○</text>
+
+  <!-- dispositivo: Proyector -->
+  <polygon points="1640,480 1648,472 1752,472 1744,480" fill="#F4E3C6" stroke="#B5843A" stroke-width="1.4" stroke-linejoin="round"/>
+  <polygon points="1744,480 1752,472 1752,584 1744,592" fill="#F4E3C6" stroke="#B5843A" stroke-width="1.4" stroke-linejoin="round"/>
+  <rect x="1640" y="480" width="104" height="112" fill="#FFFFFF" stroke="#B5843A" stroke-width="1.6"/>
+  <text x="1652" y="501" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#6F4B12">«device»</text>
+  <text x="1652" y="521" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#1E2127">Proyector</text>
+  <text x="1652" y="538" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">mesa</text>
+  <text x="1652" y="555" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">T749 en demo</text>
+
+  <!-- componente: pcx-capture -->
+  <rect x="264" y="432" width="192" height="192" rx="5" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.6"/>
+  <rect x="432" y="441" width="14" height="18" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="428" y="444" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="428" y="451" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <circle cx="283" cy="450" r="5" fill="#4C9867" stroke="#4C9867" stroke-width="1.3"/>
+  <text x="294" y="454" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#215E37">«worker»</text>
+  <text x="278" y="475" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" font-weight="700" fill="#1E2127">pcx-capture</text>
+
+  <!-- componente: pcx-shm -->
+  <rect x="280" y="500" width="160" height="56" rx="5" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.6"/>
+  <rect x="416" y="509" width="14" height="18" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="412" y="512" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="412" y="519" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <circle cx="299" cy="518" r="5" fill="#4C9867" stroke="#4C9867" stroke-width="1.3"/>
+  <text x="310" y="522" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#215E37">«component»</text>
+  <text x="294" y="543" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" font-weight="700" fill="#1E2127">pcx-shm</text>
+  <rect x="448" y="520" width="16" height="16" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.4"/>
+  <path d="M 440 528 L 448 528" fill="none" stroke="#50555E" stroke-width="1.4" stroke-linejoin="round"/>
+  <text x="280" y="580" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">uvc · mjpeg · replay</text>
+  <text x="280" y="597" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">celular (getUserMedia)</text>
+  <text x="280" y="614" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#5A5F69">anillo pcx.cam.&lt;id&gt;</text>
+
+  <!-- componente: pcx-objects -->
+  <rect x="616" y="360" width="176" height="112" rx="5" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.6"/>
+  <rect x="768" y="369" width="14" height="18" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="764" y="372" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="764" y="379" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <circle cx="635" cy="378" r="5" fill="#4C9867" stroke="#4C9867" stroke-width="1.3"/>
+  <text x="646" y="382" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#215E37">«worker»</text>
+  <text x="630" y="403" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" font-weight="700" fill="#1E2127">pcx-objects</text>
+  <text x="630" y="421" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">cascada diff → NCC</text>
+  <text x="630" y="439" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">→ ORB → DINO + SAM</text>
+  <text x="630" y="457" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">→ Claude desempata</text>
+
+  <!-- componente: pcx-hands -->
+  <rect x="616" y="584" width="176" height="112" rx="5" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.6"/>
+  <rect x="768" y="593" width="14" height="18" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="764" y="596" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="764" y="603" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <circle cx="635" cy="602" r="5" fill="#4C9867" stroke="#4C9867" stroke-width="1.3"/>
+  <text x="646" y="606" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#215E37">«worker»</text>
+  <text x="630" y="627" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" font-weight="700" fill="#1E2127">pcx-hands</text>
+  <text x="630" y="645" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">MediaPipe en ONNX</text>
+  <text x="630" y="663" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">manos · toque</text>
+  <text x="630" y="681" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">pinch · apoyo · dwell</text>
+
+  <!-- componente: pcx-core -->
+  <rect x="1000" y="400" width="240" height="224" rx="5" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.6"/>
+  <rect x="1216" y="409" width="14" height="18" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="1212" y="412" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="1212" y="419" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <circle cx="1019" cy="418" r="5" fill="#4C9867" stroke="#4C9867" stroke-width="1.3"/>
+  <text x="1030" y="422" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#215E37">«component»</text>
+  <text x="1014" y="443" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="16" font-weight="700" fill="#1E2127">pcx-core</text>
+  <text x="1014" y="461" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">actor de escritor único</text>
+  <line x1="1000" y1="471" x2="1240" y2="471" stroke="#4C9867" stroke-width="1" stroke-opacity="0.6"/>
+  <text x="1014" y="491" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1E2127">mundo en mm · widgets</text>
+  <text x="1014" y="509" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1E2127">comandos · eventos con seq</text>
+  <text x="1014" y="527" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1E2127">run_flow · ask · dwell</text>
+  <text x="1014" y="545" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1E2127">MCP local (rmcp)</text>
+  <text x="1014" y="563" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1E2127">enlace a la nube</text>
+  <text x="1014" y="581" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1E2127">HomePolicy · confirmaciones</text>
+
+  <!-- componente: pcx-calib -->
+  <rect x="976" y="712" width="144" height="96" rx="5" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.6"/>
+  <rect x="1096" y="721" width="14" height="18" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="1092" y="724" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="1092" y="731" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <circle cx="995" cy="730" r="5" fill="#4C9867" stroke="#4C9867" stroke-width="1.3"/>
+  <text x="1006" y="734" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#215E37">«component»</text>
+  <text x="990" y="755" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" font-weight="700" fill="#1E2127">pcx-calib</text>
+  <text x="990" y="773" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">quick · precise</text>
+  <text x="990" y="791" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">verify</text>
+
+  <!-- datastore: SQLite -->
+  <path d="M 1136 713 L 1136 807 A 56.0 9 0 0 0 1248 807 L 1248 713" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.6"/>
+  <ellipse cx="1192.0" cy="713" rx="56.0" ry="9" fill="#D9EEDF" stroke="#4C9867" stroke-width="1.6"/>
+  <circle cx="1153" cy="737" r="5" fill="#4C9867" stroke="#4C9867" stroke-width="1.3"/>
+  <text x="1164" y="741" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#215E37">«datastore»</text>
+  <text x="1148" y="761" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#1E2127">SQLite</text>
+  <text x="1148" y="778" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">pcx.db</text>
+  <text x="1148" y="795" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">eventos · mundo</text>
+
+  <!-- componente: pcx-renderer -->
+  <rect x="1400" y="464" width="160" height="128" rx="5" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.6"/>
+  <rect x="1536" y="473" width="14" height="18" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="1532" y="476" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="1532" y="483" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <circle cx="1419" cy="482" r="5" fill="#4C9867" stroke="#4C9867" stroke-width="1.3"/>
+  <text x="1430" y="486" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#215E37">«application»</text>
+  <text x="1414" y="507" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" font-weight="700" fill="#1E2127">pcx-renderer</text>
+  <text x="1414" y="525" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">wgpu + vello</text>
+  <text x="1414" y="543" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">homografía / LUT</text>
+  <text x="1414" y="561" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">efectos WGSL</text>
+
+  <!-- componente: supervisor -->
+  <rect x="264" y="888" width="256" height="80" rx="5" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.6"/>
+  <rect x="496" y="897" width="14" height="18" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="492" y="900" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <rect x="492" y="907" width="8" height="4" fill="#FFFFFF" stroke="#4C9867" stroke-width="1.2"/>
+  <circle cx="283" cy="906" r="5" fill="#4C9867" stroke="#4C9867" stroke-width="1.3"/>
+  <text x="294" y="910" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#215E37">«executable» pcx (crate pcxd)</text>
+  <text x="278" y="931" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1E2127">supervisor</text>
+  <text x="278" y="949" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#5A5F69">se inicia con pcx up · node/pcx.toml</text>
+  <path d="M 256 272 L 564 272 L 576 284 L 576 408 L 256 408 Z" fill="#FFFDF4" stroke="#4C9867" stroke-width="1.2"/>
+  <path d="M 564 272 L 564 284 L 576 284" fill="none" stroke="#4C9867" stroke-width="1.2"/>
+  <text x="268" y="292" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#1E2127">Transporte interno</text>
+  <text x="268" y="308" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">cuadros: memoria compartida (pcx-shm)</text>
+  <text x="268" y="324" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">workers externos → core: ZeroMQ</text>
+  <text x="268" y="340" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">dentro de pcx serve: canales en proceso</text>
+  <text x="268" y="356" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">core ↔ renderer: WS (scene · blank/blanked)</text>
+  <text x="268" y="372" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">foto limpia: blank → blanked → captura</text>
+  <text x="268" y="388" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">pcx-calib: patrones → renderer, cuadros ← captura</text>
+
+  <!-- leyenda -->
+  <rect x="32" y="1024" width="1696" height="216" rx="4" fill="#FFFFFF" stroke="#C9CCD2" stroke-width="1.2"/>
+  <text x="52" y="1050" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1E2127">Notación UML 2</text>
+  <rect x="52" y="1064" width="40" height="26" rx="3" fill="#FFFFFF" stroke="#50555E" stroke-width="1.3"/>
+  <rect x="74" y="1068" width="14" height="18" fill="#FFFFFF" stroke="#50555E" stroke-width="1.2"/>
+  <rect x="70" y="1071" width="8" height="4" fill="#FFFFFF" stroke="#50555E" stroke-width="1.2"/>
+  <rect x="70" y="1078" width="8" height="4" fill="#FFFFFF" stroke="#50555E" stroke-width="1.2"/>
+  <text x="104" y="1081" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Componente · «service» «worker» «application»</text>
+  <polygon points="52,1106 58,1100 92,1100 86,1106" fill="#EEE" stroke="#50555E" stroke-width="1.2"/>
+  <polygon points="86,1106 92,1100 92,1120 86,1126" fill="#EEE" stroke="#50555E" stroke-width="1.2"/>
+  <rect x="52" y="1106" width="34" height="20" fill="#FFF" stroke="#50555E" stroke-width="1.2"/>
+  <text x="104" y="1117" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Nodo de despliegue · «device»</text>
+  <path d="M 56 1140 L 56 1158 A 16 5 0 0 0 88 1158 L 88 1140" fill="#FFF" stroke="#50555E" stroke-width="1.2"/>
+  <ellipse cx="72" cy="1140" rx="16" ry="5" fill="#EEE" stroke="#50555E" stroke-width="1.2"/>
+  <text x="104" y="1153" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">«datastore» (base de datos)</text>
+  <path d="M 54 1174 L 82 1174 L 90 1182 L 90 1196 L 54 1196 Z" fill="#FFFDF4" stroke="#50555E" stroke-width="1.2"/>
+  <text x="104" y="1189" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Nota</text>
+  <line x1="364" y1="1076" x2="386" y2="1076" stroke="#50555E" stroke-width="1.4"/>
+  <circle cx="392" cy="1076" r="6.5" fill="#FFF" stroke="#50555E" stroke-width="1.6"/>
+  <text x="416" y="1081" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Interfaz provista (piruleta)</text>
+  <line x1="364" y1="1112" x2="386" y2="1112" stroke="#50555E" stroke-width="1.4"/>
+  <path d="M 386 1101 A 11 11 0 0 1 386 1123" fill="none" stroke="#50555E" stroke-width="1.6"/>
+  <text x="416" y="1117" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Interfaz requerida (socket)</text>
+  <line x1="364" y1="1148" x2="374" y2="1148" stroke="#50555E" stroke-width="1.4"/>
+  <line x1="392" y1="1148" x2="404" y2="1148" stroke="#50555E" stroke-width="1.4"/>
+  <path d="M 385 1137 A 11 11 0 0 0 385 1159" fill="none" stroke="#50555E" stroke-width="1.6"/>
+  <circle cx="385" cy="1148" r="6.5" fill="#FFF" stroke="#50555E" stroke-width="1.6"/>
+  <text x="416" y="1153" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Ensamble: requiere ⊃ provee (piruleta)</text>
+  <path d="M 364 1184 L 404 1184" stroke="#50555E" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#open)" fill="none"/>
+  <text x="416" y="1189" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Dependencia «use» / «lanza y vigila»</text>
+  <text x="52" y="1224" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">Convenciones propias: estereotipos «worker» «location» «process», cilindro de datos y marcas de estado.</text>
+  <line x1="672" y1="1038" x2="672" y2="1226" stroke="#E1E3E8" stroke-width="1"/>
+  <text x="692" y="1050" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1E2127">Estado (según los README)</text>
+  <rect x="692" y="1064" width="44" height="26" rx="3" fill="#FFF" stroke="#50555E" stroke-width="1.6"/>
+  <circle cx="706" cy="1077" r="5" fill="#50555E" stroke="#50555E" stroke-width="1.3"/>
+  <text x="750" y="1081" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Implementado, con tests automáticos</text>
+  <rect x="692" y="1100" width="44" height="26" rx="3" fill="#FFF" stroke="#50555E" stroke-width="1.6" stroke-dasharray="7 4"/>
+  <circle cx="706" cy="1113" r="5" fill="#FFFFFF" stroke="#50555E" stroke-width="1.3"/>
+  <path d="M 706 1108 A 5 5 0 0 1 706 1118 Z" fill="#50555E"/>
+  <text x="750" y="1117" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">En progreso (definido, sin desplegar)</text>
+  <rect x="692" y="1136" width="44" height="26" rx="3" fill="#FFF" stroke="#50555E" stroke-width="1.6" stroke-dasharray="2.5 3"/>
+  <circle cx="706" cy="1149" r="5" fill="#FFFFFF" stroke="#50555E" stroke-width="1.3" stroke-dasharray="2 1.6"/>
+  <text x="750" y="1153" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Planificado</text>
+  <rect x="692" y="1172" width="44" height="26" rx="3" fill="#FFF" stroke="#50555E" stroke-width="1.6"/>
+  <text x="750" y="1189" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Sin marca: producto o hardware externo</text>
+  <line x1="992" y1="1038" x2="992" y2="1226" stroke="#E1E3E8" stroke-width="1"/>
+  <text x="1012" y="1050" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1E2127">Color por capa</text>
+  <rect x="1012" y="1062" width="28" height="18" rx="3" fill="#F5F2FC" stroke="#7A68C2" stroke-width="1.4"/>
+  <text x="1052" y="1076" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Agentes de IA</text>
+  <rect x="1012" y="1090" width="28" height="18" rx="3" fill="#EEF4FC" stroke="#4C7BC0" stroke-width="1.4"/>
+  <text x="1052" y="1104" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Nube · Render</text>
+  <rect x="1012" y="1118" width="28" height="18" rx="3" fill="#EDF7F0" stroke="#4C9867" stroke-width="1.4"/>
+  <text x="1052" y="1132" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Nodo local (Rust)</text>
+  <rect x="1012" y="1146" width="28" height="18" rx="3" fill="#FCF4E7" stroke="#B5843A" stroke-width="1.4"/>
+  <text x="1052" y="1160" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Hardware</text>
+  <rect x="1012" y="1174" width="28" height="18" rx="3" fill="#F4F4F5" stroke="#85878C" stroke-width="1.4"/>
+  <text x="1052" y="1188" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Servicio externo</text>
+  <text x="1232" y="1050" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1E2127">Conexiones</text>
+  <line x1="1232" y1="1072" x2="1272" y2="1072" stroke="#D9502A" stroke-width="2.4"/>
+  <text x="1284" y="1076" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Flujo principal (datos)</text>
+  <line x1="1232" y1="1100" x2="1272" y2="1100" stroke="#50555E" stroke-width="1.4"/>
+  <text x="1284" y="1104" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Otra conexión</text>
+  <line x1="1232" y1="1128" x2="1272" y2="1128" stroke="#8C9099" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <text x="1284" y="1132" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Conexión planificada</text>
+  <line x1="1232" y1="1156" x2="1272" y2="1156" stroke="#50555E" stroke-width="1.4" stroke-dasharray="2 4"/>
+  <text x="1284" y="1160" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Supervisión (lanza y vigila)</text>
+  <text x="1232" y="1192" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#5A5F69">Etiqueta = protocolo del enlace</text>
+  </g>
+  <g id="conn">
+  <path d="M 152 517 A 11 11 0 0 1 152 539" fill="none" stroke="#D9502A" stroke-width="2.4000000000000004"/>
+  <circle cx="152" cy="528" r="6.5" fill="#FFFFFF" stroke="#D9502A" stroke-width="2.4000000000000004"/>
+  <path d="M 480 517 A 11 11 0 0 1 480 539" fill="none" stroke="#D9502A" stroke-width="2.4000000000000004"/>
+  <circle cx="480" cy="528" r="6.5" fill="#FFFFFF" stroke="#D9502A" stroke-width="2.4000000000000004"/>
+  <path d="M 984 517 A 11 11 0 0 0 984 539" fill="none" stroke="#D9502A" stroke-width="2.4000000000000004"/>
+  <circle cx="984" cy="528" r="6.5" fill="#FFFFFF" stroke="#D9502A" stroke-width="2.4000000000000004"/>
+  <path d="M 1288 517 A 11 11 0 0 1 1288 539" fill="none" stroke="#D9502A" stroke-width="2.4000000000000004"/>
+  <circle cx="1288" cy="528" r="6.5" fill="#FFFFFF" stroke="#D9502A" stroke-width="2.4000000000000004"/>
+  <path d="M 1624 517 A 11 11 0 0 0 1624 539" fill="none" stroke="#D9502A" stroke-width="2.4000000000000004"/>
+  <circle cx="1624" cy="528" r="6.5" fill="#FFFFFF" stroke="#D9502A" stroke-width="2.4000000000000004"/>
+  <path d="M 749 252 A 11 11 0 0 0 771 252" fill="none" stroke="#50555E" stroke-width="1.5999999999999999"/>
+  <circle cx="760" cy="252" r="6.5" fill="#FFFFFF" stroke="#50555E" stroke-width="1.5999999999999999"/>
+  <path d="M 1149 240 A 11 11 0 0 1 1171 240" fill="none" stroke="#50555E" stroke-width="1.5999999999999999"/>
+  <circle cx="1160" cy="240" r="6.5" fill="#FFFFFF" stroke="#50555E" stroke-width="1.5999999999999999"/>
+  <path d="M 1509 252 A 11 11 0 0 0 1531 252" fill="none" stroke="#50555E" stroke-width="1.5999999999999999"/>
+  <circle cx="1520" cy="252" r="6.5" fill="#FFFFFF" stroke="#50555E" stroke-width="1.5999999999999999"/>
+  </g>
+  <g id="label">
+  <rect x="155.5" y="475.5" width="57.0" height="35.0" rx="3" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="184" y="490.0" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" text-anchor="middle" fill="#1E2127">USB UVC</text>
+  <text x="184" y="505.5" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" text-anchor="middle" fill="#1E2127">MJPEG</text>
+  <rect x="490.4" y="476.0" width="75.2" height="34.0" rx="3" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="528" y="490" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#1E2127">memoria</text>
+  <text x="528" y="505" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#1E2127">compartida</text>
+  <rect x="853.2" y="460.0" width="101.6" height="49.0" rx="3" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="904" y="474" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#1E2127">ZeroMQ</text>
+  <text x="904" y="489" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#1E2127">PUSH → PULL</text>
+  <text x="904" y="504" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#1E2127">eventos msgpack</text>
+  <rect x="436.0" y="766.0" width="232.6" height="19.0" rx="3" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="440" y="780" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">frame_meta · device_changed (ZeroMQ)</text>
+  <rect x="1277.8" y="476.0" width="120.3" height="34.0" rx="3" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="1338" y="490" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" font-weight="700" text-anchor="middle" fill="#1E2127">WS /render</text>
+  <text x="1338" y="505" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#1E2127">scene · scene_diff</text>
+  <rect x="1602.0" y="491.5" width="36.0" height="19.5" rx="3" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="1620" y="506.0" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" text-anchor="middle" fill="#1E2127">HDMI</text>
+  <rect x="772.0" y="234.0" width="145.3" height="34.0" rx="3" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="776" y="248" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#1E2127">HTTPS</text>
+  <text x="776" y="263" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">/v1/messages · nivel 4</text>
+  <rect x="1172.0" y="222.0" width="164.0" height="49.0" rx="3" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="1176" y="236" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#1E2127">MCP local</text>
+  <text x="1176" y="251" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">Streamable HTTP :9200/mcp</text>
+  <text x="1176" y="266" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">o stdio (pcx mcp)</text>
+  <rect x="1532.0" y="234.0" width="89.1" height="34.0" rx="3" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="1536" y="248" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#1E2127">WSS saliente</text>
+  <text x="1536" y="263" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">nodo → Render</text>
+  <rect x="1052.0" y="658.0" width="39.2" height="19.0" rx="3" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="1056" y="672" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" fill="#1E2127">«use»</text>
+  <rect x="629.3" y="938.0" width="357.4" height="34.0" rx="3" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="808" y="952" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#1E2127">«lanza y vigila» cada proceso: pcx-capture, pcx-objects,</text>
+  <text x="808" y="967" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#1E2127">pcx-hands, pcx serve y pcx-renderer</text>
+  </g>
+</svg>

@@ -1,0 +1,9 @@
+{
+  "type": "pattern",
+  "pattern_id": "graycode-x-03",
+  "image": {
+    "path": "/tmp/pcx/patterns/graycode-x-03.png",
+    "data_uri": null
+  },
+  "until_ms": 1795231660400.0
+}

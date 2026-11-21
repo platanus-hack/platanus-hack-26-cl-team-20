@@ -8,3 +8,8 @@ __pycache__/
 .DS_Store
 dist/
 .next/
+
+# Rust
+/target/
+# worktrees de agentes
+.claude/worktrees/

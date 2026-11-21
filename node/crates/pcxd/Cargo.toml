@@ -1,0 +1,31 @@
+[package]
+name = "pcxd"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Binario `pcx` del nodo: serve | mcp | up | replay."
+publish = false
+
+[[bin]]
+name = "pcx"
+path = "src/main.rs"
+
+[dependencies]
+pcx-core = { path = "../pcx-core" }
+anyhow = "1"
+clap = { version = "4", features = ["derive", "env"] }
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+axum = "0.8"
+reqwest = { version = "0.13", default-features = false }
+rmcp = { version = "3.11", features = ["server", "client", "transport-io", "transport-streamable-http-client-reqwest"] }
+tokio-util = "0.7"
+zeromq = "0.7"
+
+[dev-dependencies]
+pcx-contracts = { path = "../../../contracts/rust/pcx-contracts" }
+serde_json = "1"
+tempfile = "3"
+tokio-tungstenite = "0.30"
+futures = "0.3"

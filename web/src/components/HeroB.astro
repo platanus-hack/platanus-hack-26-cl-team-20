@@ -1,0 +1,269 @@
+---
+import { CIFRAS } from "../data/site";
+const cols = 9, filas = 6;
+const puntos = Array.from({ length: cols * filas }, (_, i) => ({ c: i % cols, f: Math.floor(i / cols) }));
+---
+
+<section class="hero-b relative isolate min-h-[100svh] overflow-hidden" aria-labelledby="titulo-b">
+  <!-- Póster estático: rayas de gray code en CSS. El shader lo reemplaza cuando está listo. -->
+  <div class="poster absolute inset-0" aria-hidden="true"></div>
+  <canvas data-gc class="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-700" aria-hidden="true"></canvas>
+  <div class="velo-b pointer-events-none absolute inset-0" aria-hidden="true"></div>
+
+  <div class="relative z-10 mx-auto grid min-h-[100svh] max-w-[1440px] items-end gap-12 px-5 pb-12 pt-28 sm:px-8 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:pb-16">
+    <div>
+      <h1 id="titulo-b" class="display text-[clamp(2.6rem,6.2vw,6rem)]">Escanea la mesa en 4,4 segundos.</h1>
+      <p class="mt-6 max-w-[46ch] text-luz-2 md:text-lg md:leading-snug">
+        El proyector dibuja franjas de gray code, la cámara las lee y pcx calcula dónde cae cada píxel. Desde ahí, tu agente
+        proyecta sobre los objetos con un error de medio milímetro.
+      </p>
+      <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+        <a href="/#instalar" class="btn-luz"><span class="marca" aria-hidden="true"></span><span data-os-cta>Instalar</span></a>
+        <a href="/#como" class="link-suave">Cómo funciona</a>
+      </div>
+    </div>
+
+    <figure class="panel relative border border-linea bg-mesa/80 p-5 backdrop-blur-[2px] sm:p-6" aria-label="Telemetría de calibración simulada">
+      <svg data-grilla viewBox="0 0 400 260" class="w-full" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="399" height="259" fill="none" style="stroke:var(--k-2b2e28)" />
+        {Array.from({ length: cols }, (_, c) => <line x1={40 + c * 40} x2={40 + c * 40} y1="20" y2="240" style="stroke:var(--k-1f221d)" />)}
+        {Array.from({ length: filas }, (_, f) => <line y1={30 + f * 40} y2={30 + f * 40} x1="20" x2="380" style="stroke:var(--k-1f221d)" />)}
+        {
+          puntos.map((p) => (
+            <g data-p data-c={p.c} data-f={p.f}>
+              <line class="res" x1={40 + p.c * 40} y1={30 + p.f * 40} x2={40 + p.c * 40} y2={30 + p.f * 40} />
+              <circle class="det" cx={40 + p.c * 40} cy={30 + p.f * 40} r="3.2" />
+              <path class="rep" d={`M${36 + p.c * 40} ${30 + p.f * 40}h8M${40 + p.c * 40} ${26 + p.f * 40}v8`} />
+            </g>
+          ))
+        }
+      </svg>
+      <dl class="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+        <div>
+          <dt class="text-xs text-luz-3">Error</dt>
+          <dd class="num mt-1 text-base"><span data-err>0,21</span> px</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-luz-3">Patrón</dt>
+          <dd class="num mt-1 text-base"><span data-bit>bit 7</span></dd>
+        </div>
+        <div>
+          <dt class="text-xs text-luz-3">Proyector</dt>
+          <dd class="num mt-1 text-base"><span data-fps-b>{CIFRAS.fps},0</span> fps</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-luz-3">Punta a punta</dt>
+          <dd class="num mt-1 text-base"><span data-lat-b>{CIFRAS.latencia}</span> ms</dd>
+        </div>
+      </dl>
+      <canvas data-spark width="720" height="80" class="mt-4 h-10 w-full" aria-hidden="true"></canvas>
+      <figcaption class="mt-3 text-xs text-luz-3">
+        Latencia medida en el montaje real: {CIFRAS.latencia} ms, antes {CIFRAS.latenciaAntes} ms. Error de calibración simulado.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<style>
+  .poster {
+    background:
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-luz) 7%, transparent) 0 48px, transparent 48px 96px),
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-luz) 4%, transparent) 0 12px, transparent 12px 24px),
+      var(--k-0b0c0a);
+  }
+  .velo-b {
+    background:
+      radial-gradient(120% 90% at 20% 80%, color-mix(in srgb, var(--color-mesa) 92%, transparent) 0%, color-mix(in srgb, var(--color-mesa) 50%, transparent) 45%, transparent 75%),
+      linear-gradient(to top, var(--color-mesa), transparent 30%);
+  }
+  .panel :global(.res) {
+    stroke: var(--color-senal);
+    stroke-width: 1.5;
+  }
+  .panel :global(.det) {
+    fill: none;
+    stroke: var(--color-luz);
+    stroke-width: 1.2;
+  }
+  .panel :global(.rep) {
+    stroke: var(--color-luz-2);
+    stroke-width: 1;
+  }
+</style>
+
+<script>
+  import { bucleVisible, cuandoOcioso, inactivo, reducido, token } from "../scripts/suave";
+
+  const quieto = reducido();
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-gc]");
+  const grilla = document.querySelector<SVGSVGElement>("[data-grilla]");
+  const spark = document.querySelector<HTMLCanvasElement>("[data-spark]");
+  const errEl = document.querySelector("[data-err]");
+  const bitEl = document.querySelector("[data-bit]");
+  const fpsEl = document.querySelector("[data-fps-b]");
+  const latEl = document.querySelector("[data-lat-b]");
+
+  // --- Shader de gray code: 10 bits en columnas, luego 10 en filas, con barrido y leve homografía.
+  const frag = `
+precision mediump float;
+uniform vec2 r; uniform float t; uniform vec3 uLuz; uniform vec3 uFondo; uniform vec3 uSenal;
+float gbit(float x, float k){ float n = floor(x * 1024.0); float p = pow(2.0, k); return floor(mod((n + p) / (2.0 * p), 2.0)); }
+float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
+void main(){
+  vec2 uv = gl_FragCoord.xy / r;
+  // homografía leve: el patrón visto por la cámara sobre una mesa inclinada
+  float w = 1.0 + (uv.y - 0.5) * (0.16 + 0.04 * sin(t * 0.21));
+  vec2 q = vec2((uv.x - 0.5) / w + 0.5 + 0.01 * sin(t * 0.13), uv.y * (1.0 + 0.03 * sin(t * 0.17)));
+  float per = 0.62; float paso = floor(t / per); float f = fract(t / per);
+  float ciclo = mod(paso, 20.0); bool filas = ciclo >= 10.0;
+  float k = 9.0 - mod(ciclo, 10.0); float kPrev = k + 1.0; if (kPrev > 9.0) kPrev = 0.0;
+  float ax = filas ? q.y : q.x;
+  float barrido = smoothstep(0.0, 0.42, f) * 1.12 - 0.06;
+  float pos = filas ? 1.0 - uv.y : uv.x;
+  float nuevo = gbit(ax, k); float viejo = gbit(ax, kPrev);
+  float v = pos < barrido ? nuevo : viejo;
+  // franjas de convergencia rojo/cian en los bordes
+  float e = 0.0015;
+  float vr = (pos < barrido ? gbit(ax + e, k) : gbit(ax + e, kPrev));
+  float vb = (pos < barrido ? gbit(ax - e, k) : gbit(ax - e, kPrev));
+  float linea = exp(-abs(pos - barrido) * 140.0) * step(f, 0.5);
+  float vig = smoothstep(1.25, 0.25, length((uv - vec2(0.62, 0.55)) * vec2(1.2, 1.0)));
+  float n = (h(gl_FragCoord.xy + t) - 0.5) * 0.035;
+  vec3 luz = uLuz;
+  vec3 col = uFondo;
+  col += luz * v * 0.12 * vig;
+  col.r += (vr - v) * 0.10 * vig; col.b += (vb - v) * 0.10 * vig;
+  col += uSenal * linea * 0.35;
+  col += n;
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+  function iniciarShader(c: HTMLCanvasElement) {
+    const gl = c.getContext("webgl", { antialias: false, alpha: false, powerPreference: "low-power" });
+    if (!gl) return;
+    const sh = (tipo: number, src: string) => {
+      const s = gl.createShader(tipo)!;
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    };
+    const p = gl.createProgram()!;
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}"));
+    gl.attachShader(p, sh(gl.FRAGMENT_SHADER, frag));
+    gl.linkProgram(p);
+    // Compilación en paralelo: no bloquea el hilo principal mientras el driver compila.
+    const par = gl.getExtension("KHR_parallel_shader_compile");
+    const listo = () => !par || gl.getProgramParameter(p, par.COMPLETION_STATUS_KHR);
+    const esperar = () => (listo() ? continuar() : setTimeout(esperar, 50));
+    esperar();
+    function continuar() {
+    if (!gl || !gl.getProgramParameter(p, gl.LINK_STATUS)) return;
+    gl.useProgram(p);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    const uR = gl.getUniformLocation(p, "r"), uT = gl.getUniformLocation(p, "t");
+    // Las franjas son blandas por naturaleza: se dibujan a menor resolución y el navegador escala.
+    const dpr = Math.min(1, devicePixelRatio || 1) * (innerWidth < 768 ? 0.5 : 0.75);
+    const ajustar = () => {
+      c.width = Math.round(c.clientWidth * dpr);
+      c.height = Math.round(c.clientHeight * dpr);
+      gl.viewport(0, 0, c.width, c.height);
+    };
+    ajustar();
+    new ResizeObserver(ajustar).observe(c);
+    const t0 = performance.now();
+    const rgb = (hex: string) => {
+      const n = parseInt(hex.replace("#", ""), 16);
+      return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255] as const;
+    };
+    const colores = () => {
+      gl.uniform3fv(gl.getUniformLocation(p, "uLuz"), rgb(token("luz") || "#f1eee4"));
+      gl.uniform3fv(gl.getUniformLocation(p, "uFondo"), rgb(token("mesa") || "#0b0c0a"));
+      gl.uniform3fv(gl.getUniformLocation(p, "uSenal"), rgb(token("senal") || "#ff5b24"));
+    };
+    colores();
+    document.addEventListener("pcx:tema", () => {
+      colores();
+      dibujar(performance.now());
+    });
+    const dibujar = (t: number) => {
+      gl.uniform2f(uR, c.width, c.height);
+      gl.uniform1f(uT, (t - t0) / 1000);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (bitEl) {
+        const s = Math.floor((t - t0) / 620) % 20;
+        bitEl.textContent = `${s >= 10 ? "fila" : "col"} ${10 - (s % 10)}/10`;
+      }
+    };
+    dibujar(t0);
+    c.classList.remove("opacity-0");
+    if (quieto) return;
+    bucleVisible(c, (t) => dibujar(t));
+    }
+  }
+  if (canvas) {
+    // Primero el póster (LCP limpio); el shader entra cuando el hilo está libre.
+    if (document.readyState === "complete") cuandoOcioso(() => iniciarShader(canvas));
+    else addEventListener("load", () => cuandoOcioso(() => iniciarShader(canvas)), { once: true });
+  }
+
+  // --- Grilla de calibración: residuos que convergen y se reinician cada 7 s.
+  if (grilla && !quieto) {
+    const ps = [...grilla.querySelectorAll<SVGGElement>("[data-p]")].map((g) => {
+      const c = Number(g.dataset.c), f = Number(g.dataset.f);
+      return {
+        x: 40 + c * 40, y: 30 + f * 40,
+        a: Math.random() * Math.PI * 2, m: 0.4 + Math.random() * 0.8,
+        res: g.querySelector<SVGLineElement>(".res")!, det: g.querySelector<SVGCircleElement>(".det")!,
+      };
+    });
+    let cuadro = 0;
+    bucleVisible(grilla, (t) => {
+      if (cuadro++ % 2) return;
+      const ciclo = (t % 7000) / 1000;
+      const err = 3.8 * Math.exp(-ciclo / 1.1) + 0.21 + Math.sin(t / 170) * 0.01;
+      ps.forEach((p, i) => {
+        const a = p.a + Math.sin(t / 900 + i) * 0.4;
+        const d = err * p.m * 4.5;
+        const dx = p.x + Math.cos(a) * d, dy = p.y + Math.sin(a) * d;
+        p.det.setAttribute("cx", dx.toFixed(2));
+        p.det.setAttribute("cy", dy.toFixed(2));
+        p.res.setAttribute("x2", dx.toFixed(2));
+        p.res.setAttribute("y2", dy.toFixed(2));
+      });
+      if (errEl) errEl.textContent = err.toFixed(2).replace(".", ",");
+    });
+  }
+
+  // --- Telemetría con sparkline.
+  if (spark && !quieto) {
+    const ctx = spark.getContext("2d")!;
+    const hist: number[] = Array.from({ length: 90 }, () => 215 + (Math.random() - 0.5) * 10);
+    let lat = 215;
+    setInterval(() => {
+      if (inactivo()) return;
+      lat += (215 + (Math.random() - 0.5) * 16 - lat) * 0.45;
+      hist.push(lat);
+      hist.shift();
+      const W = spark.width, H = spark.height;
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = token("linea");
+      ctx.beginPath();
+      ctx.moveTo(0, H - ((313 - 180) / 150) * H);
+      ctx.lineTo(W, H - ((313 - 180) / 150) * H);
+      ctx.stroke();
+      ctx.strokeStyle = token("luz");
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      hist.forEach((v, i) => {
+        const x = (i / (hist.length - 1)) * W, y = H - ((v - 180) / 150) * H;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      });
+      ctx.stroke();
+      if (latEl) latEl.textContent = String(Math.round(lat));
+      if (fpsEl) fpsEl.textContent = (60 - (Math.random() < 0.2 ? Math.random() * 0.3 : 0)).toFixed(1).replace(".", ",");
+    }, 140);
+  }
+</script>

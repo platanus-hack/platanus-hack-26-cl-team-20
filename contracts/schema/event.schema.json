@@ -1,0 +1,978 @@
+{
+  "anyOf": [
+    {
+      "$ref": "#/$defs/ObjectAppeared"
+    },
+    {
+      "$ref": "#/$defs/ObjectMoved"
+    },
+    {
+      "$ref": "#/$defs/ObjectRemoved"
+    },
+    {
+      "$ref": "#/$defs/TouchDown"
+    },
+    {
+      "$ref": "#/$defs/TouchMove"
+    },
+    {
+      "$ref": "#/$defs/TouchUp"
+    },
+    {
+      "$ref": "#/$defs/WidgetPressed"
+    },
+    {
+      "$ref": "#/$defs/Dwell"
+    },
+    {
+      "$ref": "#/$defs/AskAnswered"
+    },
+    {
+      "$ref": "#/$defs/CalibrationDrift"
+    },
+    {
+      "$ref": "#/$defs/FlowStateChanged"
+    },
+    {
+      "$ref": "#/$defs/FlowEmitted"
+    },
+    {
+      "$ref": "#/$defs/FrameMeta"
+    },
+    {
+      "$ref": "#/$defs/DeviceChanged"
+    },
+    {
+      "$ref": "#/$defs/ConfirmationRequested"
+    },
+    {
+      "$ref": "#/$defs/ConfirmationResolved"
+    },
+    {
+      "$ref": "#/$defs/HomeCallDone"
+    },
+    {
+      "$ref": "#/$defs/Blanked"
+    },
+    {
+      "$ref": "#/$defs/HandsGone"
+    }
+  ],
+  "discriminator": {
+    "propertyName": "type",
+    "mapping": {
+      "object_appeared": "#/$defs/ObjectAppeared",
+      "object_moved": "#/$defs/ObjectMoved",
+      "object_removed": "#/$defs/ObjectRemoved",
+      "touch_down": "#/$defs/TouchDown",
+      "touch_move": "#/$defs/TouchMove",
+      "touch_up": "#/$defs/TouchUp",
+      "widget_pressed": "#/$defs/WidgetPressed",
+      "dwell": "#/$defs/Dwell",
+      "ask_answered": "#/$defs/AskAnswered",
+      "calibration_drift": "#/$defs/CalibrationDrift",
+      "flow_state_changed": "#/$defs/FlowStateChanged",
+      "flow_emitted": "#/$defs/FlowEmitted",
+      "frame_meta": "#/$defs/FrameMeta",
+      "device_changed": "#/$defs/DeviceChanged",
+      "confirmation_requested": "#/$defs/ConfirmationRequested",
+      "confirmation_resolved": "#/$defs/ConfirmationResolved",
+      "home_call_done": "#/$defs/HomeCallDone",
+      "blanked": "#/$defs/Blanked",
+      "hands_gone": "#/$defs/HandsGone"
+    }
+  },
+  "$defs": {
+    "ObjectAppeared": {
+      "title": "ObjectAppeared",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "object_appeared"
+          ]
+        },
+        "object": {
+          "$ref": "#/$defs/ObjectState"
+        }
+      },
+      "required": [
+        "type",
+        "object"
+      ]
+    },
+    "ObjectState": {
+      "title": "ObjectState",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "polygon_mm": {
+          "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PointMM"
+          },
+          "minItems": 3
+        },
+        "center_mm": {
+          "$ref": "#/$defs/PointMM"
+        },
+        "bbox_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RectMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "since_ns": {
+          "type": "integer"
+        },
+        "last_seen_ns": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "confidence",
+        "polygon_mm",
+        "center_mm",
+        "since_ns",
+        "last_seen_ns"
+      ]
+    },
+    "PointMM": {
+      "title": "PointMM",
+      "description": "Punto en mm del marco `table_mm`. En el cable: `[x, y]` (exactamente 2 números).",
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "RectMM": {
+      "title": "RectMM",
+      "description": "Rectángulo alineado a ejes en mm. En el cable: `[x, y, w, h]` (x, y = esquina superior izquierda).",
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "ObjectMoved": {
+      "title": "ObjectMoved",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "object_moved"
+          ]
+        },
+        "object_id": {
+          "type": "string"
+        },
+        "center_mm": {
+          "$ref": "#/$defs/PointMM"
+        },
+        "polygon_mm": {
+          "anyOf": [
+            {
+              "description": "Polígono cerrado en mm: [[x,y],...] (≥ 3)",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PointMM"
+              },
+              "minItems": 3
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "object_id",
+        "center_mm"
+      ]
+    },
+    "ObjectRemoved": {
+      "title": "ObjectRemoved",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "object_removed"
+          ]
+        },
+        "object_id": {
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "object_id"
+      ]
+    },
+    "TouchDown": {
+      "title": "TouchDown",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "touch_down"
+          ]
+        },
+        "touch": {
+          "$ref": "#/$defs/Touch"
+        }
+      },
+      "required": [
+        "type",
+        "touch"
+      ]
+    },
+    "Touch": {
+      "title": "Touch",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "down",
+            "move",
+            "up"
+          ]
+        },
+        "point_mm": {
+          "$ref": "#/$defs/PointMM"
+        },
+        "widget_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "object_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "trigger": {
+          "enum": [
+            "api",
+            "dwell",
+            "pinch",
+            "rest",
+            "shadow"
+          ],
+          "default": "dwell"
+        }
+      },
+      "required": [
+        "id",
+        "phase",
+        "point_mm"
+      ]
+    },
+    "TouchMove": {
+      "title": "TouchMove",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "touch_move"
+          ]
+        },
+        "touch": {
+          "$ref": "#/$defs/Touch"
+        }
+      },
+      "required": [
+        "type",
+        "touch"
+      ]
+    },
+    "TouchUp": {
+      "title": "TouchUp",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "touch_up"
+          ]
+        },
+        "touch": {
+          "$ref": "#/$defs/Touch"
+        }
+      },
+      "required": [
+        "type",
+        "touch"
+      ]
+    },
+    "WidgetPressed": {
+      "title": "WidgetPressed",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "widget_pressed"
+          ]
+        },
+        "widget_id": {
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "trigger": {
+          "enum": [
+            "api",
+            "dwell",
+            "pinch",
+            "rest",
+            "shadow"
+          ],
+          "default": "dwell"
+        },
+        "point_mm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PointMM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "widget_id"
+      ]
+    },
+    "Dwell": {
+      "title": "Dwell",
+      "description": "Progreso de permanencia sobre un punto (para animar el anillo); `progress` = 1 confirma.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "dwell"
+          ]
+        },
+        "point_mm": {
+          "$ref": "#/$defs/PointMM"
+        },
+        "progress": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "widget_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "object_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "point_mm",
+        "progress"
+      ]
+    },
+    "AskAnswered": {
+      "title": "AskAnswered",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "ask_answered"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "answer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "timed_out": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "type",
+        "request_id"
+      ]
+    },
+    "CalibrationDrift": {
+      "title": "CalibrationDrift",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "calibration_drift"
+          ]
+        },
+        "from_frame": {
+          "type": "string"
+        },
+        "to_frame": {
+          "type": "string"
+        },
+        "residual_mm": {
+          "type": "number"
+        },
+        "threshold_mm": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "from_frame",
+        "to_frame",
+        "residual_mm",
+        "threshold_mm"
+      ]
+    },
+    "FlowStateChanged": {
+      "title": "FlowStateChanged",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "flow_state_changed"
+          ]
+        },
+        "flow_id": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "from_state": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "to_state": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cause": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "flow_id",
+        "request_id"
+      ]
+    },
+    "FlowEmitted": {
+      "title": "FlowEmitted",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "flow_emitted"
+          ]
+        },
+        "flow_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "request_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "event": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "default": {}
+        }
+      },
+      "required": [
+        "type",
+        "event"
+      ]
+    },
+    "FrameMeta": {
+      "title": "FrameMeta",
+      "description": "Cuadro nuevo en el anillo de memoria compartida `segment` (v2.1: `segment`, `format`, `stride`).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "frame_meta"
+          ]
+        },
+        "camera_id": {
+          "type": "string"
+        },
+        "seq": {
+          "type": "integer"
+        },
+        "t_capture_ns": {
+          "type": "integer"
+        },
+        "w": {
+          "type": "integer"
+        },
+        "h": {
+          "type": "integer"
+        },
+        "segment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "format": {
+          "enum": [
+            "bgr8",
+            "gray8",
+            "rgb8"
+          ],
+          "default": "bgr8"
+        },
+        "stride": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "camera_id",
+        "seq",
+        "t_capture_ns",
+        "w",
+        "h"
+      ]
+    },
+    "DeviceChanged": {
+      "title": "DeviceChanged",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "device_changed"
+          ]
+        },
+        "device": {
+          "$ref": "#/$defs/Device"
+        }
+      },
+      "required": [
+        "type",
+        "device"
+      ]
+    },
+    "Device": {
+      "title": "Device",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "camera",
+            "home_assistant",
+            "midi",
+            "phone",
+            "projector"
+          ]
+        },
+        "adapter": {
+          "type": "string"
+        },
+        "caps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "status": {
+          "enum": [
+            "degraded",
+            "offline",
+            "online",
+            "unknown"
+          ],
+          "default": "unknown"
+        },
+        "meta": {
+          "type": "object",
+          "default": {}
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "adapter"
+      ]
+    },
+    "ConfirmationRequested": {
+      "title": "ConfirmationRequested",
+      "description": "El nodo espera confirmación física o de consola para una acción (ver `home.py`).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "confirmation_requested"
+          ]
+        },
+        "confirmation_id": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "via": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "console",
+              "touch"
+            ]
+          }
+        },
+        "expires_ns": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "confirmation_id",
+        "request_id",
+        "action_digest",
+        "summary",
+        "via",
+        "expires_ns"
+      ]
+    },
+    "ConfirmationResolved": {
+      "title": "ConfirmationResolved",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "confirmation_resolved"
+          ]
+        },
+        "confirmation_id": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "approved": {
+          "type": "boolean"
+        },
+        "via": {
+          "enum": [
+            "console",
+            "timeout",
+            "touch"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "confirmation_id",
+        "request_id",
+        "action_digest",
+        "approved",
+        "via"
+      ]
+    },
+    "HomeCallDone": {
+      "title": "HomeCallDone",
+      "description": "Desenlace final de un `home_call` (inmediato o tras la confirmación).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "home_call_done"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "confirmation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": [
+            "denied",
+            "done",
+            "expired",
+            "failed",
+            "rejected"
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "status"
+      ]
+    },
+    "Blanked": {
+      "title": "Blanked",
+      "description": "El proyector estuvo oscuro en [t_start_ms, t_end_ms] (ms de época, reportado por el renderer).\n    Un cuadro de cámara es limpio si su `t_capture` cae dentro, descontando la latencia proyector→cámara.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "blanked"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "projector_id": {
+          "type": "string"
+        },
+        "t_start_ms": {
+          "type": "number"
+        },
+        "t_end_ms": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "request_id",
+        "projector_id",
+        "t_start_ms",
+        "t_end_ms"
+      ]
+    },
+    "HandsGone": {
+      "title": "HandsGone",
+      "description": "Fin de un episodio de manos: hubo manos y ya no hay (la mesa está libre para una foto limpia).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "hands_gone"
+          ]
+        },
+        "t_capture_ns": {
+          "type": "integer"
+        },
+        "episode_start_ns": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "last_hand_ns": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "t_capture_ns"
+      ]
+    }
+  }
+}

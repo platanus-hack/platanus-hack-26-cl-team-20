@@ -1,0 +1,41 @@
+{
+  "$ref": "#/$defs/HomePolicy",
+  "$defs": {
+    "HomePolicy": {
+      "title": "HomePolicy",
+      "description": "Política del nodo. Patrones `domain.service` con comodines (`light.*`, `*`).",
+      "type": "object",
+      "properties": {
+        "allow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "confirm": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "confirm_via": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "console",
+              "touch"
+            ]
+          }
+        },
+        "confirm_timeout_s": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 600,
+          "default": 30.0
+        }
+      },
+      "required": []
+    }
+  }
+}
