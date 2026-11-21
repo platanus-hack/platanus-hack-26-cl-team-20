@@ -92,8 +92,14 @@ pub enum ShmError {
     Exists(String),
     NotARing(String),
     Version(u64),
-    TooBig { nbytes: usize, capacity: usize },
-    BadLength { expected: usize, got: usize },
+    TooBig {
+        nbytes: usize,
+        capacity: usize,
+    },
+    BadLength {
+        expected: usize,
+        got: usize,
+    },
     NameTooLong(String),
     /// El escritor cerró (o reemplazó) el anillo: volver a abrir el lector.
     Closed(String),
@@ -425,7 +431,8 @@ impl RingReader {
                 std::hint::spin_loop();
                 continue;
             }
-            let (w, h, stride, code, tcap, nbytes) = (ld(S_W), ld(S_H), ld(S_STRIDE), ld(S_FMT), ld(S_TCAP), ld(S_NBYTES));
+            let (w, h, stride, code, tcap, nbytes) =
+                (ld(S_W), ld(S_H), ld(S_STRIDE), ld(S_FMT), ld(S_TCAP), ld(S_NBYTES));
             let Some(format) = PixelFormat::from_code(code) else {
                 self.retries += 1;
                 continue;
@@ -434,7 +441,16 @@ impl RingReader {
                 self.retries += 1;
                 continue;
             }
-            let meta = SlotMeta { seq: head, t_capture_ns: tcap, w: w as u32, h: h as u32, stride: stride as u32, format, slot: i, gen };
+            let meta = SlotMeta {
+                seq: head,
+                t_capture_ns: tcap,
+                w: w as u32,
+                h: h as u32,
+                stride: stride as u32,
+                format,
+                slot: i,
+                gen,
+            };
             let bytes = unsafe { std::slice::from_raw_parts(self.lay.data(i) as *const u8, nbytes as usize) };
             let r = f(&meta, bytes);
             fence(Ordering::Acquire);

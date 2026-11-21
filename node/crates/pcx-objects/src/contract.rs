@@ -78,7 +78,9 @@ impl ObjectEvent {
     /// Evento del contrato (`pcx_contracts::Event`), sin las extensiones del seguidor.
     pub fn to_contract(&self) -> pcx_contracts::Event {
         match self {
-            ObjectEvent::ObjectAppeared { object, .. } => pcx_contracts::Event::ObjectAppeared { object: object.to_contract() },
+            ObjectEvent::ObjectAppeared { object, .. } => {
+                pcx_contracts::Event::ObjectAppeared { object: object.to_contract() }
+            }
             ObjectEvent::ObjectMoved { object_id, center_mm, polygon_mm, .. } => pcx_contracts::Event::ObjectMoved {
                 object_id: object_id.clone(),
                 center_mm: *center_mm,
@@ -158,7 +160,9 @@ mod tests {
         assert_eq!(m["type"], "object_moved");
         assert_eq!(m["polygon_mm"], serde_json::Value::Null);
         assert_eq!(m["aff"], serde_json::json!([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]));
-        let r = serde_json::to_value(ObjectEvent::ObjectRemoved { object_id: "m01".into(), label: Some("taza".into()) }).unwrap();
+        let r =
+            serde_json::to_value(ObjectEvent::ObjectRemoved { object_id: "m01".into(), label: Some("taza".into()) })
+                .unwrap();
         assert_eq!(r, serde_json::json!({"type": "object_removed", "object_id": "m01", "label": "taza"}));
     }
 

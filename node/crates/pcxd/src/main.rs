@@ -71,7 +71,16 @@ enum Worker {
     Capture(pcx_capture::cli::RunArgs),
 }
 
-const INPUT_TYPES: &[&str] = &["object_appeared", "object_moved", "object_removed", "touch_down", "touch_move", "touch_up", "frame_meta", "device_changed"];
+const INPUT_TYPES: &[&str] = &[
+    "object_appeared",
+    "object_moved",
+    "object_removed",
+    "touch_down",
+    "touch_move",
+    "touch_up",
+    "frame_meta",
+    "device_changed",
+];
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -92,7 +101,13 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Serve { port } => serve(port).await,
         Cmd::Mcp => mcp_stdio().await,
         Cmd::Up { config } => {
-            let cfg = config.unwrap_or_else(|| ["pcx.toml", "node/pcx.toml"].iter().map(PathBuf::from).find(|p| p.exists()).unwrap_or("pcx.toml".into()));
+            let cfg = config.unwrap_or_else(|| {
+                ["pcx.toml", "node/pcx.toml"]
+                    .iter()
+                    .map(PathBuf::from)
+                    .find(|p| p.exists())
+                    .unwrap_or("pcx.toml".into())
+            });
             anyhow::ensure!(cfg.exists(), "no existe {}", cfg.display());
             let stop = CancellationToken::new();
             let s2 = stop.clone();
@@ -177,14 +192,21 @@ async fn mcp_stdio() -> anyhow::Result<()> {
             let _ = axum_serve(listener, router, st).await;
         });
     }
-    eprintln!("pcx (stdio): core en proceso; HTTP {}", if free { format!("en :{}", s.port) } else { "desactivado".into() });
+    eprintln!(
+        "pcx (stdio): core en proceso; HTTP {}",
+        if free { format!("en :{}", s.port) } else { "desactivado".into() }
+    );
     PcxMcp::local(core.tools.clone()).serve(rmcp::transport::stdio()).await?.waiting().await?;
     stop.cancel();
     core.stop().await;
     Ok(())
 }
 
-async fn axum_serve(listener: tokio::net::TcpListener, router: axum::Router, stop: CancellationToken) -> std::io::Result<()> {
+async fn axum_serve(
+    listener: tokio::net::TcpListener,
+    router: axum::Router,
+    stop: CancellationToken,
+) -> std::io::Result<()> {
     axum::serve(listener, router).with_graceful_shutdown(async move { stop.cancelled().await }).await
 }
 

@@ -68,11 +68,22 @@ impl HomeCallCmd {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Action {
-    Project { widgets: Vec<Widget> },
-    Update { id: String, set: Json },
-    Remove { ids: Vec<String> },
+    Project {
+        widgets: Vec<Widget>,
+    },
+    Update {
+        id: String,
+        set: Json,
+    },
+    Remove {
+        ids: Vec<String>,
+    },
     Clear {},
-    Emit { event: String, #[serde(default)] data: Json },
+    Emit {
+        event: String,
+        #[serde(default)]
+        data: Json,
+    },
     HomeCall(HomeCallBody),
 }
 
@@ -165,7 +176,12 @@ pub fn check_flow(flow: &Flow) -> Vec<String> {
             }
         }
     }
-    fn cyc<'a>(n: &'a str, g: &BTreeMap<&'a str, Vec<&'a str>>, stack: &mut Vec<&'a str>, seen: &mut Vec<&'a str>) -> bool {
+    fn cyc<'a>(
+        n: &'a str,
+        g: &BTreeMap<&'a str, Vec<&'a str>>,
+        stack: &mut Vec<&'a str>,
+        seen: &mut Vec<&'a str>,
+    ) -> bool {
         if stack.contains(&n) {
             return true;
         }

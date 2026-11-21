@@ -55,7 +55,8 @@ const SYSTEM_FONTS: &str = "'Helvetica Neue', 'Apple Color Emoji', 'Lucida Grand
 #[cfg(target_os = "windows")]
 const SYSTEM_FONTS: &str = "'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Arial Unicode MS'";
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-const SYSTEM_FONTS: &str = "'Noto Sans', 'DejaVu Sans', 'Noto Color Emoji', 'Noto Sans Symbols 2', 'Noto Sans Symbols', 'Symbola'";
+const SYSTEM_FONTS: &str =
+    "'Noto Sans', 'DejaVu Sans', 'Noto Color Emoji', 'Noto Sans Symbols 2', 'Noto Sans Symbols', 'Symbola'";
 
 impl Painter {
     /// `fonts_dir`: `.ttf/.otf/.ttc` que se registran y van primero en la pila (fuentes propias del
@@ -89,7 +90,8 @@ impl Painter {
     }
 
     fn layout(&mut self, text: &str, size_px: f32, bold: bool, max_w: Option<f32>) -> &Layout<()> {
-        let key = Key { text: text.to_owned(), size_bits: size_px.to_bits(), bold, max_w_bits: max_w.map(f32::to_bits) };
+        let key =
+            Key { text: text.to_owned(), size_bits: size_px.to_bits(), bold, max_w_bits: max_w.map(f32::to_bits) };
         let frame = self.frame;
         let e = self.cache.entry(key).or_insert_with(|| {
             let mut b = self.layout_cx.ranged_builder(&mut self.font_cx, text, 1.0, true);
@@ -185,7 +187,12 @@ impl Painter {
                 };
                 scene.push_clip_layer(Fill::NonZero, mm, &Rect::new(x, y, x + w, y + h - 1.0));
                 let bl = self.layout(&p.body, (5.5 * ppmm) as f32, false, Some(inner_w));
-                draw_layout(scene, bl, Affine::translate(origin + Vec2::new(0.0, th + 2.0 * ppmm)), Color::WHITE.multiply_alpha(0.92));
+                draw_layout(
+                    scene,
+                    bl,
+                    Affine::translate(origin + Vec2::new(0.0, th + 2.0 * ppmm)),
+                    Color::WHITE.multiply_alpha(0.92),
+                );
                 scene.pop_layer();
             }
             Widget::Button(b) => {
@@ -213,16 +220,21 @@ impl Painter {
                 match images.get(&im.src) {
                     Some(data) => {
                         let (iw, ih) = (data.width as f64, data.height as f64);
-                        let xf = Affine::scale(ppmm)
-                            * Affine::translate((x, y))
-                            * Affine::scale_non_uniform(w / iw, h / ih);
+                        let xf =
+                            Affine::scale(ppmm) * Affine::translate((x, y)) * Affine::scale_non_uniform(w / iw, h / ih);
                         let brush = ImageBrush::new(data.clone()).with_alpha(im.opacity.clamp(0.0, 1.0) as f32);
                         scene.draw_image(&brush, xf);
                     }
                     None => {
                         // Marcador: la imagen no está (aún).
                         let rr = Rect::new(x, y, x + w, y + h);
-                        scene.stroke(&Stroke::new(0.6).with_dashes(0.0, [3.0, 2.0]), mm, Color::from_rgba8(255, 80, 80, 200), None, &rr);
+                        scene.stroke(
+                            &Stroke::new(0.6).with_dashes(0.0, [3.0, 2.0]),
+                            mm,
+                            Color::from_rgba8(255, 80, 80, 200),
+                            None,
+                            &rr,
+                        );
                     }
                 }
             }

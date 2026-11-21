@@ -117,7 +117,9 @@ pub fn load(path: &Path) -> anyhow::Result<Vec<ProcSpec>> {
     let base = path.parent().unwrap_or(Path::new(".")).to_path_buf();
     let genv: BTreeMap<String, String> = cfg.env.iter().map(|(k, v)| (k.clone(), tv(v))).collect();
     let sup = cfg.supervisor;
-    if let Some((n, p)) = cfg.process.iter().find(|(_, p)| !["always", "on-failure", "never"].contains(&p.restart.as_str())) {
+    if let Some((n, p)) =
+        cfg.process.iter().find(|(_, p)| !["always", "on-failure", "never"].contains(&p.restart.as_str()))
+    {
         anyhow::bail!("proceso {n}: restart = {:?} inválido (always | on-failure | never)", p.restart);
     }
     Ok(cfg
@@ -263,13 +265,20 @@ pub fn group_alive(pgid: i32) -> bool {
 async fn healthy(client: &reqwest::Client, url: &Option<String>) -> bool {
     match url {
         None => true,
-        Some(u) => client.get(u).timeout(Duration::from_secs(2)).send().await.map(|r| r.status().is_success()).unwrap_or(false),
+        Some(u) => {
+            client.get(u).timeout(Duration::from_secs(2)).send().await.map(|r| r.status().is_success()).unwrap_or(false)
+        }
     }
 }
 
 impl Supervised {
     pub fn new(spec: ProcSpec) -> Arc<Self> {
-        Arc::new(Supervised { spec, restarts: AtomicU64::new(0), pid: AtomicU64::new(0), failed: AtomicBool::new(false) })
+        Arc::new(Supervised {
+            spec,
+            restarts: AtomicU64::new(0),
+            pid: AtomicU64::new(0),
+            failed: AtomicBool::new(false),
+        })
     }
 
     /// Lanza, vigila y reinicia hasta `stop` (o hasta el cortacircuito).
@@ -320,7 +329,10 @@ impl Supervised {
             let ok = code.is_some_and(|c| c.success());
             log(&name, &format!("terminó ({})", code.map(|c| c.to_string()).unwrap_or_else(|| "?".into())));
             // una salida limpia no es una caída (no cuenta para el cortacircuito)
-            if self.spec.restart == "never" || (ok && self.spec.restart == "on-failure") || (!ok && self.trip(&mut crashes)) {
+            if self.spec.restart == "never"
+                || (ok && self.spec.restart == "on-failure")
+                || (!ok && self.trip(&mut crashes))
+            {
                 return;
             }
             self.restarts.fetch_add(1, Ordering::Relaxed);
@@ -341,7 +353,11 @@ impl Supervised {
             self.failed.store(true, Ordering::Relaxed);
             log(
                 &self.spec.name,
-                &format!("FAILED: {} caídas en {:.0} s; no se reintenta (revisa el log y relanza `pcx up`)", crashes.len(), self.spec.crash_window.as_secs_f64()),
+                &format!(
+                    "FAILED: {} caídas en {:.0} s; no se reintenta (revisa el log y relanza `pcx up`)",
+                    crashes.len(),
+                    self.spec.crash_window.as_secs_f64()
+                ),
             );
             return true;
         }
@@ -410,7 +426,8 @@ pub async fn up(config: &Path, stop: CancellationToken) -> anyhow::Result<()> {
     for t in tasks {
         let _ = t.await;
     }
-    let failed: Vec<&str> = procs.iter().filter(|p| p.failed.load(Ordering::Relaxed)).map(|p| p.spec.name.as_str()).collect();
+    let failed: Vec<&str> =
+        procs.iter().filter(|p| p.failed.load(Ordering::Relaxed)).map(|p| p.spec.name.as_str()).collect();
     if !failed.is_empty() {
         write_status(&status_path, &procs); // se conserva para diagnosticar
         anyhow::bail!("[pcx up] procesos en estado failed: {}", failed.join(", "));
@@ -453,7 +470,10 @@ pub fn guard(argv: &[String]) -> i32 {
         eprintln!("pcx guard: falta el comando");
         return 2;
     };
-    let watched: i32 = std::env::var(SUPERVISOR_PID_ENV).ok().and_then(|s| s.parse().ok()).unwrap_or_else(|| unsafe { libc::getppid() });
+    let watched: i32 = std::env::var(SUPERVISOR_PID_ENV)
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or_else(|| unsafe { libc::getppid() });
     // si el supervisor ya murió, no lanzar nada
     if unsafe { libc::getppid() } != watched || unsafe { libc::kill(watched, 0) } != 0 {
         return 0;

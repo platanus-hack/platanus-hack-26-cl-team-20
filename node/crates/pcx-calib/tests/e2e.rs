@@ -57,7 +57,10 @@ fn quick_mode_homography_in_mm() {
     }
     let (spx, smm) = (ErrStats::of(&epx), ErrStats::of(&emm));
     let q = out.report.quick.as_ref().unwrap();
-    println!("QUICK: {}/{} marcadores, adquisición {:.0} ms, cómputo {:.0} ms", q.markers_seen, q.markers_total, out.report.acquisition_ms, out.report.compute_ms);
+    println!(
+        "QUICK: {}/{} marcadores, adquisición {:.0} ms, cómputo {:.0} ms",
+        q.markers_seen, q.markers_total, out.report.acquisition_ms, out.report.compute_ms
+    );
     show("residuo esquinas (propio)", &q.residual_mm, "mm");
     show("mesa vs verdad", &spx, "px proy");
     show("mesa vs verdad", &smm, "mm");
@@ -109,9 +112,17 @@ fn precise_mode_lut_corrects_parallax() {
     let st = pr.stream.as_ref().unwrap();
     println!(
         "PRECISE: skip {:?}, {} patrones, {} pasadas ({} reintentos), latencia {:.0} ms, cobertura LUT {:.1} %",
-        pr.skip_bits, pr.patterns, st.passes, st.retried, st.latency_ms, pr.lut_coverage * 100.0
+        pr.skip_bits,
+        pr.patterns,
+        st.passes,
+        st.retried,
+        st.latency_ms,
+        pr.lut_coverage * 100.0
     );
-    println!("  adquisición {:.0} ms (reloj de cámara), cómputo {:.0} ms", out.report.acquisition_ms, out.report.compute_ms);
+    println!(
+        "  adquisición {:.0} ms (reloj de cámara), cómputo {:.0} ms",
+        out.report.acquisition_ms, out.report.compute_ms
+    );
     for s in &out.report.steps {
         println!("    {:?}: adq {:.0} ms, cómputo {:.1} ms — {}", s.step, s.acquisition_ms, s.compute_ms, s.note);
     }
@@ -124,14 +135,17 @@ fn precise_mode_lut_corrects_parallax() {
     show("homografía aprox. mesa", &ErrStats::of(&ht), "px cám");
     show("lienzo (polinomio) mesa", &ErrStats::of(&ct), "px cám");
     show("LUT vs esquinas de marcadores", &pr.check_cam_px, "px cám");
-    let (slb, shb, slt, sct, sht) = (ErrStats::of(&lb), ErrStats::of(&hb), ErrStats::of(&lt), ErrStats::of(&ct), ErrStats::of(&ht));
+    let (slb, shb, slt, sct, sht) =
+        (ErrStats::of(&lb), ErrStats::of(&hb), ErrStats::of(&lt), ErrStats::of(&ct), ErrStats::of(&ht));
     assert!(slt.p50 < 1.0, "LUT mesa {slt:?}");
     assert!(slb.n > 500 && slb.p50 < 1.5, "LUT caja {slb:?}");
     assert!(shb.p50 > 4.0 * slb.p50, "la homografía no muestra paralaje: {shb:?} vs {slb:?}");
     assert!(sct.p50 < sht.p50, "el lienzo no corrige la lente: {sct:?} vs {sht:?}");
     assert!(st.latency_ms > 100.0);
     // descriptor de la LUT
-    let Some(Transform::Lut(l)) = out.transforms.iter().find(|t| matches!(t, Transform::Lut(_))) else { panic!("sin LUT") };
+    let Some(Transform::Lut(l)) = out.transforms.iter().find(|t| matches!(t, Transform::Lut(_))) else {
+        panic!("sin LUT")
+    };
     let bytes = std::fs::read(&l.lut.path).unwrap();
     assert_eq!(&bytes[..6], b"\x93NUMPY");
     assert_eq!((bytes.len() - 128) / 8, (l.lut.width * l.lut.height) as usize);
@@ -144,7 +158,10 @@ fn verify_ok_then_drift_when_projector_moves() {
     let cal = run(&sim, Mode::Quick, cfg("verify"), None).calibration.unwrap();
     let ok = run(&sim, Mode::Verify, cfg("verify"), Some(cal.clone()));
     let v = ok.report.verify.as_ref().unwrap();
-    println!("VERIFY quieto: {} cuadrados, adq {:.0} ms, cómputo {:.0} ms", v.err_mm.n, ok.report.acquisition_ms, ok.report.compute_ms);
+    println!(
+        "VERIFY quieto: {} cuadrados, adq {:.0} ms, cómputo {:.0} ms",
+        v.err_mm.n, ok.report.acquisition_ms, ok.report.compute_ms
+    );
     show("cuadrados", &v.err_mm, "mm");
     show("cuadrados", &v.err_proj_px, "px proy");
     assert!(v.ok && ok.drift.is_none() && v.err_mm.n >= 10, "{v:?}");
@@ -170,9 +187,15 @@ fn precise_with_change_sync_and_step_machine() {
     while run.next_step() != Step::Done {
         seen.push(run.step(&mut p, &mut g).unwrap());
     }
-    assert_eq!(seen, [Step::QuickGrid, Step::Metric, Step::ChooseBits, Step::GrayCapture, Step::Decode, Step::BuildLut, Step::Done]);
+    assert_eq!(
+        seen,
+        [Step::QuickGrid, Step::Metric, Step::ChooseBits, Step::GrayCapture, Step::Decode, Step::BuildLut, Step::Done]
+    );
     let out = run.finish();
-    println!("PRECISE (sincronía por cambio): adquisición {:.0} ms, cómputo {:.0} ms", out.report.acquisition_ms, out.report.compute_ms);
+    println!(
+        "PRECISE (sincronía por cambio): adquisición {:.0} ms, cómputo {:.0} ms",
+        out.report.acquisition_ms, out.report.compute_ms
+    );
     let cal = out.calibration.unwrap();
     let h = from_row_major(&cal.h_cam_proj);
     assert!(h.iter().all(|v| v.is_finite()));

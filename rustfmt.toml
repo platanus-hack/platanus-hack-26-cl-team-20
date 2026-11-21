@@ -1,0 +1,3 @@
+# Estilo del workspace: líneas de hasta 120 y expresiones cortas en una línea (lo que ya usaba el código).
+max_width = 120
+use_small_heuristics = "Max"

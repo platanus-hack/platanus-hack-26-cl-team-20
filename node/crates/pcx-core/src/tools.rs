@@ -49,7 +49,10 @@ impl ToolOutput {
     pub fn to_cloud(&self, call_id: &str) -> CloudMessage {
         let mut content = vec![];
         if let Some((img, mime)) = &self.image {
-            content.push(ContentItem::Image { data: base64::engine::general_purpose::STANDARD.encode(img), mime_type: mime.clone() });
+            content.push(ContentItem::Image {
+                data: base64::engine::general_purpose::STANDARD.encode(img),
+                mime_type: mime.clone(),
+            });
         }
         content.push(ContentItem::Text { text: self.text.clone() });
         CloudMessage::ToolResult {
@@ -96,7 +99,16 @@ impl Tools {
         let rid = args.get("request_id").and_then(Value::as_str);
         let out = ToolOutput { request_id: out.request_id.clone().or(rid.map(String::from)), ..out };
         let res = if out.image.is_some() { "[imagen] ".to_string() + &out.text } else { out.text.clone() };
-        self.world.store.audit(origin, name, call_id, rid, &args, !out.is_error, t0.elapsed().as_secs_f64() * 1000.0, &res);
+        self.world.store.audit(
+            origin,
+            name,
+            call_id,
+            rid,
+            &args,
+            !out.is_error,
+            t0.elapsed().as_secs_f64() * 1000.0,
+            &res,
+        );
         out
     }
 
@@ -127,7 +139,11 @@ impl Tools {
                         image: Some((f.data, f.mime_type)),
                         ..Default::default()
                     },
-                    None => ToolOutput::error(format!("Sin cuadro de la cámara {:?}. Disponibles: {:?}\n{text}", a.camera_id, self.frames.cameras())),
+                    None => ToolOutput::error(format!(
+                        "Sin cuadro de la cámara {:?}. Disponibles: {:?}\n{text}",
+                        a.camera_id,
+                        self.frames.cameras()
+                    )),
                 }
             }
             "events_wait" => {
@@ -152,7 +168,10 @@ impl Tools {
                 if name == "run_flow" {
                     if let Some(m) = v.as_object_mut() {
                         m.insert("cursor".into(), w.last_seq().into());
-                        m.insert("hint".into(), "usa events_wait con types=['flow_state_changed','flow_emitted'] para seguirlo".into());
+                        m.insert(
+                            "hint".into(),
+                            "usa events_wait con types=['flow_state_changed','flow_emitted'] para seguirlo".into(),
+                        );
                     }
                 }
                 let mut out = ToolOutput::data(v);

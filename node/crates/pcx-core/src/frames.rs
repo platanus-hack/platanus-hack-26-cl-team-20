@@ -53,13 +53,29 @@ impl FrameSource for SyntheticFrameSource {
         }
         let ws = self.state.borrow().clone();
         let (png, w, h) = render_png(&ws, annotate);
-        Some(Frame { camera_id: self.camera_id.clone(), data: png, mime_type: "image/png".into(), w, h, t_capture_ns: now_ns(), annotated: annotate })
+        Some(Frame {
+            camera_id: self.camera_id.clone(),
+            data: png,
+            mime_type: "image/png".into(),
+            w,
+            h,
+            t_capture_ns: now_ns(),
+            annotated: annotate,
+        })
     }
 }
 
 const PX_PER_MM: f64 = 1.25;
 const MARGIN: f64 = 30.0;
-const OBJ_COLORS: [[u8; 3]; 7] = [[0xC0, 0x39, 0x2B], [0x2E, 0x86, 0xC1], [0x28, 0xB4, 0x63], [0xAF, 0x7A, 0xC5], [0xF3, 0x9C, 0x12], [0x16, 0xA0, 0x85], [0xD3, 0x54, 0x00]];
+const OBJ_COLORS: [[u8; 3]; 7] = [
+    [0xC0, 0x39, 0x2B],
+    [0x2E, 0x86, 0xC1],
+    [0x28, 0xB4, 0x63],
+    [0xAF, 0x7A, 0xC5],
+    [0xF3, 0x9C, 0x12],
+    [0x16, 0xA0, 0x85],
+    [0xD3, 0x54, 0x00],
+];
 
 struct Canvas {
     w: u32,
@@ -190,7 +206,11 @@ pub fn render_png(ws: &WorldState, annotate: bool) -> (Vec<u8>, u32, u32) {
     }
     for t in &ws.touches {
         let c = p(t.point_mm.0, t.point_mm.1);
-        cv.outline(&[(c.0 - 7.0, c.1 - 7.0), (c.0 + 7.0, c.1 - 7.0), (c.0 + 7.0, c.1 + 7.0), (c.0 - 7.0, c.1 + 7.0)], 3.0, [0xFF, 0x2D, 0x95]);
+        cv.outline(
+            &[(c.0 - 7.0, c.1 - 7.0), (c.0 + 7.0, c.1 - 7.0), (c.0 + 7.0, c.1 + 7.0), (c.0 - 7.0, c.1 + 7.0)],
+            3.0,
+            [0xFF, 0x2D, 0x95],
+        );
     }
     let mut out = Vec::new();
     {
@@ -215,7 +235,10 @@ pub fn summary_text(ws: &WorldState, cursor: i64) -> String {
     } else {
         lines.push("Objetos (en la imagen, colores en este orden: rojo, azul, verde, violeta, naranja…):".into());
         for o in &ws.objects {
-            lines.push(format!("- {} ({}) centro=({:.0}, {:.0}) mm conf={:.2}", o.id, o.label, o.center_mm.0, o.center_mm.1, o.confidence));
+            lines.push(format!(
+                "- {} ({}) centro=({:.0}, {:.0}) mm conf={:.2}",
+                o.id, o.label, o.center_mm.0, o.center_mm.1, o.confidence
+            ));
         }
     }
     if !ws.widgets.is_empty() {

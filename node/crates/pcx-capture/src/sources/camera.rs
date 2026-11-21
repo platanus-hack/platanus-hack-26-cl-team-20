@@ -32,7 +32,8 @@ pub fn select(cams: &[CameraInfo], sel: &str) -> Result<usize, BoxError> {
         return Ok(i);
     }
     let low = sel.to_lowercase();
-    let hits: Vec<usize> = cams.iter().enumerate().filter(|(_, c)| c.name.to_lowercase().contains(&low)).map(|(i, _)| i).collect();
+    let hits: Vec<usize> =
+        cams.iter().enumerate().filter(|(_, c)| c.name.to_lowercase().contains(&low)).map(|(i, _)| i).collect();
     match hits.as_slice() {
         [i] => Ok(*i),
         [] => Err(format!("no hay cámara {sel:?}; disponibles: {}", describe(cams)).into()),
@@ -57,7 +58,13 @@ pub fn list() -> Result<Vec<CameraInfo>, BoxError> {
     Err("sin backend de cámara en este SO: compila con --features uvc".into())
 }
 
-pub fn spawn(sel: &str, size: (u32, u32), fps: f64, ctl: CamControls, tx: LatestTx) -> Result<std::thread::JoinHandle<()>, BoxError> {
+pub fn spawn(
+    sel: &str,
+    size: (u32, u32),
+    fps: f64,
+    ctl: CamControls,
+    tx: LatestTx,
+) -> Result<std::thread::JoinHandle<()>, BoxError> {
     #[cfg(target_os = "macos")]
     return super::avf::spawn(sel, size, fps, ctl, tx);
     #[cfg(all(not(target_os = "macos"), feature = "uvc"))]
@@ -83,7 +90,13 @@ mod fallback {
             .collect())
     }
 
-    pub fn spawn(sel: &str, size: (u32, u32), fps: f64, _ctl: CamControls, tx: LatestTx) -> Result<std::thread::JoinHandle<()>, BoxError> {
+    pub fn spawn(
+        sel: &str,
+        size: (u32, u32),
+        fps: f64,
+        _ctl: CamControls,
+        tx: LatestTx,
+    ) -> Result<std::thread::JoinHandle<()>, BoxError> {
         let all = nokhwa::query(ApiBackend::Auto)?;
         let infos = list()?;
         let i = super::select(&infos, sel)?;
@@ -101,7 +114,11 @@ mod tests {
 
     fn cams() -> Vec<CameraInfo> {
         let c = |id: &str, name: &str| CameraInfo { id: id.into(), name: name.into(), model: String::new() };
-        vec![c("0x1120000046d0892", "HD Pro Webcam C920"), c("FACE-1", "Cámara FaceTime HD"), c("IPH-2", "Cámara de iPhone")]
+        vec![
+            c("0x1120000046d0892", "HD Pro Webcam C920"),
+            c("FACE-1", "Cámara FaceTime HD"),
+            c("IPH-2", "Cámara de iPhone"),
+        ]
     }
 
     #[test]

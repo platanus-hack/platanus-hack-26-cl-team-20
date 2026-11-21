@@ -145,7 +145,17 @@ struct Cand {
 impl Tracker {
     pub fn new(canvas: Canvas, params: Params) -> Tracker {
         let area = raster::full(canvas.width, canvas.height);
-        Tracker { params, canvas, area, objects: BTreeMap::new(), prev: None, detector: None, segmenter: None, llm: None, appearance_dir: None }
+        Tracker {
+            params,
+            canvas,
+            area,
+            objects: BTreeMap::new(),
+            prev: None,
+            detector: None,
+            segmenter: None,
+            llm: None,
+            appearance_dir: None,
+        }
     }
     pub fn with_area(mut self, area: Mask) -> Self {
         self.area = area;
@@ -184,7 +194,14 @@ impl Tracker {
     }
 
     /// Registra un objeto a mano (o retoma el catálogo) con su máscara en px del lienzo.
-    pub fn add_object(&mut self, id: &str, label: &str, prompt: &str, mask: Mask, frame: &CleanFrame) -> Option<ObjectEvent> {
+    pub fn add_object(
+        &mut self,
+        id: &str,
+        label: &str,
+        prompt: &str,
+        mask: Mask,
+        frame: &CleanFrame,
+    ) -> Option<ObjectEvent> {
         let mut o = TrackedObject {
             id: id.into(),
             label: label.into(),
@@ -201,7 +218,8 @@ impl Tracker {
         };
         recrop(&mut o, &frame.rgb);
         self.publish_appearance(&mut o, &frame.rgb);
-        let ev = self.state_of(&o).map(|s| ObjectEvent::ObjectAppeared { object: s, level: Some("registro manual".into()) });
+        let ev =
+            self.state_of(&o).map(|s| ObjectEvent::ObjectAppeared { object: s, level: Some("registro manual".into()) });
         self.objects.insert(id.into(), o);
         if self.prev.is_none() {
             self.set_reference(frame);
@@ -210,7 +228,14 @@ impl Tracker {
     }
 
     /// Igual que `add_object` pero con un polígono en mm (p. ej. al retomar `ObjectState` guardados).
-    pub fn add_object_polygon_mm(&mut self, id: &str, label: &str, prompt: &str, poly: &[PointMM], frame: &CleanFrame) -> Option<ObjectEvent> {
+    pub fn add_object_polygon_mm(
+        &mut self,
+        id: &str,
+        label: &str,
+        prompt: &str,
+        poly: &[PointMM],
+        frame: &CleanFrame,
+    ) -> Option<ObjectEvent> {
         let pts: Vec<imageproc::point::Point<i32>> = poly
             .iter()
             .map(|p| {
@@ -261,7 +286,12 @@ impl Tracker {
             .map(|o| o.id.clone())
             .collect();
         let ocultos: Vec<String> = self.objects.values().filter(|o| o.hidden).map(|o| o.id.clone()).collect();
-        rep.log.push(format!("N0 cambio: {} px · sospechosos: {:?} · ocultos: {}", rep.changed_px, sosp, ocultos.len()));
+        rep.log.push(format!(
+            "N0 cambio: {} px · sospechosos: {:?} · ocultos: {}",
+            rep.changed_px,
+            sosp,
+            ocultos.len()
+        ));
         let mut libre = cambio.clone();
         for o in self.objects.values() {
             if !o.hidden && !sosp.contains(&o.id) {
@@ -287,8 +317,17 @@ impl Tracker {
             let (mut nuevo, mut metodo, mut conf) = (None::<Mask>, String::new(), 0.0);
             // ---- nivel 2 ----
             if let Some((a, ninl)) = self.n2_rigid(&o, rgb, &libre) {
-                let base = if raster::any(&o.mask) { o.mask.clone() } else { ref_mask_full(&o, self.canvas.width, self.canvas.height) };
-                nuevo = Some(raster::fill_largest(&raster::warp_affine_nearest(&base, &a, self.canvas.width, self.canvas.height)));
+                let base = if raster::any(&o.mask) {
+                    o.mask.clone()
+                } else {
+                    ref_mask_full(&o, self.canvas.width, self.canvas.height)
+                };
+                nuevo = Some(raster::fill_largest(&raster::warp_affine_nearest(
+                    &base,
+                    &a,
+                    self.canvas.width,
+                    self.canvas.height,
+                )));
                 o.aff_mm = geom::compose(&self.canvas.affine_px_to_mm(&a), &o.aff_mm);
                 metodo = format!("N2 rígido ({ninl} pts)");
                 conf = (0.5 + ninl as f64 / 60.0).min(1.0);
@@ -301,8 +340,10 @@ impl Tracker {
                         vec![]
                     }
                 };
-                let buenos: Vec<&Cand> =
-                    cands.iter().filter(|c| c.sim > p.n3_sim_ok && p.n3_ratio.0 < c.ratio && c.ratio < p.n3_ratio.1).collect();
+                let buenos: Vec<&Cand> = cands
+                    .iter()
+                    .filter(|c| c.sim > p.n3_sim_ok && p.n3_ratio.0 < c.ratio && c.ratio < p.n3_ratio.1)
+                    .collect();
                 let mut elegido: Option<&Cand> = None;
                 if !buenos.is_empty() && (buenos.len() == 1 || buenos[0].score - buenos[1].score > p.n3_margin) {
                     elegido = Some(buenos[0]);
@@ -364,8 +405,13 @@ impl Tracker {
                     o.hidden = true;
                     o.seq += 1;
                     o.mask = raster::empty(self.canvas.width, self.canvas.height);
-                    rep.log.push(format!("  {}: no lo encuentro → oculto ({:.2}s)", o.label, t1.elapsed().as_secs_f64()));
-                    rep.events.push(ObjectEvent::ObjectRemoved { object_id: o.id.clone(), label: Some(o.label.clone()) });
+                    rep.log.push(format!(
+                        "  {}: no lo encuentro → oculto ({:.2}s)",
+                        o.label,
+                        t1.elapsed().as_secs_f64()
+                    ));
+                    rep.events
+                        .push(ObjectEvent::ObjectRemoved { object_id: o.id.clone(), label: Some(o.label.clone()) });
                 }
                 None => {}
             }
@@ -405,7 +451,8 @@ impl Tracker {
         if ms.len() < p.n2_min_inliers {
             return None;
         }
-        let p1: Vec<(f64, f64)> = ms.iter().map(|&(i, _)| (k1[i].x as f64 + r.bbox.0 as f64, k1[i].y as f64 + r.bbox.1 as f64)).collect();
+        let p1: Vec<(f64, f64)> =
+            ms.iter().map(|&(i, _)| (k1[i].x as f64 + r.bbox.0 as f64, k1[i].y as f64 + r.bbox.1 as f64)).collect();
         let p2: Vec<(f64, f64)> = ms.iter().map(|&(_, j)| (k2[j].x as f64, k2[j].y as f64)).collect();
         let (a, inl) = geom::ransac_similarity(&p1, &p2, p.n2_ransac_px, 2000)?;
         let n = inl.iter().filter(|&&b| b).count();
@@ -495,9 +542,17 @@ impl Tracker {
         let rgb = &frame.rgb;
         let (w, h) = (self.canvas.width, self.canvas.height);
         let seg = self.segmenter.as_mut().ok_or(TrackError::Missing("segmentador (nivel 5)"))?;
-        let props = models::automatic_masks(seg.as_mut(), rgb, &self.area, self.params.n5_grid.0, self.params.n5_grid.1, self.params.n5_min_area)?;
+        let props = models::automatic_masks(
+            seg.as_mut(),
+            rgb,
+            &self.area,
+            self.params.n5_grid.0,
+            self.params.n5_grid.1,
+            self.params.n5_min_area,
+        )?;
         let area_total = raster::count(&self.area) as f64;
-        let props: Vec<Mask> = props.into_iter().filter(|p| (p.area as f64) < 0.25 * area_total).map(|p| p.mask).collect();
+        let props: Vec<Mask> =
+            props.into_iter().filter(|p| (p.area as f64) < 0.25 * area_total).map(|p| p.mask).collect();
         // imagen 1: vista con regiones numeradas · imagen 2: hoja de recortes
         let mut vis = rgb.clone();
         for (k, m) in props.iter().enumerate() {
@@ -532,7 +587,8 @@ impl Tracker {
         )?;
         let groups = group_regions(&res, n);
         rep.log.push(format!("registro: {n} regiones, {} objetos, {:.1}s", groups.len(), t0.elapsed().as_secs_f64()));
-        let old: Vec<(String, String, bool)> = self.objects.values().map(|o| (o.id.clone(), o.label.clone(), o.hidden)).collect();
+        let old: Vec<(String, String, bool)> =
+            self.objects.values().map(|o| (o.id.clone(), o.label.clone(), o.hidden)).collect();
         self.objects.clear();
         for (k, (nombre, prompt, regs)) in groups.into_iter().enumerate() {
             let mut m = raster::empty(w, h);

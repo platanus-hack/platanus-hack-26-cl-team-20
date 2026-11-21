@@ -5,7 +5,12 @@ use pcx_contracts::{Event, PatternImage, ToRenderer};
 
 #[test]
 fn drift_serializa_igual_que_el_evento_del_contrato() {
-    let d = CalibrationDrift { from_frame: "table_mm".into(), to_frame: "proj:main".into(), residual_mm: 3.2, threshold_mm: 2.0 };
+    let d = CalibrationDrift {
+        from_frame: "table_mm".into(),
+        to_frame: "proj:main".into(),
+        residual_mm: 3.2,
+        threshold_mm: 2.0,
+    };
     let ours = serde_json::to_value(&d).unwrap();
     let ev = d.to_event();
     assert_eq!(ours, serde_json::to_value(&ev).unwrap());

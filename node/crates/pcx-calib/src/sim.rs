@@ -31,7 +31,16 @@ pub struct Pinhole {
 
 impl Pinhole {
     #[allow(clippy::too_many_arguments)]
-    pub fn look_at(w: u32, h: u32, f: f64, cx: f64, cy: f64, center: [f64; 3], target: [f64; 3], k: (f64, f64)) -> Self {
+    pub fn look_at(
+        w: u32,
+        h: u32,
+        f: f64,
+        cx: f64,
+        cy: f64,
+        center: [f64; 3],
+        target: [f64; 3],
+        k: (f64, f64),
+    ) -> Self {
         let c = V3::from(center);
         let z = (V3::from(target) - c).normalize();
         let x = V3::new(0.0, 1.0, 0.0).cross(&z).normalize();
@@ -173,7 +182,8 @@ impl World {
 }
 
 /// Marcadores impresos del escenario por defecto: (id, x, y) de la esquina TL en mm.
-pub const PRINTED: [(usize, f64, f64); 4] = [(60, 70.0, 60.0), (61, 640.0, 60.0), (62, 70.0, 470.0), (63, 640.0, 470.0)];
+pub const PRINTED: [(usize, f64, f64); 4] =
+    [(60, 70.0, 60.0), (61, 640.0, 60.0), (62, 70.0, 470.0), (63, 640.0, 470.0)];
 pub const PRINTED_SIDE_MM: f64 = 60.0;
 
 #[derive(Debug, Clone)]
@@ -190,8 +200,18 @@ pub struct SimConfig {
 
 impl Default for SimConfig {
     fn default() -> Self {
-        let cam = Pinhole::look_at(640, 480, 560.0, 320.0, 240.0, [420.0, 300.0, -1000.0], [400.0, 280.0, 0.0], (-0.08, 0.01));
-        let proj = Pinhole::look_at(1024, 768, 1640.0, 512.0, 384.0, [600.0, 260.0, -1150.0], [400.0, 300.0, 0.0], (0.0, 0.0));
+        let cam = Pinhole::look_at(
+            640,
+            480,
+            560.0,
+            320.0,
+            240.0,
+            [420.0, 300.0, -1000.0],
+            [400.0, 280.0, 0.0],
+            (-0.08, 0.01),
+        );
+        let proj =
+            Pinhole::look_at(1024, 768, 1640.0, 512.0, 384.0, [600.0, 260.0, -1150.0], [400.0, 300.0, 0.0], (0.0, 0.0));
         Self {
             world: World {
                 cam,
@@ -272,7 +292,10 @@ impl State {
         let out: Vec<f32> = self
             .subs
             .chunks(4)
-            .map(|c| c.iter().map(|s| s.albedo * (amb + if s.p[0].is_nan() { 0.0 } else { gain * sample(s.p) })).sum::<f32>() / 4.0)
+            .map(|c| {
+                c.iter().map(|s| s.albedo * (amb + if s.p[0].is_nan() { 0.0 } else { gain * sample(s.p) })).sum::<f32>()
+                    / 4.0
+            })
             .collect();
         let r = Arc::new(out);
         self.cache.push((pat.clone(), r.clone()));
@@ -308,7 +331,9 @@ impl State {
         let data = acc
             .iter()
             .map(|v| {
-                let g = (self.rng.uniform() + self.rng.uniform() + self.rng.uniform() + self.rng.uniform() - 2.0) as f32 * 1.732;
+                let g = (self.rng.uniform() + self.rng.uniform() + self.rng.uniform() + self.rng.uniform() - 2.0)
+                    as f32
+                    * 1.732;
                 (v + n * g).round().clamp(0.0, 255.0) as u8
             })
             .collect();
@@ -326,7 +351,16 @@ impl Sim {
         let subs = State::precompute(&cfg);
         let black = Arc::new(GrayImage::new(cfg.world.proj.w, cfg.world.proj.h, 0));
         let rng = Rng::new(cfg.seed);
-        Sim(Arc::new(Mutex::new(State { cfg, subs, clock: T0, next_k: 0, events: vec![(0, black)], cache: Vec::new(), rng, frames: 0 })))
+        Sim(Arc::new(Mutex::new(State {
+            cfg,
+            subs,
+            clock: T0,
+            next_k: 0,
+            events: vec![(0, black)],
+            cache: Vec::new(),
+            rng,
+            frames: 0,
+        })))
     }
     pub fn projector(&self) -> SimProjector {
         SimProjector(self.clone())

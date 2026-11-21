@@ -17,6 +17,7 @@ use crate::contracts::now_ns;
 use crate::frame::{nv12_to_rgb, BoxError, Frame, LatestTx};
 use image::RgbImage;
 use objc2::rc::Retained;
+use objc2::runtime::Bool;
 use objc2::runtime::{AnyObject, NSObject, NSObjectProtocol, ProtocolObject};
 use objc2::{define_class, msg_send, AllocAnyThread, DefinedClass};
 use objc2_av_foundation::{
@@ -24,21 +25,29 @@ use objc2_av_foundation::{
     AVCaptureExposureMode, AVCaptureOutput, AVCaptureSession, AVCaptureVideoDataOutput,
     AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureWhiteBalanceMode, AVMediaTypeVideo,
 };
-use objc2_core_media::{CMClock, CMFormatDescription, CMSampleBuffer, CMTime, CMTimeFlags, CMVideoFormatDescriptionGetDimensions};
+use objc2_core_foundation::CFString;
+use objc2_core_media::{
+    CMClock, CMFormatDescription, CMSampleBuffer, CMTime, CMTimeFlags, CMVideoFormatDescriptionGetDimensions,
+};
 use objc2_core_video::{
-    kCVImageBufferYCbCrMatrixKey, kCVImageBufferYCbCrMatrix_ITU_R_709_2, kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
-    CVPixelBufferGetBaseAddressOfPlane, CVPixelBufferGetBytesPerRowOfPlane,
-    CVPixelBufferGetHeight, CVPixelBufferGetPixelFormatType, CVPixelBufferGetWidth, CVPixelBufferLockBaseAddress,
-    CVPixelBufferLockFlags, CVPixelBufferUnlockBaseAddress,
+    kCVImageBufferYCbCrMatrixKey, kCVImageBufferYCbCrMatrix_ITU_R_709_2,
+    kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange, CVPixelBufferGetBaseAddressOfPlane,
+    CVPixelBufferGetBytesPerRowOfPlane, CVPixelBufferGetHeight, CVPixelBufferGetPixelFormatType, CVPixelBufferGetWidth,
+    CVPixelBufferLockBaseAddress, CVPixelBufferLockFlags, CVPixelBufferUnlockBaseAddress,
 };
 use objc2_foundation::{NSDictionary, NSNumber, NSString};
-use objc2::runtime::Bool;
-use objc2_core_foundation::CFString;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
 /// Sesión abierta: todo lo que debe vivir mientras se captura, más su descripción.
-type Opened = (Retained<AVCaptureSession>, Retained<AVCaptureDevice>, Retained<Delegate>, Retained<AVCaptureDeviceFormat>, CMTime, String);
+type Opened = (
+    Retained<AVCaptureSession>,
+    Retained<AVCaptureDevice>,
+    Retained<Delegate>,
+    Retained<AVCaptureDeviceFormat>,
+    CMTime,
+    String,
+);
 
 const FIRST_FRAME_TIMEOUT: Duration = Duration::from_secs(5);
 const STALL_TIMEOUT: Duration = Duration::from_secs(3);
@@ -70,7 +79,11 @@ fn dims(desc: &CMFormatDescription) -> (i32, i32) {
 
 /// Formato 420v al tamaño exacto con un rango que alcance `fps`. Duración: en rangos discretos (C920: 30–30) el
 /// `minFrameDuration` exacto del rango (B7); en rangos continuos (1–60) `1/fps`, para no subir a 60 fps.
-fn pick_format(dev: &AVCaptureDevice, size: (u32, u32), fps: f64) -> Option<(Retained<AVCaptureDeviceFormat>, CMTime, f64)> {
+fn pick_format(
+    dev: &AVCaptureDevice,
+    size: (u32, u32),
+    fps: f64,
+) -> Option<(Retained<AVCaptureDeviceFormat>, CMTime, f64)> {
     let mut best: Option<(Retained<AVCaptureDeviceFormat>, CMTime, f64)> = None;
     for f in unsafe { dev.formats() }.iter() {
         let desc = unsafe { f.formatDescription() };
@@ -104,7 +117,10 @@ fn offered(dev: &AVCaptureDevice) -> String {
             let desc = unsafe { f.formatDescription() };
             let st = unsafe { desc.media_sub_type() }.to_be_bytes();
             let (w, h) = dims(&desc);
-            let max = unsafe { f.videoSupportedFrameRateRanges() }.iter().map(|r| unsafe { r.maxFrameRate() }).fold(0.0, f64::max);
+            let max = unsafe { f.videoSupportedFrameRateRanges() }
+                .iter()
+                .map(|r| unsafe { r.maxFrameRate() })
+                .fold(0.0, f64::max);
             format!("{}{w}x{h}@{max:.0}", String::from_utf8_lossy(&st))
         })
         .collect();
@@ -202,13 +218,17 @@ impl Delegate {
         let arrival = now_ns();
         // edad del cuadro según el reloj del host (PTS) → hora de captura en época (≈ 50–60 ms antes de la llegada)
         let age_s = unsafe { CMClock::host_time_clock().time().subtract(sb.presentation_time_stamp()).seconds() };
-        let t_capture_ns = if age_s.is_finite() && (0.0..1.0).contains(&age_s) { arrival - (age_s * 1e9) as u64 } else { arrival };
+        let t_capture_ns =
+            if age_s.is_finite() && (0.0..1.0).contains(&age_s) { arrival - (age_s * 1e9) as u64 } else { arrival };
         let Some(pb) = (unsafe { sb.image_buffer() }) else { return };
         let pf = CVPixelBufferGetPixelFormatType(&pb);
         if pf != NV12 {
             iv.skipped.fetch_add(1, Ordering::Relaxed);
             if !iv.warned.swap(true, Ordering::Relaxed) {
-                eprintln!("[pcx-capture] avf: formato inesperado {}; se descartan esos cuadros", String::from_utf8_lossy(&pf.to_be_bytes()));
+                eprintln!(
+                    "[pcx-capture] avf: formato inesperado {}; se descartan esos cuadros",
+                    String::from_utf8_lossy(&pf.to_be_bytes())
+                );
             }
             return;
         }
@@ -298,7 +318,13 @@ fn ensure_access(mt: &objc2_av_foundation::AVMediaType) -> Result<(), String> {
 }
 
 /// Abre la cámara `sel` (uniqueID o subcadena única del nombre) y entrega cuadros RGB al buzón hasta que se cierre.
-pub fn spawn(sel: &str, size: (u32, u32), fps: f64, ctl: CamControls, tx: LatestTx) -> Result<std::thread::JoinHandle<()>, BoxError> {
+pub fn spawn(
+    sel: &str,
+    size: (u32, u32),
+    fps: f64,
+    ctl: CamControls,
+    tx: LatestTx,
+) -> Result<std::thread::JoinHandle<()>, BoxError> {
     let sel = sel.to_string();
     let (ready_tx, ready_rx) = std::sync::mpsc::channel::<Result<String, String>>();
     let h = std::thread::Builder::new().name("avf".into()).spawn(move || {
@@ -309,7 +335,13 @@ pub fn spawn(sel: &str, size: (u32, u32), fps: f64, ctl: CamControls, tx: Latest
             let dev = find(&sel).map_err(|e| e.to_string())?;
             ensure_access(mt)?;
             let (fmt, dur, maxfps) = pick_format(&dev, size, fps).ok_or_else(|| {
-                format!("{} no ofrece 420v {}x{}@{fps}; ofrece: {}", unsafe { dev.localizedName() }, size.0, size.1, offered(&dev))
+                format!(
+                    "{} no ofrece 420v {}x{}@{fps}; ofrece: {}",
+                    unsafe { dev.localizedName() },
+                    size.0,
+                    size.1,
+                    offered(&dev)
+                )
             })?;
             let session = unsafe { AVCaptureSession::new() };
             let input = unsafe { AVCaptureDeviceInput::deviceInputWithDevice_error(&dev) }
@@ -317,8 +349,9 @@ pub fn spawn(sel: &str, size: (u32, u32), fps: f64, ctl: CamControls, tx: Latest
             let output = unsafe { AVCaptureVideoDataOutput::new() };
             let key = NSString::from_str("PixelFormatType"); // kCVPixelBufferPixelFormatTypeKey
             let val = NSNumber::new_u32(NV12);
-            let settings: Retained<NSDictionary<NSString, AnyObject>> =
-                unsafe { Retained::cast_unchecked(NSDictionary::<NSString, NSNumber>::from_slices(&[&*key], &[&*val])) };
+            let settings: Retained<NSDictionary<NSString, AnyObject>> = unsafe {
+                Retained::cast_unchecked(NSDictionary::<NSString, NSNumber>::from_slices(&[&*key], &[&*val]))
+            };
             let delegate = Delegate::new(Ivars {
                 tx: tx.clone(),
                 size,

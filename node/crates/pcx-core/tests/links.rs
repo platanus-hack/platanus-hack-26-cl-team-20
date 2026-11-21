@@ -67,7 +67,12 @@ async fn fake_gateway(port: u16, sessions: Sessions) {
                 match msg {
                     CloudMessage::Hello { .. } => {
                         let last = *durable.lock().unwrap();
-                        let w = CloudMessage::Welcome { session_id: format!("s{n}"), contract_version: 2, last_stream_id: None, last_cursor: Some(last) };
+                        let w = CloudMessage::Welcome {
+                            session_id: format!("s{n}"),
+                            contract_version: 2,
+                            last_stream_id: None,
+                            last_cursor: Some(last),
+                        };
                         ws.send(Message::Text(serde_json::to_string(&w).unwrap().into())).await.unwrap();
                     }
                     CloudMessage::EventBatch { cursor, .. } => {
@@ -76,7 +81,12 @@ async fn fake_gateway(port: u16, sessions: Sessions) {
                     }
                     CloudMessage::ReplayDone { .. } if n == 0 && !sent_call => {
                         sent_call = true;
-                        let c = CloudMessage::ToolCall { call_id: "c1".into(), tool: "scene".into(), args: Json::new(), timeout_s: Some(5.0) };
+                        let c = CloudMessage::ToolCall {
+                            call_id: "c1".into(),
+                            tool: "scene".into(),
+                            args: Json::new(),
+                            timeout_s: Some(5.0),
+                        };
                         ws.send(Message::Text(serde_json::to_string(&c).unwrap().into())).await.unwrap();
                     }
                     CloudMessage::ToolResult { .. } if n == 0 => {
@@ -104,10 +114,14 @@ async fn enlace_nube_snapshot_replay_toolcall_y_reconexion() {
     let cancel = CancellationToken::new();
     link.clone().spawn(tools, cancel.clone());
     let s = sessions.clone();
-    until(|| s.lock().unwrap().first().is_some_and(|m| m.iter().any(|x| matches!(x, CloudMessage::ToolResult { .. })))).await;
+    until(|| s.lock().unwrap().first().is_some_and(|m| m.iter().any(|x| matches!(x, CloudMessage::ToolResult { .. }))))
+        .await;
     {
         let s0 = sessions.lock().unwrap()[0].clone();
-        let CloudMessage::Hello { token, capabilities, contract_versions, log_last_cursor, stream_id, .. } = &s0[0] else { panic!("hello primero") };
+        let CloudMessage::Hello { token, capabilities, contract_versions, log_last_cursor, stream_id, .. } = &s0[0]
+        else {
+            panic!("hello primero")
+        };
         assert_eq!((token.as_str(), contract_versions.as_slice(), *log_last_cursor), ("tok", &[2][..], 1));
         assert_eq!(capabilities.len(), 10);
         let CloudMessage::StateSnapshot { world, cursor, stream_id: sid, .. } = &s0[1] else { panic!("snapshot") };
@@ -115,17 +129,37 @@ async fn enlace_nube_snapshot_replay_toolcall_y_reconexion() {
         let CloudMessage::EventBatch { replay, events, .. } = &s0[2] else { panic!("replay") };
         assert!(*replay && events[0].type_ == "object_appeared" && events[0].node_id == "mesa-1");
         assert!(matches!(&s0[3], CloudMessage::ReplayDone { history_complete: true, cursor: 1, .. }));
-        let r = s0.iter().find_map(|m| if let CloudMessage::ToolResult { call_id, ok, content, .. } = m { Some((call_id.clone(), *ok, content.clone())) } else { None }).unwrap();
+        let r = s0
+            .iter()
+            .find_map(|m| {
+                if let CloudMessage::ToolResult { call_id, ok, content, .. } = m {
+                    Some((call_id.clone(), *ok, content.clone()))
+                } else {
+                    None
+                }
+            })
+            .unwrap();
         assert!(r.0 == "c1" && r.1 && matches!(r.2.last(), Some(ContentItem::Text { text }) if text.contains("taza")));
     }
     add_object(&w, "frasco").await; // mientras está desconectado o reconectando
-    until(|| s.lock().unwrap().get(1).is_some_and(|m| m.iter().any(|x| matches!(x, CloudMessage::ReplayDone { .. })))).await;
+    until(|| s.lock().unwrap().get(1).is_some_and(|m| m.iter().any(|x| matches!(x, CloudMessage::ReplayDone { .. }))))
+        .await;
     assert!(link.connects.load(Ordering::Relaxed) >= 2);
     let s1 = sessions.lock().unwrap()[1].clone();
     let CloudMessage::StateSnapshot { cursor, .. } = &s1[1] else { panic!() };
     assert_eq!(*cursor, w.last_seq());
     // el replay de la 2.ª sesión solo trae lo posterior al cursor durable de la nube
-    let replayed: Vec<i64> = s1.iter().filter_map(|m| if let CloudMessage::EventBatch { events, replay: true, .. } = m { Some(events.iter().map(|e| e.seq).collect::<Vec<_>>()) } else { None }).flatten().collect();
+    let replayed: Vec<i64> = s1
+        .iter()
+        .filter_map(|m| {
+            if let CloudMessage::EventBatch { events, replay: true, .. } = m {
+                Some(events.iter().map(|e| e.seq).collect::<Vec<_>>())
+            } else {
+                None
+            }
+        })
+        .flatten()
+        .collect();
     assert!(replayed.iter().all(|s| *s > 1), "{replayed:?}");
     cancel.cancel();
 }

@@ -86,7 +86,9 @@ impl CloudLink {
         };
         tx.send(enc(&hello)).await?;
         let welcome = loop {
-            let m = tokio::time::timeout(Duration::from_secs(15), rx.next()).await?.ok_or_else(|| anyhow::anyhow!("cerrado antes de welcome"))??;
+            let m = tokio::time::timeout(Duration::from_secs(15), rx.next())
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("cerrado antes de welcome"))??;
             if let Message::Text(t) = m {
                 break serde_json::from_str::<CloudMessage>(&t)?;
             }
@@ -100,29 +102,63 @@ impl CloudLink {
         self.connects.fetch_add(1, Ordering::Relaxed);
         // estado recuperado + historial desde last_cursor
         let (snap_cursor, snapshot) = world.call(|w| (w.seq, w.snapshot())).await;
-        tx.send(enc(&CloudMessage::StateSnapshot { stream_id: stream_id.clone(), cursor: snap_cursor, world: snapshot })).await?;
+        tx.send(enc(&CloudMessage::StateSnapshot {
+            stream_id: stream_id.clone(),
+            cursor: snap_cursor,
+            world: snapshot,
+        }))
+        .await?;
         let first = store.first_seq();
         let mut from = last_cursor;
         let mut complete = true;
         if let Some(ls) = last_stream.filter(|s| *s != stream_id) {
             complete = false;
             from = 0;
-            tx.send(enc(&CloudMessage::HistoryGap(HistoryGap { stream_id: ls, from_: last_cursor + 1, to: None, reason: GapReason::StreamReset }))).await?;
+            tx.send(enc(&CloudMessage::HistoryGap(HistoryGap {
+                stream_id: ls,
+                from_: last_cursor + 1,
+                to: None,
+                reason: GapReason::StreamReset,
+            })))
+            .await?;
             if first > 1 {
-                tx.send(enc(&CloudMessage::HistoryGap(HistoryGap { stream_id: stream_id.clone(), from_: 1, to: Some(first - 1), reason: GapReason::StreamReset }))).await?;
+                tx.send(enc(&CloudMessage::HistoryGap(HistoryGap {
+                    stream_id: stream_id.clone(),
+                    from_: 1,
+                    to: Some(first - 1),
+                    reason: GapReason::StreamReset,
+                })))
+                .await?;
             }
         } else if first > 0 && last_cursor + 1 < first {
             complete = false;
-            tx.send(enc(&CloudMessage::HistoryGap(HistoryGap { stream_id: stream_id.clone(), from_: last_cursor + 1, to: Some(first - 1), reason: GapReason::Retention }))).await?;
+            tx.send(enc(&CloudMessage::HistoryGap(HistoryGap {
+                stream_id: stream_id.clone(),
+                from_: last_cursor + 1,
+                to: Some(first - 1),
+                reason: GapReason::Retention,
+            })))
+            .await?;
         }
         while from < snap_cursor {
             let (evs, _) = store.after(from, &[], self.batch_max);
             let evs: Vec<Envelope> = evs.into_iter().filter(|e| e.seq <= snap_cursor).collect();
             let Some(last) = evs.last().map(|e| e.seq) else { break };
-            tx.send(enc(&CloudMessage::EventBatch { stream_id: stream_id.clone(), cursor: last, events: evs, replay: true })).await?;
+            tx.send(enc(&CloudMessage::EventBatch {
+                stream_id: stream_id.clone(),
+                cursor: last,
+                events: evs,
+                replay: true,
+            }))
+            .await?;
             from = last;
         }
-        tx.send(enc(&CloudMessage::ReplayDone { stream_id: stream_id.clone(), cursor: snap_cursor, history_complete: complete })).await?;
+        tx.send(enc(&CloudMessage::ReplayDone {
+            stream_id: stream_id.clone(),
+            cursor: snap_cursor,
+            history_complete: complete,
+        }))
+        .await?;
 
         // en vivo: un escritor (canal), subidor de eventos, heartbeat, lector de tool_call
         let (out_tx, mut out_rx) = mpsc::channel::<CloudMessage>(256);

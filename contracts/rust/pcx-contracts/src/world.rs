@@ -10,7 +10,6 @@ fn t_dwell() -> Trigger {
     Trigger::Dwell
 }
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ObjectState {
     pub id: String,

@@ -61,7 +61,16 @@ pub fn rgb_to_bgr(src: &[u8], dst: &mut [u8]) {
 
 /// NV12 de rango video (420v: Y 16–235, CbCr 16–240) → RGB8 empaquetado, en punto fijo. `bt709` para HD.
 #[allow(clippy::too_many_arguments)]
-pub fn nv12_to_rgb(y: &[u8], y_stride: usize, uv: &[u8], uv_stride: usize, w: usize, h: usize, bt709: bool, out: &mut [u8]) {
+pub fn nv12_to_rgb(
+    y: &[u8],
+    y_stride: usize,
+    uv: &[u8],
+    uv_stride: usize,
+    w: usize,
+    h: usize,
+    bt709: bool,
+    out: &mut [u8],
+) {
     // coeficientes ×1024: R = 1.164(Y−16) + a·V; G = … − b·U − c·V; B = … + d·U
     let (a, b, c, d) = if bt709 { (1836, 218, 546, 2163) } else { (1634, 401, 833, 2066) };
     let clamp = |v: i32| ((v + 512) >> 10).clamp(0, 255) as u8;

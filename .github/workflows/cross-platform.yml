@@ -1,0 +1,45 @@
+# `cargo check` del workspace en Windows y macOS. Solo a mano o en PR hacia main: los minutos de estos
+# runners cuestan 2× (Windows) y 10× (macOS) los de Linux.
+name: cross-platform
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - Cargo.toml
+      - Cargo.lock
+      - contracts/rust/**
+      - node/crates/**
+      - renderer/**
+      - .github/workflows/cross-platform.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cross-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  check:
+    name: cargo check (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: cargo check
+        run: cargo check --workspace --all-targets

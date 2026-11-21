@@ -100,7 +100,9 @@ fn hands_loop(a: HandsArgs, backend: Backend, tx: mpsc::Sender<Out>, stop: Arc<A
     std::thread::spawn(move || {
         std::thread::sleep(timeout);
         if !r2.load(Ordering::Relaxed) {
-            eprintln!("[pcx worker hands] los modelos no cargaron en {timeout:?}; salgo para que el supervisor reintente");
+            eprintln!(
+                "[pcx worker hands] los modelos no cargaron en {timeout:?}; salgo para que el supervisor reintente"
+            );
             std::process::exit(3);
         }
     });
@@ -110,7 +112,11 @@ fn hands_loop(a: HandsArgs, backend: Backend, tx: mpsc::Sender<Out>, stop: Arc<A
     cfg.detector.intra_threads = a.threads.max(1);
     let mut eng = HandsEngine::from_cache(cfg)?;
     ready.store(true, Ordering::Relaxed);
-    eprintln!("[pcx worker hands] modelos listos en {:.0} ms (backend {:?})", t0.elapsed().as_secs_f64() * 1e3, backend);
+    eprintln!(
+        "[pcx worker hands] modelos listos en {:.0} ms (backend {:?})",
+        t0.elapsed().as_secs_f64() * 1e3,
+        backend
+    );
 
     let node_id = std::env::var("PCX_NODE_ID").unwrap_or_else(|_| "local".into());
     let mut buf = Vec::new();
@@ -179,7 +185,13 @@ fn hands_loop(a: HandsArgs, backend: Backend, tx: mpsc::Sender<Out>, stop: Arc<A
         had_hands = has;
         for ev in &out.events {
             if let Some(e) = ev.to_contract() {
-                let env = pcx_contracts::wrap(pcx_contracts::Payload::Event(e), 0, "pcx-hands", &node_id, Some(out.t_capture_ns));
+                let env = pcx_contracts::wrap(
+                    pcx_contracts::Payload::Event(e),
+                    0,
+                    "pcx-hands",
+                    &node_id,
+                    Some(out.t_capture_ns),
+                );
                 let _ = tx.try_send(serde_json::to_vec(&env)?);
             }
         }

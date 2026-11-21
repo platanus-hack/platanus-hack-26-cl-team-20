@@ -67,10 +67,7 @@ pub struct HandsEngine {
 
 impl HandsEngine {
     pub fn new(det: HandDetector, cfg: EngineConfig) -> Self {
-        Self {
-            tracker: HandTracker::new(det, cfg.tracker),
-            touch: TouchTracker::new(cfg.touch, cfg.homography),
-        }
+        Self { tracker: HandTracker::new(det, cfg.tracker), touch: TouchTracker::new(cfg.touch, cfg.homography) }
     }
 
     /// Modelos desde la caché del SO (los baja si faltan, con sha256).
@@ -84,16 +81,9 @@ impl HandsEngine {
 
     pub fn process(&mut self, frame: &Frame, meta: &FrameMeta) -> Result<HandsOutput, HandsError> {
         let t0 = std::time::Instant::now();
-        let (tracked, timings) = self
-            .tracker
-            .process(frame, meta.t_capture_ns as f64 * 1e-9)?;
-        let inputs: Vec<TouchHand> = tracked
-            .iter()
-            .map(|h| TouchHand {
-                id: format!("h{}", h.id),
-                landmarks_px: h.xy(),
-            })
-            .collect();
+        let (tracked, timings) = self.tracker.process(frame, meta.t_capture_ns as f64 * 1e-9)?;
+        let inputs: Vec<TouchHand> =
+            tracked.iter().map(|h| TouchHand { id: format!("h{}", h.id), landmarks_px: h.xy() }).collect();
         let events = self.touch.update(&inputs, meta.t_capture_ns);
         let hands = tracked
             .iter()

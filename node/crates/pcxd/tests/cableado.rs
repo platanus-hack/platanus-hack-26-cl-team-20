@@ -44,10 +44,13 @@ impl Drop for Up {
 }
 
 fn models_cached() -> bool {
-    let dir = std::env::var_os("PCX_MODELS_DIR").map(std::path::PathBuf::from).or_else(|| {
-        directories_dir().map(|d| d.join("models"))
-    });
-    dir.is_some_and(|d| d.join("palm_detection_mediapipe_2023feb.onnx").exists() && d.join("handpose_estimation_mediapipe_2023feb.onnx").exists())
+    let dir = std::env::var_os("PCX_MODELS_DIR")
+        .map(std::path::PathBuf::from)
+        .or_else(|| directories_dir().map(|d| d.join("models")));
+    dir.is_some_and(|d| {
+        d.join("palm_detection_mediapipe_2023feb.onnx").exists()
+            && d.join("handpose_estimation_mediapipe_2023feb.onnx").exists()
+    })
 }
 
 fn directories_dir() -> Option<std::path::PathBuf> {
@@ -104,7 +107,9 @@ async fn up_captura_manos_core_mcp_renderer() {
     if !models_cached() {
         // en CI se exige (PCX_E2E_REQUIRE_MODELS=1) para que el «ok» no sea vacío
         assert!(std::env::var_os("PCX_E2E_REQUIRE_MODELS").is_none(), "faltan los modelos de pcx-hands");
-        eprintln!("SKIP (no es un ok real): faltan los modelos de pcx-hands; cargo run -p pcx-hands --example fetch_models");
+        eprintln!(
+            "SKIP (no es un ok real): faltan los modelos de pcx-hands; cargo run -p pcx-hands --example fetch_models"
+        );
         return;
     }
     let port = free_port();
@@ -170,13 +175,20 @@ cmd = ["sh", "-c", "trap '' TERM; exec sleep 300"]
     let (mut rws, _) = tokio_tungstenite::connect_async(format!("ws://127.0.0.1:{port}/render")).await.unwrap();
     let Some(Ok(Message::Text(t))) = rws.next().await else { panic!("scene") };
     assert_eq!(serde_json::from_str::<Value>(&t).unwrap()["type"], "scene");
-    let cfg_mcp = StreamableHttpClientTransportConfig::with_uri(format!("http://127.0.0.1:{port}/mcp")).auth_header(TOKEN);
+    let cfg_mcp =
+        StreamableHttpClientTransportConfig::with_uri(format!("http://127.0.0.1:{port}/mcp")).auth_header(TOKEN);
     let mcp = ().serve(StreamableHttpClientTransport::from_config(cfg_mcp)).await.unwrap();
     let args = json!({"request_id": "r-etq", "widgets": [{"type": "label", "id": "etq", "text": "Hola mesa", "anchor": {"point_mm": [400, 250]}}]});
-    let r = mcp.call_tool(CallToolRequestParams::new("project").with_arguments(args.as_object().unwrap().clone())).await.unwrap();
+    let r = mcp
+        .call_tool(CallToolRequestParams::new("project").with_arguments(args.as_object().unwrap().clone()))
+        .await
+        .unwrap();
     assert_ne!(r.is_error, Some(true), "{:?}", r.content);
     loop {
-        let Some(Ok(Message::Text(t))) = tokio::time::timeout(Duration::from_secs(5), rws.next()).await.expect("diff") else { panic!() };
+        let Some(Ok(Message::Text(t))) = tokio::time::timeout(Duration::from_secs(5), rws.next()).await.expect("diff")
+        else {
+            panic!()
+        };
         let d: Value = serde_json::from_str(&t).unwrap();
         if d["upsert"].as_array().is_some_and(|u| u.iter().any(|w| w["id"] == "etq")) {
             break;
@@ -195,7 +207,8 @@ cmd = ["sh", "-c", "trap '' TERM; exec sleep 300"]
     #[cfg(unix)]
     {
         let st = wait_for(5, "pcx-up.json", async || status(&run)).await;
-        let (old, core_pid) = (st["procs"]["hands"]["pid"].as_i64().unwrap(), st["procs"]["core"]["pid"].as_i64().unwrap());
+        let (old, core_pid) =
+            (st["procs"]["hands"]["pid"].as_i64().unwrap(), st["procs"]["core"]["pid"].as_i64().unwrap());
         assert!(alive(old) && alive(core_pid));
         unsafe { libc::kill(old as i32, libc::SIGKILL) };
         let t_kill = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() as i64;
@@ -207,24 +220,35 @@ cmd = ["sh", "-c", "trap '' TERM; exec sleep 300"]
         .await;
         assert_eq!(st["procs"]["core"]["pid"].as_i64(), Some(core_pid), "el core no se reinició");
         wait_for(120, "manos nuevas tras el reinicio", async || {
-            hands_of(&get(port, "/state").await?).iter().any(|h| h["t_capture_ns"].as_i64().unwrap_or(0) > t_kill).then_some(())
+            hands_of(&get(port, "/state").await?)
+                .iter()
+                .any(|h| h["t_capture_ns"].as_i64().unwrap_or(0) > t_kill)
+                .then_some(())
         })
         .await;
 
         // instancia única
-        let out = Command::new(env!("CARGO_BIN_EXE_pcx")).args(["up", "--config", cfg.to_str().unwrap()]).env("PCX_RUNTIME_DIR", &run).output().unwrap();
+        let out = Command::new(env!("CARGO_BIN_EXE_pcx"))
+            .args(["up", "--config", cfg.to_str().unwrap()])
+            .env("PCX_RUNTIME_DIR", &run)
+            .output()
+            .unwrap();
         assert!(!out.status.success());
         assert!(String::from_utf8_lossy(&out.stderr).contains("ya hay un `pcx up`"));
 
         // si `pcx up` muere sin avisar (SIGKILL), los hijos se cierran solos
         let st = status(&run).unwrap();
-        let kids: Vec<i64> = ["core", "capture", "hands", "ajeno"].iter().filter_map(|n| st["procs"][n]["pid"].as_i64()).collect();
+        let kids: Vec<i64> =
+            ["core", "capture", "hands", "ajeno"].iter().filter_map(|n| st["procs"][n]["pid"].as_i64()).collect();
         assert_eq!(kids.len(), 4);
         // el «ajeno» (no es `pcx`) corre bajo `pcx guard`; su nieto `sleep` ignora SIGTERM y debe morir igual
         let pg_ajeno = st["procs"]["ajeno"]["pid"].as_i64().unwrap() as i32;
         let _ = up.0.kill();
         let _ = up.0.wait();
-        wait_for(10, "hijos cerrados tras SIGKILL del supervisor", async || kids.iter().all(|p| !alive(*p)).then_some(())).await;
+        wait_for(10, "hijos cerrados tras SIGKILL del supervisor", async || {
+            kids.iter().all(|p| !alive(*p)).then_some(())
+        })
+        .await;
         wait_for(10, "grupo del ajeno vacío", async || (unsafe { libc::killpg(pg_ajeno, 0) } != 0).then_some(())).await;
     }
     drop(up);

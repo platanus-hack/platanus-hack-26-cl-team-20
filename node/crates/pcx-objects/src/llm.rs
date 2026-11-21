@@ -48,8 +48,18 @@ impl SentImage {
         let (w, h) = img.dimensions();
         let k = (MAX_SIDE as f64 / w.max(h) as f64).min(1.0);
         let (nw, nh) = (((w as f64) * k).round().max(1.0) as u32, ((h as f64) * k).round().max(1.0) as u32);
-        let small = if k < 1.0 { image::imageops::resize(img, nw, nh, image::imageops::FilterType::Triangle) } else { img.clone() };
-        SentImage { media_type: "image/jpeg", bytes: raster::jpeg_bytes(&small, 88), scale: 1.0 / k, width: nw, height: nh }
+        let small = if k < 1.0 {
+            image::imageops::resize(img, nw, nh, image::imageops::FilterType::Triangle)
+        } else {
+            img.clone()
+        };
+        SentImage {
+            media_type: "image/jpeg",
+            bytes: raster::jpeg_bytes(&small, 88),
+            scale: 1.0 / k,
+            width: nw,
+            height: nh,
+        }
     }
 
     /// Lleva una caja `[x0, y0, x1, y1]` en px de la imagen enviada a px de la imagen original.
@@ -98,7 +108,8 @@ impl ClaudeClient {
     }
 
     pub fn new(api_key: String, model: String) -> ClaudeClient {
-        let http = reqwest::blocking::Client::builder().timeout(Duration::from_secs(180)).build().expect("cliente http");
+        let http =
+            reqwest::blocking::Client::builder().timeout(Duration::from_secs(180)).build().expect("cliente http");
         ClaudeClient { model, max_tokens: 16000, api_key, http, log_path: None, usage: Mutex::new(Vec::new()) }
     }
 
@@ -110,7 +121,8 @@ impl ClaudeClient {
 
     /// Modelos con fallback del servidor (`fallbacks: "default"`).
     pub fn supports_fallback(model: &str) -> bool {
-        ["claude-opus-5-5", "claude-opus-5", "claude-fable-5-1", "claude-fable-5-2", "claude-sonnet-5-5"].contains(&model)
+        ["claude-opus-5-5", "claude-opus-5", "claude-fable-5-1", "claude-fable-5-2", "claude-sonnet-5-5"]
+            .contains(&model)
     }
 
     /// Cuerpo y headers extra de la petición (separado para testearlo sin red).
@@ -154,7 +166,10 @@ impl ClaudeClient {
     fn record(&self, u: Usage) {
         if let Some(p) = &self.log_path {
             if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(p) {
-                let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0);
+                let t = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs_f64())
+                    .unwrap_or(0.0);
                 let line = json!({"t": t, "modelo": u.model, "seg": (u.seconds * 10.0).round() / 10.0,
                     "tokens": u.input_tokens + u.output_tokens, "input_tokens": u.input_tokens, "output_tokens": u.output_tokens});
                 let _ = writeln!(f, "{line}");
@@ -227,7 +242,11 @@ impl MockLlm {
 impl VisionLlm for MockLlm {
     fn ask_json(&mut self, parts: &[Part], _schema: &Value, _effort: &str) -> Result<Value, LlmError> {
         let n_img = parts.iter().filter(|p| matches!(p, Part::Image(_))).count();
-        let txt = parts.iter().filter_map(|p| if let Part::Text(t) = p { Some(t.as_str()) } else { None }).collect::<Vec<_>>().join(" ");
+        let txt = parts
+            .iter()
+            .filter_map(|p| if let Part::Text(t) = p { Some(t.as_str()) } else { None })
+            .collect::<Vec<_>>()
+            .join(" ");
         self.calls.push((n_img, txt));
         Ok(self.replies.pop_front().unwrap_or_else(|| self.default.clone()))
     }
@@ -246,7 +265,8 @@ mod tests {
         let img = SentImage::jpeg(&RgbImage::new(3136, 100));
         assert_eq!(img.width, 1568);
         assert_eq!(img.box_to_original([10.0, 0.0, 20.0, 50.0]), [20.0, 0.0, 40.0, 100.0]);
-        let (body, headers) = c.build_request(&[Part::Text("hola".into()), Part::Image(img)], &json!({"type": "object"}), "low");
+        let (body, headers) =
+            c.build_request(&[Part::Text("hola".into()), Part::Image(img)], &json!({"type": "object"}), "low");
         assert_eq!(body["fallbacks"], "default");
         assert_eq!(body["model"], "claude-opus-5-5");
         assert_eq!(body["output_config"]["effort"], "low");
@@ -261,7 +281,9 @@ mod tests {
     fn parse_refusal_before_content() {
         let v = json!({"stop_reason": "refusal", "stop_details": {"type": "refusal", "category": "cyber"},
                        "content": [{"type": "text", "text": "{\"n\": 1}"}]});
-        assert!(matches!(ClaudeClient::parse_response(&v), Err(LlmError::Refusal { category: Some(c) }) if c == "cyber"));
+        assert!(
+            matches!(ClaudeClient::parse_response(&v), Err(LlmError::Refusal { category: Some(c) }) if c == "cyber")
+        );
         let ok = json!({"stop_reason": "end_turn", "content": [{"type": "thinking", "thinking": ""},
             {"type": "fallback", "from": {}, "to": {}}, {"type": "text", "text": "Listo: {\"n\": 2}"}]});
         assert_eq!(ClaudeClient::parse_response(&ok).unwrap(), json!({"n": 2}));

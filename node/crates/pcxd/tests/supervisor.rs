@@ -31,7 +31,10 @@ async fn reinicia_y_detiene() {
     let dir = tempfile::tempdir().unwrap();
     let marca = dir.path().join("corridas");
     let sh = format!("echo x >> '{}'; sleep 0.2; exit 1", marca.display());
-    let s = Supervised::new(ProcSpec { backoff0: Duration::from_millis(50), ..spec("corto", &["sh", "-c", &sh], dir.path()) });
+    let s = Supervised::new(ProcSpec {
+        backoff0: Duration::from_millis(50),
+        ..spec("corto", &["sh", "-c", &sh], dir.path())
+    });
     let stop = CancellationToken::new();
     let task = tokio::spawn(s.clone().watch(stop.clone()));
     until(|| s.restarts.load(Ordering::Relaxed) >= 1 && lines(&marca) >= 2).await;
@@ -45,7 +48,8 @@ async fn cortacircuito_tras_caidas_seguidas() {
     let dir = tempfile::tempdir().unwrap();
     let marca = dir.path().join("corridas");
     let sh = format!("echo x >> '{}'; exit 3", marca.display());
-    let sp = ProcSpec { max_crashes: 3, backoff0: Duration::from_millis(10), ..spec("cae", &["sh", "-c", &sh], dir.path()) };
+    let sp =
+        ProcSpec { max_crashes: 3, backoff0: Duration::from_millis(10), ..spec("cae", &["sh", "-c", &sh], dir.path()) };
     let s = Supervised::new(sp);
     let task = tokio::spawn(s.clone().watch(CancellationToken::new()));
     tokio::time::timeout(Duration::from_secs(10), task).await.expect("debe rendirse solo").unwrap();
@@ -59,7 +63,10 @@ async fn salida_limpia_no_cuenta_como_caida() {
     let dir = tempfile::tempdir().unwrap();
     let sp = ProcSpec { restart: "on-failure".into(), ..spec("ok", &["sh", "-c", "exit 0"], dir.path()) };
     let s = Supervised::new(sp);
-    tokio::time::timeout(Duration::from_secs(5), tokio::spawn(s.clone().watch(CancellationToken::new()))).await.unwrap().unwrap();
+    tokio::time::timeout(Duration::from_secs(5), tokio::spawn(s.clone().watch(CancellationToken::new())))
+        .await
+        .unwrap()
+        .unwrap();
     assert!(!s.failed.load(Ordering::Relaxed));
     assert_eq!(s.restarts.load(Ordering::Relaxed), 0);
 }
@@ -152,13 +159,15 @@ fn pcx_toml_ejemplo_mac_completo() {
 fn up_sale_con_error_si_todo_queda_failed() {
     let dir = tempfile::tempdir().unwrap();
     let cfg = dir.path().join("pcx.toml");
-    std::fs::write(&cfg, "[supervisor]\nmax_crashes = 2\n[process.malo]\ncmd = [\"sh\", \"-c\", \"exit 7\"]\n").unwrap();
+    std::fs::write(&cfg, "[supervisor]\nmax_crashes = 2\n[process.malo]\ncmd = [\"sh\", \"-c\", \"exit 7\"]\n")
+        .unwrap();
     let out = std::process::Command::new(env!("CARGO_BIN_EXE_pcx"))
         .args(["up", "--config", cfg.to_str().unwrap()])
         .env("PCX_RUNTIME_DIR", dir.path().join("run"))
         .output()
         .unwrap();
     assert!(!out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
-    let st: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(dir.path().join("run/pcx-up.json")).unwrap()).unwrap();
+    let st: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(dir.path().join("run/pcx-up.json")).unwrap()).unwrap();
     assert_eq!(st["procs"]["malo"]["failed"], true);
 }
