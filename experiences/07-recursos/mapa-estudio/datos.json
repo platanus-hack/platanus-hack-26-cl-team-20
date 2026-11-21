@@ -1,0 +1,55 @@
+{
+  "fecha": "2026-11-21",
+  "escenarios": [
+    {"id":"crear","titulo":"Crear con el mundo","verbo":"Crear","persona":"Creador de experiencias","necesidad":"Probar una interacción sin integrar toda la cadena técnica","gesto":"Pedir una regla y después cambiarla","respuesta":"Un comportamiento sobre los objetos se modifica","valor":"Menos preparación hasta la primera interacción utilizable","comprador":"Creador o taller · por validar","prueba":"Tiempo, pasos y ayuda técnica hasta que otra persona pueda usarla","pendiente":"Creación de comportamientos frente a activación de efectos existentes","referentes":["F03","F11","F14","F27","F28"]},
+    {"id":"aprender","titulo":"Entender haciendo","verbo":"Aprender","persona":"Principiante ante una tarea manual","necesidad":"Saber qué pieza usar y dónde actuar","gesto":"Seleccionar y colocar una pieza","respuesta":"Una indicación aparece junto a la pieza y su destino","valor":"Menos ambigüedad entre la explicación y la acción","comprador":"Instructor o taller · por validar","prueba":"Dudas, selecciones y ayudas en una tarea breve","pendiente":"Distinguir guía proyectada de comprobación automática del paso","referentes":["F08","F09","F24","F25"]},
+    {"id":"pensar","titulo":"Pensar juntos","verbo":"Compartir","persona":"Dos personas que exploran una relación","necesidad":"Comprender y discutir mirando la misma cosa","gesto":"Mover piezas y señalar una relación","respuesta":"La representación compartida cambia con la disposición","valor":"Una consecuencia que ambos pueden ver y modificar","comprador":"Facilitador o espacio de aprendizaje · por validar","prueba":"Ambas personas intervienen y explican qué cambió","pendiente":"Que la manipulación aporte comprensión más allá de una pizarra","referentes":["F01","F15","F17","F18"]},
+    {"id":"narrar","titulo":"Dar vida a una historia","verbo":"Imaginar","persona":"Visitantes de una experiencia cultural","necesidad":"Participar y transformar una historia juntos","gesto":"Un objeto activa o modifica un capítulo","respuesta":"Personajes y entorno responden a la acción","valor":"La persona interviene en vez de solo mirar","comprador":"Creador cultural o anfitrión · por validar","prueba":"Comprensión de la regla, iniciativa y consecuencia reconocible","pendiente":"Que el objeto tenga un papel real después de la sorpresa inicial","referentes":["F19","F21","F23"]}
+  ],
+  "familias": [
+    {"titulo":"Pensar y crear juntos","pregunta":"¿Qué cambia al compartir el mismo espacio?","ids":["F01","F02","F03","F15","F18"]},
+    {"titulo":"Ayuda junto a los objetos","pregunta":"¿Qué información debe caer justo aquí?","ids":["F04","F05","F06","F13","F16"]},
+    {"titulo":"Guiar y comprobar","pregunta":"¿Qué paso o error puede observarse?","ids":["F08","F09","F10","F24","F25","F30"]},
+    {"titulo":"Crear proyecciones","pregunta":"¿Qué parte de la preparación simplificamos?","ids":["F07","F11","F12","F14","F17","F27","F28","F29"]},
+    {"titulo":"Jugar y contar historias","pregunta":"¿Qué invita a participar?","ids":["F19","F20","F21","F22","F23"]}
+  ],
+  "rubrica": [
+    {"nombre":"Originalidad","peso":15,"evidencia":"Una diferencia específica frente a antecedentes cercanos"},
+    {"nombre":"Ambición","peso":20,"evidencia":"Una visión amplia que se entiende desde una escena"},
+    {"nombre":"Ejecución","peso":20,"evidencia":"Una persona completa el ciclo y podemos repetirlo"},
+    {"nombre":"Aspecto técnico","peso":25,"evidencia":"Percepción, decisión y respuesta visibles"},
+    {"nombre":"Impacto","peso":20,"evidencia":"Un cambio reconocible para alguien concreto"}
+  ],
+  "fuentes": [
+    {"id":"F01","nombre":"Dynamicland","tipo":"Laboratorio","url":"https://dynamicland.org/2024/Intro/","idea":"Materiales y computación para explorar ideas juntos","limite":"Visión y ejemplos; no validación comercial"},
+    {"id":"F02","nombre":"Folk Computer","tipo":"Proyecto abierto","url":"https://folk.computer/pilot/","idea":"Instalar un sistema de computación física","limite":"Preparación y hardware forman parte de la experiencia"},
+    {"id":"F03","nombre":"Folk · objetos + SAM2","tipo":"Diario técnico · 2026","url":"https://folk.computer/newsletters/2026-07","idea":"Tracking de objetos y experimentos con DrawTalking","limite":"Experimentos con problemas de exposición y geometría"},
+    {"id":"F04","nombre":"WorldKit","tipo":"Investigación · 2013","url":"https://chrisharrison.net/index.php/Research/WorldKit","idea":"Crear controles sobre superficies cotidianas","limite":"Cámara de profundidad y proyector; ficha del proyecto"},
+    {"id":"F05","nombre":"Desktopography","tipo":"Investigación · 2017","url":"https://chrisharrison.net/index.php/Research/Desktopography","idea":"Interfaces que conviven con los objetos del escritorio","limite":"Prototipo de investigación; no prueba nuestro montaje"},
+    {"id":"F06","nombre":"RoomAlive Toolkit","tipo":"Microsoft Research","url":"https://www.microsoft.com/en-us/research/project/roomalive-toolkit/","idea":"Calibrar redes de sensores y proyectores","limite":"No se comprobó compatibilidad o mantenimiento actual"},
+    {"id":"F07","nombre":"Lightform","tipo":"Producto histórico","url":"https://lightform.com/blog/lightforms-sunset","idea":"Simplificar creación y despliegue de mapping","limite":"Anunció cierre en 2022; no prueba inviabilidad de la categoría"},
+    {"id":"F08","nombre":"LightGuide","tipo":"Proveedor industrial","url":"https://www.lightguidesys.com/ai-capabilities/","idea":"Guía proyectada, visión y verificación","limite":"Capacidades declaradas por el proveedor"},
+    {"id":"F09","nombre":"Arkite","tipo":"Proveedor industrial","url":"https://arkite.com/how-it-works/","idea":"Instrucciones, ejecución, comprobación y datos","limite":"No se probó su sistema ni sus integraciones"},
+    {"id":"F10","nombre":"Arkite AI","tipo":"Proveedor industrial","url":"https://arkite.com/platform/ai/","idea":"IA para borradores e inspección","limite":"Los borradores requieren revisión humana"},
+    {"id":"F11","nombre":"Illumibot","tipo":"Producto y documentación","url":"https://docs.illumibot.ai/","idea":"Describir visuales y proyectarlos sobre superficies","limite":"Generar contenido no equivale a una interacción física"},
+    {"id":"F12","nombre":"Illumibot · montaje","tipo":"Guía de instalación","url":"https://docs.illumibot.ai/first-time-setup/","idea":"Alineación automática, guiada o avanzada","limite":"No se midió el tiempo real de preparación"},
+    {"id":"F13","nombre":"Lenovo AI Workmate","tipo":"Concepto · MWC 2026","url":"https://news.lenovo.com/pressroom/press-releases/trusted-ai-powered-business-computing-modular-enterprise-mwc/","idea":"Asistente de escritorio con proyección e interacción natural","limite":"Prueba de concepto; no producto disponible verificado"},
+    {"id":"F14","nombre":"ImaginateAR","tipo":"Investigación · UIST 2025","url":"https://nianticspatial.github.io/imaginatear/","idea":"Autoría espacial mediante lenguaje natural","limite":"AR móvil; no proyección"},
+    {"id":"F15","nombre":"Tangible AI Mind-map","tipo":"Poster · SIGGRAPH 2026","url":"https://s2026.conference-schedule.org/presentation/?id=pos_423&sess=sess437","idea":"Brainstorming con proyección, gestos y LLM","limite":"Programa oficial; sin evaluación completa leída"},
+    {"id":"F16","nombre":"Simon","tipo":"Proyecto de hackathon","url":"https://devpost.com/software/simon-1835tp","idea":"Asistencia visual y señalamiento sobre la tarea","limite":"Descripción de su autor; sin reproducción independiente"},
+    {"id":"F17","nombre":"RealitySketch","tipo":"Investigación · UIST 2020","url":"https://ryosuzuki.org/realitysketch/","idea":"Gráficas ligadas al movimiento de objetos","limite":"AR móvil; no equivalencia automática con proyección"},
+    {"id":"F18","nombre":"Tangible Landscape","tipo":"Proyecto académico","url":"https://tangible-landscape.github.io/index.html","idea":"Manipular una maqueta y ver consecuencias calculadas","limite":"Modelo y contexto geoespacial específicos"},
+    {"id":"F19","nombre":"Le Petit Chef","tipo":"Experiencia comercial","url":"https://lepetitchef.com/en","idea":"Una historia gastronómica sobre la mesa","limite":"No demuestra reconocimiento ni generación en vivo"},
+    {"id":"F20","nombre":"EyeClick","tipo":"Proveedor de experiencias","url":"https://eyeclick.com/healthcare/physical-therapy","idea":"Juego corporal y actividades guiadas","limite":"Mensajes y testimonios comerciales"},
+    {"id":"F21","nombre":"Tovertafel","tipo":"Producto","url":"https://www.tover.care/tovertafel","idea":"Proyección y movimiento para juego compartido","limite":"Comunicación comercial; distinguir del estudio de campo"},
+    {"id":"F22","nombre":"Tovertafel · facilitación","tipo":"Estudio de campo · 2025","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC12381539/","idea":"La participación depende también del personal facilitador","limite":"Una residencia y cuatro sesiones observadas"},
+    {"id":"F23","nombre":"Osmo","tipo":"Producto tangible","url":"https://www.playosmo.com/","idea":"Manipular piezas físicas con respuesta digital","limite":"Usa tablet; no es proyección"},
+    {"id":"F24","nombre":"Funk · guía situada","tipo":"Resumen oficial · ASSETS 2015","url":"https://assets15.sigaccess.org/acceptedPapers/68.html","idea":"Beneficios en una tarea y población delimitadas","limite":"15 trabajadores con discapacidad cognitiva; no generalizar"},
+    {"id":"F25","nombre":"Funk · expertos y novatos","tipo":"Resumen de estudio · 2017","url":"https://hcistudio.org/publication/funk2017working/","idea":"El resultado cambia según la experiencia del trabajador","limite":"Beneficio en no entrenados y deterioro en expertos estudiados"},
+    {"id":"F26","nombre":"ProCap","tipo":"Investigación · IEEE VR 2026","url":"https://zimocao.github.io/ProCap/","idea":"Separar lo proyectado de lo físico al interpretar la escena","limite":"Problema documentado; no medido en nuestro montaje"},
+    {"id":"F27","nombre":"TouchDesigner","tipo":"Documentación de herramienta","url":"https://derivative.ca/UserGuide/Projection_Mapping","idea":"Mapping, calibración y flujos creativos existentes","limite":"No se comparó productividad con nuestra implementación"},
+    {"id":"F28","nombre":"MadMapper","tipo":"Funciones de herramienta","url":"https://madmapper.com/madmapper/features","idea":"Mapping, controles en vivo y calibración","limite":"Sin prueba práctica ni cotización"},
+    {"id":"F29","nombre":"Montaje audiovisual","tipo":"Testimonio comunitario · 2024","url":"https://www.reddit.com/r/VIDEOENGINEERING/comments/1e5hgpw","idea":"Presión de tiempo para alinear y cambiar contenido","limite":"Un testimonio de gran escala; sin prevalencia"},
+    {"id":"F30","nombre":"LightGuide / TNO","tipo":"Caso publicado por proveedor","url":"https://www.lightguidesys.com/resource-center/case-study/fast-flexible-and-faultless-assembly/","idea":"Comparación de guía proyectada y monitor en 35 operadores","limite":"Informe comercial; no trasladar porcentajes a nuestra demo"}
+  ]
+}
