@@ -489,3 +489,7 @@ main {
 .previa .fila .btn {
   margin-top: 0;
 }
+
+.actividad li a {
+  color: var(--senal);
+}

@@ -3,6 +3,7 @@ import { BrowserNode } from "./node.js";
 import { pxToMm, solveH } from "./calib.js";
 import { HandTracker } from "./hands.js";
 import { HtmlLayer } from "./html-layer.js";
+import { Voice } from "./voice.js";
 import { drawHands, drawScene, drawUi, hit, trackTrails } from "./render.js";
 
 const $ = (id) => document.getElementById(id);
@@ -349,11 +350,64 @@ let encoding = false;
 const shareCanvas = document.createElement("canvas");
 
 // Interfaz propia de la mesa: franja de pestañas (escenas) y botón de voz, visibles en todas las escenas.
-let voiceUi = null; // lo llena el botón de voz
+let voiceUi = { state: "idle", text: "" };
 const uiState = () => ({ enabled: node.ui.enabled, flip: node.ui.flip, scenes: node.scenes.map((s) => s.name), active: node.active, voice: voiceUi });
 let uiBounds = new Map();
 const uiAt = ([x, y]) => [...uiBounds].find(([, r]) => x >= r[0] && x <= r[0] + r[2] && y >= r[1] && y <= r[1] + r[3])?.[0];
+// ------------------------------------------------------------------ botón de voz
+// Mientras la mano (o el mouse) está sobre la esquina reservada, escucha; al salir, manda lo dicho al agente como
+// evento flow_emitted{event: "voice_command", data: {text, scene}} (llega por events_wait).
+const voice = new Voice((text) => ((voiceUi.text = text), pushWorld()), { forceAudio: new URLSearchParams(location.search).get("voz") === "audio" });
+let voiceBusy = false;
+async function voiceStart() {
+  if (voiceBusy || voice.listening) return;
+  voiceUi = { state: "listening", text: "" };
+  pushWorld();
+  await voice.start();
+}
+async function voiceStop() {
+  if (!voice.listening || voiceBusy) return;
+  voiceBusy = true;
+  const r = await voice.stop();
+  voiceBusy = false;
+  const scene = node.active;
+  if (r.error) {
+    voiceUi = { state: "idle", text: r.error };
+    note("voz", r.error);
+  } else if (r.audio) {
+    // Sin transcripción: el audio queda en esta consola y el evento avisa que está pendiente.
+    node.emit({ type: "flow_emitted", event: "voice_command", data: { text: null, audio_pending: true, seconds: r.seconds, scene } });
+    voiceUi = { state: "idle", text: `Audio de ${r.seconds} s guardado, sin transcribir` };
+    const li = note("voz", `audio de ${r.seconds} s sin transcribir (este navegador no trae reconocimiento de voz)`);
+    li.querySelector("small").replaceWith(Object.assign(document.createElement("a"), { href: URL.createObjectURL(r.audio), download: `voz-${Date.now()}.webm`, textContent: "audio" }));
+  } else if (r.text) {
+    node.emit({ type: "flow_emitted", event: "voice_command", data: { text: r.text, seconds: r.seconds, scene } });
+    voiceUi = { state: "idle", text: `Enviado: ${r.text}` };
+    note("voz", r.text);
+  } else voiceUi = { state: "idle", text: r.seconds > 0.6 ? "No escuché nada" : "" };
+  pushWorld();
+  const shown = voiceUi;
+  setTimeout(() => voiceUi === shown && ((voiceUi = { state: "idle", text: "" }), pushWorld()), 3500);
+}
+let voiceSeen = 0; // última vez que hubo una mano sobre el botón (los cuadros sin mano no cortan al tiro)
+function voiceHands(hands, now) {
+  const r = uiBounds.get("pcx:voice");
+  const over = r && hands.some((h) => h.mm.some(([x, y]) => x >= r[0] && x <= r[0] + r[2] && y >= r[1] && y <= r[1] + r[3]));
+  if (over) {
+    voiceSeen = now;
+    voiceStart();
+  } else if (voice.listening && voiceFrom === "hand" && now - voiceSeen > 450) voiceStop();
+  if (over) voiceFrom = "hand";
+}
+let voiceFrom = null;
+setInterval(() => voice.listening && voiceFrom === "hand" && performance.now() - voiceSeen > 1200 && voiceStop(), 400); // la mano salió del cuadro
+
 function pressUi(id, by) {
+  if (id === "pcx:voice") {
+    // Clic (consola o ventana del proyector): un clic empieza a escuchar y otro manda.
+    voiceFrom = "click";
+    return voice.listening ? voiceStop() : voiceStart();
+  }
   if (id.startsWith("pcx:tab:")) {
     node.scenesTool({ action: "activate", name: id.slice(8) }, by);
     note("escena", `${id.slice(8)} (${by === "touch" ? "con el dedo" : by === "viewer" ? "desde el visor" : "desde la consola"})`);
@@ -597,6 +651,20 @@ for (const [id, key] of [["ui-mesa", "enabled"], ["ui-girar", "flip"]]) {
   };
 }
 paintScenes();
+// Permiso del micrófono con un gesto de la persona, antes de que haga falta en la mesa.
+$("voz-permiso").onclick = async () => {
+  try {
+    (await navigator.mediaDevices.getUserMedia({ audio: true })).getTracks().forEach((t) => t.stop());
+    $("voz-estado").textContent = voice.transcribes
+      ? "Micrófono listo. La mesa escucha mientras haya una mano sobre «Hablar» y transcribe con el reconocimiento de voz del navegador."
+      : "Micrófono listo, pero este navegador no trae reconocimiento de voz: se graba el audio y el evento sale con audio pendiente. Usa Chrome para que transcriba.";
+  } catch (err) {
+    $("voz-estado").textContent = `No hay permiso para el micrófono (${err.name}). Dáselo en el candado de la barra de direcciones.`;
+  }
+};
+$("voz-estado").textContent = voice.transcribes
+  ? "Voz: aprieta «Activar micrófono» una vez para dar el permiso."
+  : "Voz: este navegador no trae reconocimiento de voz; se grabará el audio sin transcribir. Usa Chrome para que transcriba.";
 
 // ------------------------------------------------------------------ calibración manual (por defecto)
 // Medida a mano el 21-nov con la webcam cenital (foto de look a 1280×720). Vale hasta que corra calibrate.
@@ -680,13 +748,14 @@ function onHands(found) {
     return { px, mm, handed: h.handed, pinch: Math.hypot(px[4][0] - px[8][0], px[4][1] - px[8][1]) / palm < 0.3 };
   });
   const now = performance.now();
+  if (node.ui.enabled) voiceHands(hands, now);
   let hover = null;
   let tip = null;
   let value; // nombre del data-press cuando el dedo está sobre un elemento de un widget html
   for (const h of hands) {
     const [x, y] = (tip = h.mm[8]);
     const ui = uiAt(tip); // la franja y el botón de voz mandan sobre lo que haya debajo
-    if (ui) {
+    if (ui && ui !== "pcx:voice") {
       hover = { id: ui, ui: true };
       break;
     }
@@ -769,6 +838,7 @@ const PROMPT =
   "Después proyecta con project un saludo corto al centro y vuelve a mirar con look para confirmar que se ve. " +
   "Si look dice calibrated=false, llama a calibrate (unos 10 s, proyecta marcas). Ya calibrado, look trae una grilla en mm y " +
   "puedes anclar widgets a lo que ves con anchor.point_px (píxeles de la foto de look). " +
+  "La mesa tiene un botón de voz: lo que la persona dice llega por events_wait como flow_emitted con event voice_command y data.text (escucha con types:['flow_emitted']). " +
   "La mesa tiene escenas (pestañas): scenes(action:list) dice cuál está activa; project, remove y scene aceptan scene:'nombre' para editar una que no está a la vista. " +
   "Para interfaces completas proyecta html: {type:'effect', id:'ui', shader:'html', rect_mm:[300,150,400,250], params:{html:'<div class=c><h1>Hola</h1><button data-press=ok>Listo</button></div>', css:'.c{padding:20px;background:#222;border-radius:16px}', rotate_deg:0}}; 1 px de CSS = 1 mm y cada data-press emite widget_pressed con ese nombre. " +
   "Para manos en vivo proyecta un widget effect con shader hands: dibuja el esqueleto sobre la mano y un dedo quieto 0,4 s sobre un button dispara widget_pressed. " +
@@ -814,6 +884,7 @@ function note(tool, text) {
   li.querySelector("b").textContent = tool;
   li.querySelector("span").textContent = li.querySelector("span").title = text;
   $("actividad").prepend(li);
+  return li;
 }
 const brief = (tool, args, data) =>
   !data || data.error

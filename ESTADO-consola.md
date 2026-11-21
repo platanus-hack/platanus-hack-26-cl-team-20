@@ -102,6 +102,14 @@ así que también va por escena) y una sola activa en el proyector.
   nuevo: el contrato no deja agregar uno sin tocar `contracts/`).
 - Zona reservada: la franja y la esquina de voz. `project` devuelve `reserved` si un widget las pisa.
 
+**Botón de voz.** Esquina reservada, visible en todas las escenas. Mientras una mano está sobre «Hablar» (o tras un
+clic en la consola o en la ventana del proyector; otro clic manda), la consola escucha con `SpeechRecognition` del
+navegador (es-CL, parciales) y el micrófono de ese computador. La mesa muestra el anillo que late y el texto parcial.
+Al sacar la mano sale `flow_emitted` con `event: "voice_command"` y `data: {text, seconds, scene}`; también queda en el
+registro de la consola y del visor. Sin `SpeechRecognition` graba el audio (queda como enlace en el registro de la
+consola) y el evento sale con `text: null, audio_pending: true`. El permiso del micrófono se da una vez con «Activar
+micrófono». El reconocimiento de Chrome usa el servicio de voz de Google: necesita internet.
+
 ## Modelo de lente (pedido de Max)
 
 Método medido por el orquestador en `tools/mesa-agente/lente.py`; resultado de referencia en
