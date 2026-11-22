@@ -138,14 +138,14 @@ servicio de detección en `:8805` y el cliente `pcxl.py`. Operación completa y 
 [docs/maestro/OPERACION.md](docs/maestro/OPERACION.md).
 
 Para solo conectar un agente a una mesa, sin las escenas, basta el gateway desplegado: abrir
-`https://pcx-gateway.onrender.com/agente` y seguir los pasos.
+`https://pcx-gateway-o0ku.onrender.com/agente` y seguir los pasos.
 
 ## Mapa del repositorio
 
 | Carpeta | Qué es |
 |---|---|
 | `experimentos/v2-mesa/` | Las tres escenas, el pipeline de percepción en milímetros, el control de la demo, los agentes de voz y la presentación. Es lo que corre en la demo. |
-| `cloud/gateway/` | Gateway FastAPI: servidor MCP (`/mcp`), consola web (`/mesa`), ventana del proyector y sesiones. Desplegado en Render como `https://pcx-gateway.onrender.com`. |
+| `cloud/gateway/` | Gateway FastAPI: servidor MCP (`/mcp`), consola web (`/mesa`), ventana del proyector y sesiones. Desplegado en Render como `https://pcx-gateway-o0ku.onrender.com`. |
 | `node/`, `renderer/`, `contracts/` | Motor local en Rust (`pcx`): captura, manos, objetos, calibración y compositor del proyector, con contratos tipados. La demo de las tres escenas no lo usa (debe estar detenido). |
 | `engine/` | Copia de `sl-scanner` de Max: luz estructurada (`slscan`), MobileSAM y más. El pipeline de la mesa importa estas piezas desde un clon aparte de `sl-scanner`, no desde esta carpeta. |
 | `integrations/` | Skills y plugin de `pcx` para Claude Code, Codex y OpenCode. |
