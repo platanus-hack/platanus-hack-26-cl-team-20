@@ -1,4 +1,4 @@
-// Remoto de la presentación WUI: recibe el POV de Matilda por WebRTC y los comandos del control.
+// Remoto de la presentación WUI: recibe el POV de Pablo por WebRTC y los comandos del control.
 // Corre dentro de presentacion.html. Si el servidor (remoto/servidor.py) no está, no hace nada visible.
 (function () {
   'use strict';

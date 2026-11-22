@@ -3,7 +3,7 @@
 Propuesta para ensayar; nada cronometrado en la mesa. El guion completo y los tiempos medidos están en [PITCH.md](PITCH.md).
 
 **Reparto propuesto.** Max abre, explica la idea y cierra. SAT presenta las tres escenas y maneja la presentación desde
-su celular. Matilda actúa y conversa con las voces. Pablo y Manu son tramoya: cambian los objetos de la mesa.
+su celular. Pablo actúa y conversa con las voces. Matilda y Manu son tramoya: cambian los objetos de la mesa.
 Si prefieren otro reparto de la voz, se intercambian los bloques sin tocar los tiempos.
 
 Señales comunes: **«Dale»** = aparece la escena con el logo. **«Mesa lista»** = tramoya terminó; SAT aprieta «Preparar»
@@ -12,14 +12,14 @@ preparado antes de empezar).
 
 ---
 
-## Matilda · qué hacer, paso a paso
+## Pablo · qué hacer, paso a paso
 
-Antes de empezar: sentada frente a la mesa, del lado lejano a la cámara. Teléfono en la cabeza con la página de
+Antes de empezar: en su puesto frente a la mesa, del lado lejano a la cámara. Teléfono en la cabeza con la página de
 transmisión abierta (ver `remoto/LEEME.md`). Tu otro teléfono, en el bolsillo.
 
 | Cuándo | Qué haces |
 |---|---|
-| 0:00 Max dice «Ella es Matilda» | Miras al público y saludas. La mesa está sin luz. |
+| 0:00 Max dice «Les presento a Pablo» | Miras al público y saludas. La mesa está sin luz. |
 | 0:27 aparece el escritorio | Trabajas con naturalidad. Posa la mano sobre **Aprobar** en el computador (medio segundo). |
 | hasta 0:57 | En la libreta: mano sobre **Comenzar juego**, dibuja un # y una X. La mesa responde con su marca. |
 | 0:57 Max dice «sin lentes» | Te echas atrás: entra tramoya. No toques nada. |
@@ -41,7 +41,7 @@ Si algo no responde en 3 segundos, sigue con lo siguiente: Max y SAT cubren con 
 
 | Bloque | Entras cuando | Dices |
 |---|---|---|
-| 1 · 0:00 | Matilda está sentada y hay silencio | «Ella es Matilda. Es CTO y programa con agentes. Sus agentes ven su pantalla, pero no ven su mesa, que es donde ella piensa.» |
+| 1 · 0:00 | Pablo está en su puesto y hay silencio | «Les presento a Pablo. Es CTO y programa con agentes. Sus agentes ven su pantalla, pero no ven su mesa, que es donde piensa.» |
 | 2 · 0:12 | Terminas el 1 | «Presentamos WUI: el motor para que los agentes trabajen contigo en el mundo físico. No solo ven tu espacio. Actúan en él, con luz.» |
 | 4 · 0:57 | SAT termina el escritorio y tramoya entra | «Es realidad mixta sin lentes. Y por eso es colaborativa: todos en la mesa ven lo mismo, y el agente también.» |
 | 6 · 1:42 | Lumo termina de hablar y tramoya entra | «La inteligencia artificial ya diseña experimentos. El cuello de botella son las manos: faltan técnicos de laboratorio. ¿Y si cualquiera pudiera seguir un protocolo sin equivocarse?» |
@@ -64,7 +64,7 @@ Tienes el control en el celular: Siguiente, Pausa, Terminar, Preparar y Dale.
 | 3 · 0:27 | **Siguiente** | «Primero, lo personal. La mesa reconoce cada objeto al milímetro y cada uno se vuelve interfaz: aprueba un cambio de código desde el computador, la libreta es un tablero de juego. Detrás hay segmentación de imagen y un modelo de decisión que lee tinta en papel en medio segundo.» |
 | 0:57 terminas | **Terminar** y **Siguiente** | — |
 | Tramoya dice «mesa lista» | **Preparar** (se lanza sola) y **Siguiente** | — |
-| 5 · 1:12 | — | «Ahora, educación. Nada aquí tiene marcadores ni sensores: la mesa sigue los platos con una cámara común.» Y te callas: es el momento de Matilda y Lumo. |
+| 5 · 1:12 | — | «Ahora, educación. Nada aquí tiene marcadores ni sensores: la mesa sigue los platos con una cámara común.» Y te callas: es el momento de Pablo y Lumo. |
 | 1:42 Lumo terminó | **Terminar** y **Siguiente** | — |
 | Tramoya dice «mesa lista» | **Preparar** (se lanza sola) y **Siguiente** | — |
 | 7 · 1:57 | — | «Trabajo. La mesa guía cada paso, avisa si usas el vial equivocado, mide cuánto líquido llevas y detecta lo que no debería estar ahí.» |
@@ -75,7 +75,7 @@ Si Lumo no responde en 6 segundos, aprieta **Terminar** y deja que Max entre con
 
 ---
 
-## Pablo y Manu · tramoya
+## Matilda y Manu · tramoya
 
 Dos cambios, 15 segundos cada uno. Ensayen con cronómetro: es donde se puede ir la demo.
 

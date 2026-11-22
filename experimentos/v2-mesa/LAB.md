@@ -16,7 +16,7 @@ La mesa conoce el inventario de la caja organizadora, alumbra lo que se le pide 
 - **Encender:** tecla **L** en el dashboard (o `curl "http://127.0.0.1:9301/start?escena=lab"`). **X** apaga.
 - **Voz:** agente de ElevenLabs «WUI · Laboratorio (mesa v2.1)», copia del agente de laboratorio de Max (misma voz
   pausada) con prompt y herramientas de esta mesa. Se crea o actualiza con `lab_agente.py`. Trata de usted, guía a
-  Matilda y conversa con ella. Parte desde el botón «Hablar con el laboratorio» junto a la libreta.
+  Pablo y conversa con ella. Parte desde el botón «Hablar con el laboratorio» junto a la libreta.
 
 ## Qué espera la escena en la mesa
 
@@ -28,7 +28,7 @@ La mesa conoce el inventario de la caja organizadora, alumbra lo que se le pide 
 | Pipeta | Paso 1 del protocolo | Sobre la mesa, separada. |
 | Vaso con líquido oscuro | Parte del experimento: meta de llenado y nivel en vivo | De pie, sin objetos pegados; a su izquierda (vista de cámara) va el medidor. |
 | Libreta abierta | Notas, pasos del protocolo y botón de voz | A 4 cm o más del borde de la persona. |
-| Teléfono | NO va en la mesa al partir | Cuando Matilda lo deja, salta la alerta en menos de medio segundo y la voz le pide retirarlo. |
+| Teléfono | NO va en la mesa al partir | Cuando Pablo lo deja, salta la alerta en menos de medio segundo y la voz le pide retirarlo. |
 
 Sin la caja organizadora la escena funciona, pero sin inventario.
 

@@ -551,7 +551,7 @@ def iniciar_experimento():
         for _ in range(40):
             if E.get('conv'): break
             time.sleep(0.25)
-    sv.PEND.append('(Matilda apretó «Iniciar experimento» en la mesa. Guíela desde el paso 1 del protocolo: llame a `protocolo`, diga la primera instrucción y avance con `paso` cuando ella confirme.)')
+    sv.PEND.append('(Pablo apretó «Iniciar experimento» en la mesa. Guíela desde el paso 1 del protocolo: llame a `protocolo`, diga la primera instrucción y avance con `paso` cuando ella confirme.)')
 
 
 def eventos():
@@ -570,11 +570,11 @@ def eventos():
                 if cid not in (PIP[0]['desde'], PIP[0]['hasta']) or (cid == PIP[0]['hasta'] and not HECHO['desde']):
                     esp = PIP[0]['hasta'] if HECHO['desde'] else PIP[0]['desde']; ERR[0] = {"texto": f"Vial incorrecto ({cid}) · use el {esp}", "t": time.time(), "id": cid}; publicar(); log('error: vial incorrecto', cid)
                     subprocess.Popen(['afplay', str(H / 'cues/recuperacion.wav')])
-                    if E.get('conv'): sv.PEND.append(f'(Error: Matilda puso la pipeta en el vial {cid}, que no corresponde. Dígale con calma que es el vial incorrecto y que use el {esp}.)')
+                    if E.get('conv'): sv.PEND.append(f'(Error: Pablo puso la pipeta en el vial {cid}, que no corresponde. Dígale con calma que es el vial incorrecto y que use el {esp}.)')
                 elif cid == PIP[0]['desde'] and not HECHO['desde']: HECHO['desde'] = True; publicar(); log('pipeta en el origen', cid); subprocess.Popen(['afplay', str(H / 'cues/guia.wav')])
                 elif cid == PIP[0]['hasta'] and HECHO['desde'] and not HECHO['hasta']:
                     HECHO['hasta'] = True; ERR[0] = None; publicar(); log('pipeta en el destino', cid); subprocess.Popen(['afplay', str(H / 'cues/confirmacion.wav')])
-                    if E.get('conv'): sv.PEND.append(f"(Matilda llevó la pipeta de {PIP[0]['desde']} a {PIP[0]['hasta']}: la transferencia está hecha. Confírmelo y siga con el paso siguiente.)")
+                    if E.get('conv'): sv.PEND.append(f"(Pablo llevó la pipeta de {PIP[0]['desde']} a {PIP[0]['hasta']}: la transferencia está hecha. Confírmelo y siga con el paso siguiente.)")
 
 
 if __name__ == '__main__':
@@ -599,7 +599,7 @@ if __name__ == '__main__':
     w = {"type": "effect", "id": "lab-vivo", "shader": "html", "rect_mm": [0, 0, 1000, 563],
          "params": {"html": '<canvas id="c"></canvas>' + marca.firma() + chip, "css": marca.fuente() + marca.CSS_CANVAS, "js": JS}}
     log('widget:', sv.pcx('project', {"request_id": "lab-%d" % time.time(), "widgets": [{"type": "effect", "id": "manos", "shader": "hands", "params": {"skeleton": False, "trail": False}}, w]})[:70])
-    threading.Thread(target=eventos, daemon=True).start(); NIVEL[0] = 0; threading.Thread(target=verificar_jev, daemon=True).start(); threading.Thread(target=seguir_pipeta, daemon=True).start(); threading.Thread(target=seguir_tiras, daemon=True).start(); (H / 'out/lista.flag').write_text('1'); threading.Thread(target=mirar_tiras, daemon=True).start()
+    threading.Thread(target=eventos, daemon=True).start(); NIVEL[0] = 0; threading.Thread(target=verificar_jev, daemon=True).start(); threading.Thread(target=seguir_pipeta, daemon=True).start();  (H / 'out/lista.flag').write_text('1'); threading.Thread(target=mirar_tiras, daemon=True).start()
     n = 0; ocupado = [False]; LEC = []
     def _det():
         ocupado[0] = True
@@ -614,13 +614,13 @@ if __name__ == '__main__':
             TEL['n'] = min(TEL['n'] + 1, 3)
             if TEL['n'] == 3 and TEL['poly'] is None:
                 TEL['poly'] = t; publicar(); log('alerta: teléfono en la mesa'); subprocess.Popen(['afplay', str(H / 'cues/recuperacion.wav')])
-                if E.get('conv'): sv.PEND.append('(Matilda acaba de dejar su teléfono sobre la mesa de trabajo. Es un objeto ajeno al experimento: pídale con cortesía que lo retire.)')
+                if E.get('conv'): sv.PEND.append('(Pablo acaba de dejar su teléfono sobre la mesa de trabajo. Es un objeto ajeno al experimento: pídale con cortesía que lo retire.)')
             elif TEL['poly'] is not None and n % 8 == 0: TEL['poly'] = t; publicar()
         else:
             TEL['n'] = max(TEL['n'] - 1, 0)
             if TEL['n'] == 0 and TEL['poly'] is not None:
                 TEL['poly'] = None; publicar(); log('teléfono retirado')
-                if E.get('conv'): sv.PEND.append('(Matilda retiró el teléfono. Puede continuar.)')
+                if E.get('conv'): sv.PEND.append('(Pablo retiró el teléfono. Puede continuar.)')
         if n == 20: BASE['g'] = None; BASE['m'] = None      # referencia del vaso vacío, ya con la proyección puesta
         if n > 20 and n % 3 == 0:
             nv = nivel_altura(g); LEC.append(nv if nv is not None else 0); del LEC[:-5]; mv = sorted(LEC)[len(LEC) // 2]
