@@ -1,0 +1,137 @@
+/* Piezas propias de la escena Laboratorio, hechas solo con los tokens del sistema común (base.css + tema.css).
+ * Se cargan entre base.css y tema.css. 1 px de CSS = 1 mm de mesa; texto ≥ 28 mm, trazos ≥ 4 mm.
+ *
+ * Firma de la escena: marcas de registro en las esquinas (como las de una placa o un plano) en vez de cajas y brillos.
+ */
+html, body { font-variant-numeric: tabular-nums; }
+
+/* ---------- marcas de registro ---------- */
+.reg { position: absolute; inset: 0; pointer-events: none; }
+.reg i { position: absolute; width: 18px; height: 18px; border: 0 solid var(--c, var(--sd-tinta)); }
+.reg i:nth-child(1) { left: 0; top: 0; border-left-width: var(--sd-trazo); border-top-width: var(--sd-trazo); }
+.reg i:nth-child(2) { right: 0; top: 0; border-right-width: var(--sd-trazo); border-top-width: var(--sd-trazo); }
+.reg i:nth-child(3) { right: 0; bottom: 0; border-right-width: var(--sd-trazo); border-bottom-width: var(--sd-trazo); }
+.reg i:nth-child(4) { left: 0; bottom: 0; border-left-width: var(--sd-trazo); border-bottom-width: var(--sd-trazo); }
+
+/* ---------- instrucción y acciones ---------- */
+.lab-panel.sd-panel { border: 0; background: transparent; position: relative; padding: 5px 8px; gap: 17px; }
+.lab-cabeza { border-top: 1px solid #f4f4f269; padding-top: 12px; }
+.lab-cabeza .sd-paso { font-weight: 400; color: var(--sd-tenue); letter-spacing: .055em; }
+.lab-panel h1 { max-width: 10em; font-size: 34px; font-weight: 500; line-height: 1.13; --wui-pista-margen: .78em; }
+.lab-panel h1 b, .lab-dir { font-weight: 650; color: var(--sd-foco); }
+.lab-detalle { color: var(--sd-tenue); padding-inline-start: 26px;
+  animation: lab-detalle 1720ms var(--wui-curva) var(--wui-pista-retardo, 0ms) both; }
+@keyframes lab-detalle { 0%, 63% { opacity: 0; } }
+.lab-panel .sd-fila { margin-top: auto; column-gap: 24px; }
+.lab-panel .sd-boton[data-press] {
+  justify-content: flex-start; padding: 0 4px; border: 0; border-block-end: 2px solid #f4f4f269;
+  border-radius: 0; background: transparent; font-weight: 500; color: var(--sd-tenue);
+}
+.lab-panel .sd-boton[data-press]::before { height: 3px; }
+.lab-panel .sd-boton.lab-listo { color: var(--sd-foco); }
+.lab-panel .sd-boton.lab-listo.ya, .lab-panel .sd-boton[data-pcx-fired] { border-color: var(--sd-foco); color: var(--sd-foco); }
+.lab-registro { display: grid; grid-template-columns: 40px 1fr; row-gap: 6px; }
+.lab-registro span:nth-child(odd) { color: var(--sd-tenue); }
+
+/* ---------- pastillero (Señalar + Nombrar), girado con la caja ---------- */
+.lab-grilla { position: absolute; }
+.lab-grilla .borde { position: absolute; inset: -6px; border: var(--sd-trazo) solid color-mix(in srgb, var(--sd-tinta) 55%, transparent); border-radius: 4px; }
+.lab-grilla .eje { position: absolute; display: grid; place-items: center; font: 600 var(--sd-texto)/1 var(--sd-fuente-dato); color: var(--sd-foco); }
+.lab-grilla .guia { position: absolute; background: var(--sd-foco); opacity: 0.7; }
+.lab-grilla .celda { position: absolute; }
+.lab-grilla .celda.hecha::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: var(--sd-tenue); }
+.lab-grilla .celda.objetivo { --c: var(--sd-foco); animation: lab-marcar 420ms var(--sd-curva) both; }
+.lab-grilla .celda.mal { --c: var(--sd-peligro); }
+.lab-grilla .celda.mal .reg i { border-style: dashed; }
+.lab-grilla .celda .reg { inset: -5px; }
+.lab-grilla .celda .reg i { width: 10px; height: 10px; }
+.lab-grilla .celda .relleno { position: absolute; inset: 3px; border-radius: 3px; background: color-mix(in srgb, var(--c) 45%, transparent); }
+.lab-grilla .sd-etiqueta { position: absolute; border: 0; border-top: 1px solid #f4f4f269;
+  padding: 6px 0; border-radius: 0; background: transparent; white-space: normal; font-weight: 600; }
+.lab-grilla .sd-etiqueta small { font: 400 var(--sd-texto) var(--sd-fuente); color: var(--sd-tenue); margin-left: 10px; }
+.lab-grilla .sd-etiqueta.mal { border-color: var(--sd-peligro); }
+.voltear { display: inline-block; transform: rotate(180deg); }
+@keyframes lab-marcar { from { transform: scale(1.12); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ---------- vaso (Medir + Avisar) ---------- */
+.lab-medidor { position: absolute; inset: 0; padding: var(--sd-aire); display: grid; grid-template-columns: 30px 1fr; grid-template-rows: 1fr auto;
+  column-gap: 20px; row-gap: var(--sd-aire); }
+.lab-medidor > .sd-aviso {
+  grid-column: 1 / -1; min-height: 86px; text-wrap: balance;
+  background: transparent; border: 0; border-block-start: 1px solid #f4f4f269; border-radius: 0; padding: 10px 0 0;
+}
+.lab-escala { position: relative; align-self: end; border-left: 2px solid #f4f4f260; }
+.lab-escala .marca { position: absolute; left: 0; height: 0; border-top: 1px solid var(--sd-tenue); }
+.lab-escala .nivel { position: absolute; left: 0; bottom: 0; width: 8px; border-radius: 4px 4px 0 0; background: var(--sd-tinta); }
+.lab-escala .exceso { position: absolute; left: 0; width: 8px; background: repeating-linear-gradient(0deg, var(--sd-tinta) 0 3px, transparent 3px 6px); }
+.lab-escala .meta { position: absolute; left: -6px; width: 39px; height: 0; border-top: 2px solid var(--sd-foco); }
+.lab-lectura { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.lab-vivo { color: var(--sd-tenue); display: flex; align-items: center; gap: 10px; }
+.lab-vivo i { width: 8px; height: 8px; border-radius: 50%; background: var(--sd-foco); animation: lab-vivo 2.2s ease-in-out infinite; }
+.lab-medidor .sd-dato { white-space: nowrap; margin-top: auto; }
+.lab-medidor .sd-dato.tres { font-size: calc(var(--sd-dato) * 0.75); }
+.lab-objetivo { color: var(--sd-tenue); white-space: nowrap; }
+.lab-objetivo b { font-family: var(--sd-fuente-dato); }
+.lab-objetivo b { color: var(--sd-foco); font-weight: 600; }
+.lab-medidor.listo .nivel { background: var(--sd-ok); }
+.lab-medidor.pasado .sd-dato { color: var(--sd-peligro); }
+.lab-medidor .reg { --c: var(--sd-tenue); }
+.lab-medidor.pasado .reg { --c: var(--sd-peligro); }
+.lab-medidor.pasado .reg i { border-style: dashed; }
+@keyframes lab-vivo { 50% { opacity: .6; } }
+
+/* ---------- guía de la celda al vaso (Llevar) ---------- */
+.lab-guia svg { position: absolute; inset: 0; overflow: visible; }
+.lab-guia path { fill: var(--sd-foco); }
+.lab-guia circle { stroke: var(--sd-tenue); stroke-width: 2; fill: none; }
+.lab-guia .lab-origen { fill: var(--sd-foco); stroke: none; }
+.lab-guia .lab-trayecto { stroke: var(--sd-foco); stroke-width: 2.6; stroke-linecap: round; fill: none;
+  stroke-dasharray: 1; animation: lab-tender 880ms var(--sd-curva) both; }
+@keyframes lab-tender { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+/* ---------- traspaso de vial a vial (Llevar, dentro de la gradilla) ---------- */
+.lab-grilla .celda.origen .reg i { border-style: solid; }
+.lab-flecha { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.lab-flecha line { stroke: var(--sd-foco); stroke-width: var(--sd-trazo); stroke-linecap: round; }
+.lab-flecha path { fill: var(--sd-foco); }
+
+/* ---------- mezclar: cuenta regresiva sin scripts ---------- */
+@property --n { syntax: "<integer>"; initial-value: 0; inherits: false; }
+.lab-reloj { display: grid; grid-template-columns: auto auto 1fr; align-items: baseline; column-gap: 8px; }
+.lab-reloj-n { font: 600 var(--sd-dato)/1 var(--sd-fuente-dato); color: var(--sd-foco); animation: lab-cuenta linear forwards;
+  animation-duration: inherit; counter-reset: n var(--n); --n: var(--s); }
+.lab-reloj-n::after { content: counter(n); }
+.lab-reloj-u { color: var(--sd-tenue); }
+.lab-reloj i { grid-column: 1 / -1; height: 8px; background: var(--sd-foco); transform-origin: left; animation: lab-vaciar linear forwards; }
+@keyframes lab-cuenta { from { --n: var(--s); } to { --n: 0; } }
+@keyframes lab-vaciar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* ---------- ambiente: proteínas en el espacio libre ---------- */
+.lab-ambiente { position: absolute; inset: 0; pointer-events: none; }
+.lab-proteina { position: absolute; overflow: visible; opacity: 0.55; transform: rotate(var(--r));
+  animation: lab-flotar cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate; }
+.lab-proteina path, .lab-proteina circle { fill: none; stroke: var(--sd-tenue); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.lab-proteina .b { stroke: color-mix(in srgb, var(--sd-foco) 70%, transparent); }
+.lab-proteina .f { fill: color-mix(in srgb, var(--sd-foco) 60%, transparent); stroke: none; }
+@keyframes lab-flotar { to { transform: translate(var(--dx), var(--dy)) rotate(calc(var(--r) + var(--dr))); } }
+
+/* ---------- la lista del protocolo ---------- */
+.lab-protocolo { position: absolute; inset: 0; padding: 8px 4px; border-top: 1px solid #f4f4f269; }
+.lab-protocolo-t { color: var(--sd-tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lab-protocolo ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-auto-flow: row; gap: 4px 14px; }
+.lab-protocolo li { display: grid; grid-template-columns: 21px minmax(0,1fr); gap: 5px; color: var(--sd-tenue); white-space: nowrap; }
+.lab-protocolo li .n { font-family: var(--sd-fuente-dato); }
+.lab-protocolo li.hecho { opacity: .58; }
+.lab-protocolo li.ahora { color: var(--sd-tinta); }
+.lab-protocolo li.ahora .n { color: var(--sd-foco); }
+
+/* ---------- objeto contaminado: contorno segmentado y aviso ---------- */
+.lab-contaminado { position: absolute; inset: 0; overflow: visible; }
+.lab-contaminado polygon { fill: color-mix(in srgb, var(--sd-peligro) 55%, transparent); stroke: var(--sd-peligro); stroke-width: 8;
+  stroke-linejoin: round; stroke-dasharray: 10 6; animation: lab-alerta 1.72s var(--sd-curva) both; }
+.lab-alarma.sd-panel { border-color: var(--sd-peligro); border-style: dashed; background: rgba(0, 0, 0, 0.82); }
+.lab-alarma .sd-paso { color: var(--sd-peligro); }
+@keyframes lab-alerta { from { opacity: .35; } }
+
+.lab-flecha line { stroke-linecap: round; animation: lab-situa 880ms var(--sd-curva) both; }
+@keyframes lab-situa { from { stroke-dashoffset: 21px; opacity: .15; } }

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Prueba del remoto (presentación simulada)</title>
+<style>body{background:#171717;color:#F4F4F2;font:16px system-ui;padding:16px}video{width:480px;background:#000}</style></head>
+<body>
+<h3>Presentación simulada (no es la real). Sala: <span id="sala"></span></h3>
+<video id="v-pov" autoplay muted playsinline></video>
+<div id="c-e">escena de prueba</div><button id="b-prep">Preparar X (P)</button>
+<pre id="log"></pre>
+<script>
+const Q = new URLSearchParams(location.search);
+window.WUI_REMOTO_URL = location.origin; window.WUI_REMOTO_SALA = Q.get('sala') || 'prueba';
+document.getElementById('sala').textContent = window.WUI_REMOTO_SALA;
+let n = 0, corriendo = false; window.__log = [];
+const L = (...a) => { window.__log.push(a.join(' ')); document.getElementById('log').textContent = window.__log.join('\n'); };
+window.WUI = { ir: k => { n = k; L('ir', k); }, siguiente: () => { n++; L('siguiente'); }, anterior: () => { n--; L('anterior'); }, pausa: () => { corriendo = !corriendo; L('pausa'); },
+  reiniciar: () => { n = 0; corriendo = false; L('reiniciar'); }, estado: () => ({ lamina: n + 1, total: 9, corriendo, t: 12.5 }),
+  ponerPov: st => { document.getElementById('v-pov').srcObject = st; L('ponerPov'); }, ctl: r => L('ctl', r) };
+</script>
+<script src="/presentacion-remoto.js"></script>
+</body></html>

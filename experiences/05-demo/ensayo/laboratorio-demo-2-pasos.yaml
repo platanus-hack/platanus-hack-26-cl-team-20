@@ -1,0 +1,38 @@
+# Protocolo corto para la demo de 3 minutos: solo los dos pasos que muestra el guion
+# (elegir el vial A2 y medir 50 ml). Es el protocolo de escenas/laboratorio/escena.md
+# (rama max/escenas-a-main, 1b853ec) SIN los pasos 2, 3 y 4 (traspaso, anticuerpo y mezcla).
+# Todo lo demás es igual. No reemplaza nada: se usa solo si se lanza así:
+#   uv run python conductor.py --escena <ruta>/laboratorio-demo-2-pasos.yaml --camara-vaso <id> ...
+nombre: Ensayo de unión, muestra 7
+investigadora: Matilda
+
+pastillero:
+  colores: [blanco, morado, amarillo, azul, verde, magenta, rosado]   # columna 1 a 7
+
+viales:
+  A2: muestra 7
+  B3: anticuerpo
+  C5: mezcla
+
+vaso:
+  capacidad_ml: 250
+  posicion_mm: [525, 470]
+
+panel_mm: [160, 64, 330, 420]
+medidor_mm: [500, 64, 210, 330]
+protocolo_mm: [650, 385, 340, 170]
+ambiente: true
+contaminacion: true
+
+pasos:
+  - di: Elige la muestra A2
+    corto: Muestra
+    detalle: Fila A, columna 2. Tócala
+    celda: A2
+    elegir: true
+
+  - di: Pon 50 ml de buffer en el vaso
+    corto: Buffer
+    detalle: Echa despacio. Te aviso
+    medir_ml: 50
+    tolerancia_ml: 3

@@ -1,0 +1,19 @@
+# PC Windows con NVIDIA: motor del escáner (captura, calibración, tracking, render).
+# torch con CUDA 12.x desde el índice oficial; el resto desde PyPI.
+--extra-index-url https://download.pytorch.org/whl/cu126
+torch
+torchvision
+numpy
+scipy
+opencv-python
+pyserial          # DMX por USB (FTDI: Enttec Open DMX / DMX USB Pro)
+pyyaml
+pytest
+open3d            # mallas (Poisson), ICP, visualización
+trimesh
+xatlas            # UV para texturas PBR (F3)
+websockets        # backend en vivo Mac <-> PC (slserver)
+fastapi
+uvicorn
+moderngl          # render desde el proyector con su calibración (F4)
+pyglet

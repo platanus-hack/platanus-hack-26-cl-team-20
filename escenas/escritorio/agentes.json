@@ -1,0 +1,8 @@
+{
+  "_como": "Los agentes que se ven en la mesa. Edita los textos y el estado (trabajando, esperando o listo). El director relee este archivo cada pocos segundos, así que cualquier programa que lo escriba los mueve en vivo.",
+  "agentes": [
+    {"nombre": "api-cobros", "estado": "trabajando", "detalle": "escribe los tests de /v1/cobros", "desde": "12 min"},
+    {"nombre": "revisor", "estado": "esperando", "detalle": "el PR 482 espera tu OK", "desde": "4 min"},
+    {"nombre": "migración", "estado": "listo", "detalle": "copió 1,2 M filas a pagos_v2", "desde": "08:52"}
+  ]
+}

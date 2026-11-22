@@ -1,0 +1,17 @@
+— Solver JS (DLT normalizado + LM), verdad fx=fy=2304 cx=960 cy=980, 1920x1080 —
+sin ruido, completo                n= 8 ruido=0cm  ok=200/200  rms(med)=5.2e-13px  modelo@2m med=5.9e-13px p90=2.5e-12px  |Δf|=9.9e-14%  |Δcy|=5.7e-12px  ΔR=0.00°  Δcentro=2.0e-13cm  0.1ms  [dlt+lm(completo)]
+ruido 1 cm, completo               n= 8 ruido=1cm  ok=200/200  rms(med)=5.16px  modelo@2m med=7.68px p90=13.77px  |Δf|=1.36%  |Δcy|=53.5px  ΔR=1.71°  Δcentro=3.45cm  0.3ms  [dlt+lm(completo)]
+ruido 1 cm, completo               n=12 ruido=1cm  ok=200/200  rms(med)=6.92px  modelo@2m med=5.92px p90=8.44px  |Δf|=0.97%  |Δcy|=35.8px  ΔR=1.24°  Δcentro=2.47cm  0.4ms  [dlt+lm(completo)]
+ruido 1 cm, completo               n=20 ruido=1cm  ok=200/200  rms(med)=8.22px  modelo@2m med=4.45px p90=6.60px  |Δf|=0.78%  |Δcy|=29.0px  ΔR=1.12°  Δcentro=1.72cm  0.5ms  [dlt+lm(completo)]
+ruido 1 cm, completo               n=30 ruido=1cm  ok=200/200  rms(med)=8.89px  modelo@2m med=3.80px p90=5.45px  |Δf|=0.55%  |Δcy|=29.6px  ΔR=0.98°  Δcentro=1.36cm  0.3ms  [dlt+lm(completo)]
+sin ruido, fxfy                    n= 8 ruido=0cm  ok=200/200  rms(med)=5.3e-13px  modelo@2m med=6.0e-13px p90=2.4e-12px  |Δf|=7.9e-14%  |Δcy|=5.0e-12px  ΔR=0.00°  Δcentro=1.9e-13cm  0.1ms  [dlt+lm(fxfy)]
+ruido 1 cm, fxfy                   n= 8 ruido=1cm  ok=200/200  rms(med)=5.58px  modelo@2m med=7.13px p90=12.73px  |Δf|=1.24%  |Δcy|=45.4px  ΔR=1.40°  Δcentro=3.24cm  0.3ms  [dlt+lm(fxfy)]
+ruido 1 cm, fxfy                   n=12 ruido=1cm  ok=200/200  rms(med)=7.24px  modelo@2m med=5.62px p90=8.29px  |Δf|=1.03%  |Δcy|=34.3px  ΔR=1.21°  Δcentro=2.37cm  0.3ms  [dlt+lm(fxfy)]
+ruido 1 cm, fxfy                   n=20 ruido=1cm  ok=200/200  rms(med)=8.44px  modelo@2m med=4.10px p90=6.27px  |Δf|=0.77%  |Δcy|=23.3px  ΔR=0.99°  Δcentro=1.69cm  0.4ms  [dlt+lm(fxfy)]
+ruido 1 cm, fxfy                   n=30 ruido=1cm  ok=200/200  rms(med)=9.00px  modelo@2m med=3.53px p90=5.10px  |Δf|=0.54%  |Δcy|=21.9px  ΔR=0.86°  Δcentro=1.36cm  0.5ms  [dlt+lm(fxfy)]
+ruido 0.5 cm, fxfy                 n=12 ruido=0.5cm  ok=200/200  rms(med)=3.62px  modelo@2m med=2.81px p90=4.13px  |Δf|=0.52%  |Δcy|=17.3px  ΔR=0.61°  Δcentro=1.21cm  0.3ms  [dlt+lm(fxfy)]
+muro plano, K verdadera fija       n=12 ruido=1cm  ok=200/200  rms(med)=6.72px  modelo@2m med=12.67px p90=23.85px  |Δf|=0.00%  |Δcy|=0.0px  ΔR=1.12°  Δcentro=4.84cm  0.2ms  [plano+lm(kfija)]
+muro plano, K con 3% de error      n=12 ruido=1cm  ok=200/200  rms(med)=6.70px  modelo@2m med=13.69px p90=25.96px  |Δf|=3.00%  |Δcy|=0.0px  ΔR=1.08°  Δcentro=8.67cm  0.2ms  [plano+lm(kfija)]
+K fija, puntos 3D                  n=12 ruido=1cm  ok=200/200  rms(med)=7.91px  modelo@2m med=4.40px p90=7.15px  |Δf|=0.00%  |Δcy|=0.0px  ΔR=0.26°  Δcentro=1.07cm  0.2ms  [general+lm(kfija)]
+pivote: punta=12.0, -18.1, -64.5 mm (verdad 12, -18, -65)  error=0.49 mm  rms=1.73 mm  giro=173°
+→ pruebas/resultados/sintetico.json

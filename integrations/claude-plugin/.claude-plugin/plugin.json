@@ -1,0 +1,9 @@
+{
+  "name": "pcx",
+  "displayName": "pcx · contexto físico para agentes",
+  "version": "0.1.0",
+  "description": "Skills, comando /pcx-estado y servidor MCP para operar pcx: ver una mesa con cámaras y proyector, proyectar interfaces sobre objetos reales, crear flujos, efectos WGSL, calibrar, domótica segura y extender la plataforma.",
+  "author": { "name": "Equipo pcx (Platanus Hack 26)" },
+  "license": "MIT",
+  "keywords": ["pcx", "mcp", "proyector", "camara", "physical-world", "spatial", "home-assistant", "wgsl"]
+}

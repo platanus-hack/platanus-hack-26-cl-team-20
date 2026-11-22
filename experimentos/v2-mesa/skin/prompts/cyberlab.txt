@@ -1,0 +1,15 @@
+This is a top-down (orthographic, bird's-eye) photo of a desk. It will be projected back onto the real desk as a 1:1 overlay, so geometry must be preserved EXACTLY, like tracing paper over the original.
+HARD CONSTRAINTS:
+- Same framing, same aspect ratio, same strictly top-down viewpoint. No zoom, crop, rotation, tilt or perspective change.
+- Every object keeps its exact position, outline, size and orientation: the open spiral notebook (top-left), the smartphone, the small group of blue vials, the large compartmented organizer box with open lid (top-right), the tall drinking glass (right), the three round white plates with white spheres and the gear (bottom-left), the grid box of colored vials with its lid, the purple vials, the two stickers, and the seam between the two table halves.
+- Do NOT add, remove, move, merge or resize objects. Do not add new objects in the empty table areas; empty table stays empty (only its surface material/texture may change).
+- Only change materials, textures, colors and surface details of each existing object and of the table surface, re-skinning each object within its existing silhouette.
+- No text, labels, borders or watermarks.
+STYLE:
+Turn this desk into a cyberpunk laboratory bench with a very specific aesthetic that must dominate every surface: liquid chrome, cyber-tribalism, translucent Y2K consumer electronics, alien sketch geometry, glossy biomorphic surfaces, weirdly ornamental machines, lights and LEDs.
+- Table surface: dark underground metal floor plating (brushed gunmetal, riveted panels, faint engraved cyber-tribal linework, thin neon LED seams), kept dark so the objects pop.
+- Notebook: an open device made of liquid chrome and translucent Y2K plastic pages with glowing alien sketch geometry and tribal glyph-like ornaments (no readable text), keeping the spiral binding in the same place.
+- Phone: glossy biomorphic chrome handheld with small LEDs. Vials: translucent candy-colored Y2K capsules glowing from inside, same colors and same grid.
+- Organizer box: ornamental machine bay of chrome and translucent plastic, each compartment a tiny glowing module. Glass: chrome-and-glass canister with luminous liquid.
+- Plates: polished chrome biomorphic platforms with engraved tribal rings and LED accents; spheres: glossy liquid-metal and iridescent orbs; gear: ornate chrome cog.
+Glossy, high-contrast, saturated LED accents (cyan, magenta, acid green) over dark metal. Sharp, highly detailed, top-down.

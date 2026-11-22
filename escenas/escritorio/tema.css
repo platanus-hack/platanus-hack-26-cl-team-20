@@ -1,0 +1,7 @@
+/* Escritorio · notas de luz sobre el papel. La voz y la galería usan la firma
+   tipográfica y la paleta común de WUI. Los widgets de la libreta usan su escala física. */
+:root {
+  --sd-radio: 6px;
+  --sd-aire: 16px;
+}
+.sd-panel { border: 0; border-top: var(--sd-trazo) solid var(--sd-tinta); border-radius: 0; }

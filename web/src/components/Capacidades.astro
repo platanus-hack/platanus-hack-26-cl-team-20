@@ -1,0 +1,257 @@
+---
+const items = [
+  { id: "guias", titulo: "Guías sobre objetos", texto: "Flechas, medidas y pasos dibujados encima de la pieza que tienes en la mano. Si la mueves, la guía la sigue." },
+  { id: "tactil", titulo: "Superficie táctil", texto: "Cualquier objeto o mesa recibe botones. WUI detecta el dedo y le avisa a tu agente qué tocaste y dónde." },
+  { id: "camaras", titulo: "Más cámaras", texto: "Suma un celular con un código QR, sin instalar nada. El agente mira el espacio desde otro ángulo." },
+  { id: "domotica", titulo: "Domótica con permiso", texto: "Tu agente puede encender una luz o abrir una cortina. Antes, pide que confirmes con un toque en la superficie." },
+];
+---
+
+<section id="capacidades" class="mx-auto max-w-[1440px] px-5 py-24 sm:px-8 md:py-36" aria-labelledby="titulo-cap">
+  <h2 id="titulo-cap" class="display max-w-[16ch] text-[clamp(2.2rem,4.6vw,4.2rem)]">Lo que tu agente puede hacer sobre el mundo</h2>
+
+  <div data-cap class="mt-14 grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
+    <div role="tablist" aria-label="Capacidades" class="flex flex-col">
+      {
+        items.map((it, i) => (
+          <button
+            role="tab"
+            id={`tab-${it.id}`}
+            aria-controls="vineta"
+            aria-selected={i === 0 ? "true" : "false"}
+            tabindex={i === 0 ? 0 : -1}
+            data-id={it.id}
+            class="cap-tab group relative border-t border-linea py-6 text-left last:border-b"
+          >
+            <span class="block text-xl wide font-[460] tracking-tight">{it.titulo}</span>
+            <span class="mt-2 block max-w-[52ch] text-luz-2">{it.texto}</span>
+            <span class="progreso absolute left-0 top-[-1px] h-px bg-luz" aria-hidden="true" />
+          </button>
+        ))
+      }
+    </div>
+
+    <div id="vineta" role="tabpanel" aria-labelledby="tab-guias" class="vineta relative aspect-[5/4] w-full self-start overflow-hidden border border-linea bg-[#0d0e0b]">
+      <svg viewBox="0 0 500 400" class="absolute inset-0 h-full w-full" aria-hidden="true">
+        <defs>
+          <pattern id="cap-grid" width="25" height="25" patternUnits="userSpaceOnUse">
+            <path d="M25 0H0V25" fill="none" stroke-opacity="0.05" style="stroke:var(--k-f1eee4)" />
+          </pattern>
+        </defs>
+        <rect width="500" height="400" fill="url(#cap-grid)" />
+
+        <g class="esc" data-esc="guias">
+          <g transform="translate(250 200) rotate(-10)">
+            <rect x="-120" y="-80" width="240" height="160" style="fill:var(--k-1b1d18);stroke:var(--k-3a3d35)" />
+            <circle cx="-60" cy="-20" r="10" style="fill:var(--k-0b0c0a);stroke:var(--k-4a4d44)" />
+            <circle cx="40" cy="30" r="10" style="fill:var(--k-0b0c0a);stroke:var(--k-4a4d44)" />
+            <rect class="c-trazo" x="-134" y="-94" width="268" height="188" pathLength="1" />
+            <line x1="-60" y1="-20" x2="40" y2="30" class="c-guia" />
+            <circle cx="40" cy="30" r="20" class="c-pulso" />
+            <text x="-120" y="118" class="c-txt">taladra aquí, 8 mm</text>
+          </g>
+        </g>
+
+        <g class="esc" data-esc="tactil">
+          {
+            ["1", "2", "3", "4", "5", "6"].map((n, i) => (
+              <g transform={`translate(${130 + (i % 3) * 90} ${120 + Math.floor(i / 3) * 90})`}>
+                <rect class={`c-tecla t${i}`} x="-34" y="-34" width="68" height="68" />
+                <text x="0" y="8" text-anchor="middle" class="c-num">{n}</text>
+              </g>
+            ))
+          }
+          <circle class="c-dedo" cx="220" cy="210" r="14" />
+          <text x="40" y="370" class="c-txt">touch → tecla 5</text>
+        </g>
+
+        <g class="esc" data-esc="camaras">
+          <rect x="150" y="130" width="200" height="140" style="fill:var(--k-1b1d18);stroke:var(--k-3a3d35)" />
+          <path d="M60 60 L150 130 M60 60 L350 130 M60 60 L150 270" class="c-cono" />
+          <path d="M440 340 L350 270 M440 340 L150 270 M440 340 L350 130" class="c-cono c-cono2" />
+          <rect x="44" y="44" width="32" height="24" class="c-cam" />
+          <rect x="424" y="326" width="22" height="36" rx="4" class="c-cam" />
+          <text x="40" y="30" class="c-txt">cámara del nodo</text>
+          <text x="300" y="390" class="c-txt">celular por QR</text>
+        </g>
+
+        <g class="esc" data-esc="domotica">
+          <circle cx="160" cy="170" r="46" style="fill:var(--k-1b1d18);stroke:var(--k-3a3d35)" />
+          <circle cx="160" cy="170" r="70" class="c-halo" />
+          <text x="240" y="150" class="c-lbl">Luz del escritorio</text>
+          <rect x="240" y="166" width="200" height="6" fill-opacity="0.15" style="fill:var(--k-f1eee4)" />
+          <rect x="240" y="166" width="80" height="6" class="c-slider" />
+          <text x="240" y="200" class="c-txt">home → 40 %, pendiente</text>
+          <rect x="240" y="230" width="150" height="50" class="c-confirma" />
+          <text x="258" y="262" class="c-lbl">Toca para confirmar</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cap-tab {
+    color: var(--color-luz-3);
+    transition: color 300ms;
+  }
+  .cap-tab:hover,
+  .cap-tab[aria-selected="true"] {
+    color: var(--color-luz);
+  }
+  .cap-tab span:nth-child(2) {
+    color: var(--color-luz-2);
+  }
+  .cap-tab .progreso {
+    width: 0;
+  }
+  .cap-tab[aria-selected="true"] .progreso {
+    animation: llena var(--dur, 4.5s) linear forwards;
+  }
+  [data-cap].pausa .cap-tab[aria-selected="true"] .progreso {
+    animation: none;
+    width: 100%;
+  }
+  @keyframes llena {
+    to { width: 100%; }
+  }
+  .esc {
+    opacity: 0;
+    transition: opacity 500ms var(--ease-proyector);
+  }
+  .esc.on {
+    opacity: 1;
+  }
+  .vineta :global(.c-trazo) {
+    fill: none;
+    stroke: var(--color-luz);
+    stroke-width: 1.5;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  .esc.on :global(.c-trazo) {
+    animation: traza 1.2s var(--ease-proyector) forwards;
+  }
+  .vineta :global(.c-guia) {
+    stroke: var(--color-luz);
+    stroke-width: 2;
+    stroke-dasharray: 6 6;
+    animation: marcha-c 1s linear infinite;
+  }
+  .vineta :global(.c-pulso),
+  .vineta :global(.c-halo) {
+    fill: none;
+    stroke: var(--color-senal);
+    stroke-width: 2;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: pulso 1.6s var(--ease-proyector) infinite;
+  }
+  .vineta :global(text) {
+    fill: var(--color-luz);
+  }
+  .vineta :global(.c-txt) {
+    font: 400 13px var(--font-mono);
+    fill: var(--color-luz-2);
+  }
+  .vineta :global(.c-lbl) {
+    font: 500 16px var(--font-sans);
+  }
+  .vineta :global(.c-num) {
+    font: 400 26px var(--font-sans);
+    /* Instrument Sans: sin eje de stretch > 100 %. */
+  }
+  .vineta :global(.c-tecla) {
+    fill: color-mix(in srgb, var(--color-luz) 5%, transparent);
+    stroke: color-mix(in srgb, var(--color-luz) 60%, transparent);
+  }
+  .vineta :global(.c-tecla.t4) {
+    animation: tecla 2.4s steps(1) infinite;
+  }
+  .vineta :global(.c-dedo) {
+    fill: color-mix(in srgb, var(--color-luz) 12%, transparent);
+    stroke: var(--color-luz-2);
+    animation: dedo 2.4s var(--ease-proyector) infinite;
+  }
+  .vineta :global(.c-cono) {
+    fill: none;
+    stroke: var(--color-luz);
+    stroke-opacity: 0.35;
+    stroke-dasharray: 4 6;
+    animation: marcha-c 1.4s linear infinite;
+  }
+  .vineta :global(.c-cono2) {
+    animation-direction: reverse;
+  }
+  .vineta :global(.c-cam) {
+    fill: var(--k-1b1d18);
+    stroke: var(--color-luz);
+  }
+  .vineta :global(.c-slider) {
+    fill: var(--color-luz);
+    animation: desliza 3s ease-in-out infinite alternate;
+  }
+  .vineta :global(.c-confirma) {
+    fill: none;
+    stroke: var(--color-senal);
+    stroke-width: 2;
+  }
+  @keyframes traza { to { stroke-dashoffset: 0; } }
+  @keyframes marcha-c { to { stroke-dashoffset: -24; } }
+  @keyframes pulso {
+    from { transform: scale(0.7); opacity: 1; }
+    to { transform: scale(1.5); opacity: 0; }
+  }
+  @keyframes tecla {
+    0%, 40% { fill: color-mix(in srgb, var(--color-luz) 5%, transparent); }
+    50%, 80% { fill: var(--color-senal); }
+  }
+  @keyframes dedo {
+    0% { transform: translate(-80px, 90px); }
+    45%, 80% { transform: translate(0, 0); }
+    100% { transform: translate(-80px, 90px); }
+  }
+  @keyframes desliza { from { width: 40px; } to { width: 120px; } }
+</style>
+
+<script>
+  import { inactivo, reducido } from "../scripts/suave";
+  const raiz = document.querySelector<HTMLElement>("[data-cap]");
+  if (raiz) {
+    const tabs = [...raiz.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const escenas = [...raiz.querySelectorAll<SVGGElement>(".esc")];
+    const panel = raiz.querySelector("#vineta")!;
+    let i = 0;
+    let timer = 0;
+    const DUR = 4500;
+    const elegir = (n: number, foco = false) => {
+      i = (n + tabs.length) % tabs.length;
+      tabs.forEach((t, k) => {
+        t.setAttribute("aria-selected", String(k === i));
+        t.tabIndex = k === i ? 0 : -1;
+      });
+      escenas.forEach((e) => e.classList.toggle("on", e.dataset.esc === tabs[i].dataset.id));
+      panel.setAttribute("aria-labelledby", tabs[i].id);
+      if (foco) tabs[i].focus();
+    };
+    const auto = () => {
+      clearInterval(timer);
+      if (reducido() || raiz.classList.contains("pausa")) return;
+      timer = window.setInterval(() => !inactivo() && elegir(i + 1), DUR);
+    };
+    tabs.forEach((t, k) => {
+      t.addEventListener("click", () => {
+        raiz.classList.add("pausa");
+        clearInterval(timer);
+        elegir(k);
+      });
+      t.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowDown" || e.key === "ArrowRight") { e.preventDefault(); raiz.classList.add("pausa"); clearInterval(timer); elegir(i + 1, true); }
+        if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); raiz.classList.add("pausa"); clearInterval(timer); elegir(i - 1, true); }
+      });
+    });
+    if (reducido()) raiz.classList.add("pausa");
+    elegir(0);
+    auto();
+  }
+</script>

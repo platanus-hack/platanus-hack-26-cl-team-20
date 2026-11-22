@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200mm" height="150mm" viewBox="0 0 200 150">
+  <title>WUI Card · plano de cortes (200 × 150 mm)</title>
+  <desc>Vista superior con todos los cortes pasantes. Niebla es la tarjeta, Tinta son los huecos.</desc>
+  <!-- cuerpo -->
+  <rect x="0.4" y="0.4" width="199.2" height="149.2" rx="4" ry="4"
+        fill="#F4F4F2" stroke="#171717" stroke-width="0.4"/>
+
+  <!-- wordmark centrado, variante Encaje -->
+  <g transform="translate(40, 15) scale(0.6217)" fill="#171717">
+    <path d="M0 24 H23 L33 63 L44 24 H60 L71 63 L82 24 H104 L84 88 H63 L52 56 L41 88 H20 Z"/>
+    <path d="M108 24 H129 V60 C129 67 132 71 139 71 C146 71 150 66 150 59 V24 H170 V88 H151 V82 C146 87 140 89 133 89 C118 89 108 78 108 61 Z"/>
+    <path d="M175 24 H193 V88 H175 Z M175 1 H193 V17 H175 Z"/>
+  </g>
+
+  <!-- marker esquinero TL · Punto -->
+  <g transform="translate(18, 18)" fill="#171717">
+    <circle r="5"/>
+    <circle cx="8" cy="0" r="1.5"/>
+    <circle cx="-8" cy="0" r="1.5"/>
+    <circle cx="0" cy="8" r="1.5"/>
+    <circle cx="0" cy="-8" r="1.5"/>
+  </g>
+
+  <!-- marker esquinero TR · Línea -->
+  <g transform="translate(182, 18)" fill="#171717">
+    <rect x="-7" y="-4.75" width="14" height="1.5"/>
+    <rect x="-7" y="-0.75" width="14" height="1.5"/>
+    <rect x="-7" y="3.25" width="14" height="1.5"/>
+  </g>
+
+  <!-- marker esquinero BL · Arco -->
+  <g transform="translate(18, 132)" fill="#171717">
+    <path d="M -9 0 A 9 9 0 0 1 9 0 L 6 0 A 6 6 0 0 0 -6 0 Z"/>
+  </g>
+
+  <!-- marker esquinero BR · Contorno -->
+  <g transform="translate(182, 132)" fill="#171717">
+    <path d="M -8 -8 L 8 -8 L 8 -2 L -5 -2 L -5 2 L 8 2 L 8 8 L -8 8 Z"/>
+  </g>
+
+  <!-- ventanas de información bajo el wordmark -->
+  <rect x="88"  y="85"  width="24" height="12" rx="1.2" fill="#171717"/>
+  <circle cx="64" cy="110" r="7" fill="#171717"/>
+  <rect x="105" y="105" width="30" height="10" rx="1.2" fill="#171717"/>
+
+  <!-- rotulado leve de referencia -->
+  <g font-family="sans-serif" font-size="2.6" fill="#626260">
+    <text x="31" y="20">Punto</text>
+    <text x="156" y="20">Línea</text>
+    <text x="31" y="135">Arco</text>
+    <text x="155" y="135">Contorno</text>
+    <text x="86" y="104">batería</text>
+    <text x="58" y="123">notif</text>
+    <text x="107" y="121">tiempo</text>
+    <text x="4" y="148">WUI · tarjeta de calibración · 200 × 150 × 1.6 mm</text>
+  </g>
+</svg>

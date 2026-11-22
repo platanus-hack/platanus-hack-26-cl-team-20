@@ -1,0 +1,49 @@
+name: pcx-cloud
+services:
+  gateway:
+    build:
+      context: ..
+      dockerfile: cloud/gateway/Dockerfile
+    init: true
+    ports:
+      - "127.0.0.1:9215:9210"
+    environment:
+      PORT: "9210"
+      DATABASE_URL: postgresql://pcx:${PCX_POSTGRES_PASSWORD:?Set PCX_POSTGRES_PASSWORD (hex)}@postgres:5432/pcx
+      REDIS_URL: redis://valkey:6379/0
+      PCX_USER_TOKEN: ${PCX_USER_TOKEN:?Set PCX_USER_TOKEN}
+      PCX_NODE_TOKEN: ${PCX_NODE_TOKEN:?Set PCX_NODE_TOKEN}
+      PCX_CONSOLE_TOKEN: ${PCX_CONSOLE_TOKEN:?Set PCX_CONSOLE_TOKEN}
+      PCX_NODE_ID: ${PCX_NODE_ID:-demo-node}
+      PCX_SPACE_ID: ${PCX_SPACE_ID:-demo-space}
+      PCX_USER_ID: ${PCX_USER_ID:-demo-user}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    # The image's healthcheck queries /health (including Postgres).
+    stop_grace_period: 30s
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: pcx
+      POSTGRES_USER: pcx
+      POSTGRES_PASSWORD: ${PCX_POSTGRES_PASSWORD:?Set PCX_POSTGRES_PASSWORD (hex)}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pcx -d pcx"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+  valkey:
+    image: valkey/valkey:8-alpine
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  postgres-data:

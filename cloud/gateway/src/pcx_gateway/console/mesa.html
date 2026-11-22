@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WUI · mesa</title>
+    <link rel="preload" href="/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="marca" href="/">WUI<span>mesa</span></a>
+      <div class="estados">
+        <div class="estado" id="motor-estado" data-state="off" title="Motor local (Rust) de este computador: cámaras, objetos, escenas y foto limpia">
+          <i></i><span id="motor-texto">Motor local: sin motor</span>
+        </div>
+        <div class="estado" id="estado" data-state="connecting">
+          <i></i><span id="estado-texto">Conectando…</span>
+          <button id="retomar" hidden>Usar aquí</button>
+        </div>
+      </div>
+    </header>
+
+    <button class="aviso version" id="version-aviso" hidden>Hay una versión nueva de la consola. Aprieta aquí para recargar (y vuelve a lanzar la proyección).</button>
+    <main>
+      <section class="paso" id="paso-camaras">
+        <div class="titulo">
+          <b>1</b>
+          <h2>Cámaras</h2>
+          <p id="camaras-nota">Buscando cámaras…</p>
+          <button class="btn" id="camaras-activar" hidden>Activar cámaras</button>
+        </div>
+        <div class="camaras" id="camaras"></div>
+        <div class="fila">
+          <button class="btn" id="celular">Sumar un celular</button>
+        </div>
+        <div class="celular" id="celular-qr" hidden>
+          <div id="celular-codigo"></div>
+          <div>
+            <p id="celular-aviso"></p>
+            <p class="chico" id="celular-url"></p>
+            <button class="btn" id="celular-copiar">Copiar enlace</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="paso" id="paso-proyector">
+        <div class="titulo">
+          <b>2</b>
+          <h2>Proyector</h2>
+          <p id="proyector-nota">Elige la pantalla donde está el proyector.</p>
+        </div>
+        <div class="dos">
+          <div>
+            <div class="pantallas" id="pantallas"></div>
+            <div class="fila">
+              <button class="btn fuerte" id="lanzar">Lanzar proyección</button>
+              <button class="btn" id="detectar" hidden>Detectar monitores</button>
+              <button class="btn" id="cerrar" hidden>Cerrar</button>
+              <button class="btn" id="calibrar">Calibrar</button>
+              <button class="btn" id="calibrar-lente">Calibrar con lente</button>
+              <label class="check"><input type="checkbox" id="patron" checked /> Patrón de prueba</label>
+              <label class="check"><input type="checkbox" id="manos" /> Manos</label>
+              <label class="check">Texto
+                <select id="texto">
+                  <option value="0.75">chico</option>
+                  <option value="1">normal</option>
+                  <option value="1.5">grande</option>
+                  <option value="2">muy grande</option>
+                </select>
+              </label>
+            </div>
+            <p class="chico" id="proyector-estado"></p>
+            <p class="aviso" id="pantalla-aviso" hidden></p>
+            <p class="chico" id="calib-estado"></p>
+            <p class="aviso" id="calib-aviso" hidden></p>
+            <p class="chico" id="manos-estado"></p>
+            <details class="manual">
+              <summary>Calibración manual (4 puntos)</summary>
+              <p class="chico">Píxeles de la foto de la cámara cenital → mm de la mesa. Un par por línea: <code>px_x, px_y &gt; mm_x, mm_y</code>.</p>
+              <textarea id="manual-pares" rows="4" spellcheck="false"></textarea>
+              <div class="fila"><button class="btn" id="manual-aplicar">Usar estos puntos</button></div>
+            </details>
+            <details class="manual">
+              <summary>Modelo de lente (pegar JSON)</summary>
+              <p class="chico">El JSON de <code>lente-modelo.json</code>: <code>camera_id, imagen, f_px, cx, cy, k1, k2, H_px_sin_distorsion_a_mm</code>.</p>
+              <textarea id="lente-json" rows="5" spellcheck="false"></textarea>
+              <div class="fila"><button class="btn" id="lente-cargar">Cargar modelo</button></div>
+            </details>
+            <details class="manual" id="motor-panel">
+              <summary>Motor local</summary>
+              <p class="chico">El motor de este computador (<code>pcx up</code>) mira la mesa con sus cámaras, encuentra los objetos, corre el módulo de la escena activa (una pestaña con el mismo nombre: <code>lab</code>, <code>solar</code>, <code>desk</code>) y le pide a esta consola apagar el proyector para la foto limpia. Abre el enlace que imprime <code>pcx up</code>, o pega aquí su URL y su token.</p>
+              <div class="fila">
+                <input class="campo" id="motor-url" placeholder="ws://127.0.0.1:9230/v1/ws" spellcheck="false" autocomplete="off" />
+                <input class="campo" id="motor-token" type="password" placeholder="Token (~/.pcx/motor.token)" autocomplete="off" />
+              </div>
+              <div class="fila">
+                <button class="btn" id="motor-conectar">Conectar</button>
+                <button class="btn" id="motor-percibir" disabled>Percibir ahora</button>
+                <button class="btn" id="motor-olvidar">Olvidar objetos</button>
+              </div>
+              <p class="chico" id="motor-detalle"></p>
+            </details>
+          </div>
+          <figure class="previa">
+            <div class="tabs escenas" id="escenas"></div>
+            <div class="lienzo">
+              <canvas id="previa" width="960" height="540"></canvas>
+              <div id="previa-html"></div>
+              <canvas id="previa-top" width="960" height="540"></canvas>
+            </div>
+            <figcaption>Lo que sale por el proyector <span id="previa-mm"></span></figcaption>
+            <div class="fila"><button class="btn" id="pantalla">Compartir pantalla</button></div>
+            <p class="chico" id="pantalla-nota"></p>
+            <p class="chico" id="audio-estado" hidden></p>
+            <div class="fila" id="scripts" hidden><span class="chico" style="margin:0">Widgets con script:</span><span class="fila" id="scripts-lista" style="margin:0"></span></div>
+            <div class="fila">
+              <input class="campo" id="escena-nombre" placeholder="Nombre de la escena" maxlength="40" />
+              <button class="btn" id="escena-crear">Nueva escena</button>
+              <button class="btn" id="escena-duplicar">Duplicar la activa</button>
+              <button class="btn" id="escena-borrar">Borrar la activa</button>
+            </div>
+            <div class="fila">
+              <label class="check"><input type="checkbox" id="ui-mesa" /> Pestañas y voz en la mesa</label>
+              <label class="check"><input type="checkbox" id="ui-girar" /> Girar esa interfaz 180°</label>
+              <button class="btn" id="voz-permiso">Activar micrófono</button>
+            </div>
+            <p class="chico" id="voz-estado"></p>
+            <p class="chico" id="escena-error"></p>
+          </figure>
+        </div>
+      </section>
+
+      <section class="paso" id="paso-agente">
+        <div class="titulo">
+          <b>3</b>
+          <h2>Agente</h2>
+          <p>Pega esto en una terminal. Abre un agente ya conectado a tu cámara y tu proyector.</p>
+        </div>
+        <div class="dos">
+          <div>
+            <div class="tabs" id="tabs">
+              <button data-tab="claude" class="on">Claude Code</button>
+              <button data-tab="codex">Codex</button>
+              <button data-tab="mcp">Otro (MCP)</button>
+            </div>
+            <pre class="comando" id="comando"></pre>
+            <div class="fila">
+              <button class="btn fuerte" id="copiar">Copiar</button>
+              <button class="btn" id="compartir">Copiar enlace para ver</button>
+              <button class="btn" id="nueva">Nueva sesión</button>
+            </div>
+            <p class="chico" id="mirando">Con el enlace para ver, otra persona mira en vivo la cámara, la proyección y lo que hace el agente. Solo mirar: no puede operar nada.</p>
+            <p class="chico">El enlace vale solo para esta sesión. «Nueva sesión» lo invalida y crea otro.</p>
+          </div>
+          <div class="actividad">
+            <h3 id="agente-estado">Esperando al agente…</h3>
+            <ol id="actividad"></ol>
+          </div>
+        </div>
+      </section>
+      <section class="paso" id="paso-presentar">
+        <div class="titulo">
+          <b>4</b>
+          <h2>Presentación</h2>
+          <p>Láminas a pantalla completa intercaladas con la mesa en vivo. Las arma el agente (tool <code>present</code>) o las pegas aquí.</p>
+        </div>
+        <div class="dos">
+          <div>
+            <textarea class="laminas" id="laminas" rows="9" spellcheck="false" placeholder="# Título de la lámina&#10;Texto corto. Las líneas con - son puntos.&#10;![](https://…/imagen.png)&#10;---&#10;@vivo&#10;---&#10;@camara cam-2&#10;# También puede llevar título&#10;&#10;(o pega un JSON: [{&quot;title&quot;: …, &quot;text&quot;: …}, {&quot;live&quot;: &quot;visor&quot;}])"></textarea>
+            <div class="fila">
+              <button class="btn fuerte" id="laminas-cargar">Cargar láminas</button>
+              <button class="btn" id="presentar-enlace">Copiar enlace para presentar</button>
+              <button class="btn" id="presentar-abrir">Abrir presentación</button>
+            </div>
+            <p class="chico" id="laminas-nota">Separa las láminas con una línea <code>---</code>. <code>@vivo</code> muestra la cámara con lo proyectado; <code>@camara cam-2</code>, una cámara sola.</p>
+          </div>
+          <div class="actividad">
+            <h3 id="laminas-estado">Sin láminas</h3>
+            <div class="fila">
+              <button class="btn" id="lamina-prev">← Anterior</button>
+              <button class="btn" id="lamina-next">Siguiente →</button>
+            </div>
+            <ol id="laminas-lista"></ol>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/vendor/qrcode.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

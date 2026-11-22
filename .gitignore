@@ -1,0 +1,19 @@
+.env
+.env.*
+!.env.example
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+dist/
+.next/
+
+# Rust
+/target/
+# worktrees de agentes
+.claude/worktrees/
+
+# Pesos de modelos: viajan en el paquete del release (scripts/install/modelos.json), nunca en el repo
+*.onnx
+/modelos/

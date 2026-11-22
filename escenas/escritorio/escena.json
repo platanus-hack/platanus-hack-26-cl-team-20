@@ -1,0 +1,76 @@
+{
+  "_como": "Todo lo que se puede cambiar de la escena sin programar. Medidas en mm de la mesa (la superficie proyectable mide 1000 × 563). Después de editar, vuelve a correr «montar».",
+
+  "escena_mesa": "Escritorio",
+
+  "libreta": {
+    "_como": "Dónde va la libreta en la mesa: sus 4 esquinas en mm, en el orden en que la lee Matilda (arriba-izquierda, arriba-derecha, abajo-derecha, abajo-izquierda). Si el motor publica un objeto con esta etiqueta, se usa ese en vez de las esquinas.",
+    "esquinas_mm": [[600, 262], [750, 262], [750, 472], [600, 472]],
+    "objeto": "libreta",
+    "camara": "cam-3",
+    "girar": 0,
+    "margen_mm": 14
+  },
+
+  "boton": {
+    "_como": "El botón que se toca (dedo quieto 400 ms) para que el agente lea. lado: izquierda o derecha de la libreta.",
+    "texto": "Responde",
+    "lado": "izquierda"
+  },
+
+  "disparo": {
+    "_como": "Qué hace que el agente lea la libreta: el botón, la voz, o solo (auto: cuando aparece tinta nueva y la mano se va).",
+    "boton": true,
+    "voz": true,
+    "auto": true,
+    "auto_min_pixeles": 250,
+    "quieto_s": 0.8,
+    "cada_s": 0.7,
+    "eventos_agente": {
+      "_como": "Eventos que emite un agente (el de voz no puede emitir voice_command): cuáles hacen leer y cuál vuelve a escribir la última respuesta.",
+      "leer": ["leer_libreta", "responde", "paso_siguiente"],
+      "repetir": ["repetir"]
+    }
+  },
+
+  "jev": {
+    "_como": "Jev (preguntas tipadas en ~1 s, llave AI_GATEWAY_API_KEY por referencia). no_contestar: lo que se ve pero no se contesta cuando lee solo (con botón o voz siempre contesta). senalar: con «¿qué es esto?» dicho mientras señala, lee lo que apunta el dedo.",
+    "activo": true,
+    "no_contestar": ["dibujo", "tachado"],
+    "confianza": 0.75,
+    "senalar": true
+  },
+
+  "respuesta": {
+    "max_lineas": 3,
+    "max_caracteres": 26,
+    "letra_mm": 10,
+    "modelo": "opus",
+    "esfuerzo": "low",
+    "voz": "voz.md",
+    "fijas": [
+      ["/v1/cobros", "/v1/pagos", "POST /v1/cargos"],
+      ["parte por el 422", "y después el retry"],
+      ["no alcanzo a leer", "¿lo repasas?"]
+    ]
+  },
+
+  "agentes": {
+    "_como": "El panel con lo que hacen tus agentes. rect_mm: [x, y, ancho, alto], con x de 150 o más (a la izquierda va la barra de pestañas). archivo: de dónde salen (agentes.json).",
+    "rect_mm": [170, 280, 240, 175],
+    "rotate_deg": 0,
+    "titulo": "Tus agentes",
+    "archivo": "agentes.json",
+    "cada_s": 3,
+    "yo": "escritorio"
+  },
+
+  "colores": {
+    "_como": "Colores de luz. Sobre la mesa, lo negro no se proyecta: el fondo siempre es la mesa misma.",
+    "papel": "#F4F4F2",
+    "papel_2": "#D2D2CE",
+    "papel_3": "#B3B3B1",
+    "tinta": "#F4F4F2",
+    "lapiz": "#F4F4F2"
+  }
+}

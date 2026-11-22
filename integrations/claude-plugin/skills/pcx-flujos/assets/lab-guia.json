@@ -1,0 +1,118 @@
+{
+  "request_id": "lab-dilucion-001",
+  "flow": {
+    "id": "lab-dilucion",
+    "initial": "paso1",
+    "cleanup": true,
+    "timeout_s": 900,
+    "states": [
+      {
+        "id": "paso1",
+        "on_enter": [
+          {"type": "project", "widgets": [
+            {"type": "panel", "id": "lab-panel", "rect_mm": [520, 20, 260, 110],
+             "title": "Paso 1 de 3", "body": "Toma la pipeta.", "z": 5},
+            {"type": "button", "id": "lab-listo", "rect_mm": [520, 140, 120, 45], "label": "Listo",
+             "on_press": {"value": "listo"}, "z": 6},
+            {"type": "button", "id": "lab-salir", "rect_mm": [660, 140, 120, 45], "label": "Salir", "color": "#FF5252",
+             "on_press": {"value": "salir", "dwell_ms": 1200}, "z": 6},
+            {"type": "halo", "id": "lab-halo", "anchor": {"object_id": "pipeta"}, "color": "#00E5FF", "pulse_hz": 1.2}
+          ]}
+        ],
+        "transitions": [
+          {"on": {"event": "object_moved", "where": {"object_id": "pipeta"}}, "to": "paso2"},
+          {"on": {"event": "object_removed", "where": {"object_id": "pipeta"}}, "to": "paso2"},
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "lab-listo"}}, "to": "paso2"},
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "lab-salir"}}, "to": "cancelado"}
+        ]
+      },
+      {
+        "id": "paso2",
+        "on_enter": [
+          {"type": "remove", "ids": ["lab-halo"]},
+          {"type": "project", "widgets": [
+            {"type": "arrow", "id": "lab-flecha", "anchor": {"object_id": "vaso"}, "color": "#FFD400"}
+          ]},
+          {"type": "update", "id": "lab-panel",
+           "set": {"title": "Paso 2 de 3", "body": "Aspira 5 ml del vaso. Toca «Listo» y reviso el nivel.", "color": "#FFFFFF"}}
+        ],
+        "transitions": [
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "lab-listo"}}, "to": "verifica2"},
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "lab-salir"}}, "to": "cancelado"}
+        ]
+      },
+      {
+        "id": "verifica2",
+        "on_enter": [
+          {"type": "update", "id": "lab-panel",
+           "set": {"title": "Verificando…", "body": "Sostén la pipeta quieta frente a la cámara lateral.", "color": "#FFD400"}},
+          {"type": "emit", "event": "verificar",
+           "data": {"paso": "2", "criterio": "La pipeta marca 5 ml", "camara": "lateral"}}
+        ],
+        "transitions": [
+          {"on": {"event": "flow_emitted", "where": {"event": "paso_verificado", "data.paso": "2", "data.ok": true}},
+           "to": "paso3"},
+          {"on": {"event": "flow_emitted", "where": {"event": "paso_verificado", "data.paso": "2", "data.ok": false}},
+           "to": "reintenta2"},
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "lab-salir"}}, "to": "cancelado"},
+          {"after_s": 40, "to": "sin_verificar2"}
+        ]
+      },
+      {
+        "id": "reintenta2",
+        "on_enter": [
+          {"type": "update", "id": "lab-panel",
+           "set": {"title": "Aún no", "body": "El nivel no llega a 5 ml. Ajusta y toca «Listo».", "color": "#FF8A65"}}
+        ],
+        "transitions": [
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "lab-listo"}}, "to": "verifica2"},
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "lab-salir"}}, "to": "cancelado"}
+        ]
+      },
+      {
+        "id": "sin_verificar2",
+        "on_enter": [
+          {"type": "update", "id": "lab-panel",
+           "set": {"title": "No pude verificar", "body": "Revisa tú que marque 5 ml y toca «Listo».", "color": "#FFFFFF"}}
+        ],
+        "transitions": [
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "lab-listo"}}, "to": "paso3"},
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "lab-salir"}}, "to": "cancelado"}
+        ]
+      },
+      {
+        "id": "paso3",
+        "on_enter": [
+          {"type": "remove", "ids": ["lab-flecha"]},
+          {"type": "project", "widgets": [
+            {"type": "halo", "id": "lab-halo-tubo", "anchor": {"object_id": "tubo_a"}, "color": "#00E676", "pulse_hz": 1.2}
+          ]},
+          {"type": "update", "id": "lab-panel",
+           "set": {"title": "Paso 3 de 3", "body": "Vierte en el tubo A y toca «Listo».", "color": "#FFFFFF"}}
+        ],
+        "transitions": [
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "lab-listo"}}, "to": "hecho"},
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "lab-salir"}}, "to": "cancelado"}
+        ]
+      },
+      {
+        "id": "hecho",
+        "on_enter": [
+          {"type": "remove", "ids": ["lab-listo", "lab-salir", "lab-halo-tubo"]},
+          {"type": "update", "id": "lab-panel",
+           "set": {"title": "Listo ✓", "body": "Protocolo completo.", "color": "#00E676"}},
+          {"type": "emit", "event": "guia_terminada", "data": {"guia": "lab-dilucion", "completada": true}}
+        ],
+        "transitions": [{"after_s": 5, "to": "fin"}]
+      },
+      {
+        "id": "cancelado",
+        "on_enter": [
+          {"type": "emit", "event": "guia_terminada", "data": {"guia": "lab-dilucion", "completada": false}}
+        ],
+        "transitions": [{"after_s": 0, "to": "fin"}]
+      },
+      {"id": "fin", "final": true}
+    ]
+  }
+}

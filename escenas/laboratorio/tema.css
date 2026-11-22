@@ -1,0 +1,6 @@
+/* Laboratorio · lectura de instrumento con los colores y la tipografía de WUI.
+   Las marcas de registro y los números tabulares identifican la escena. */
+:root {
+  --sd-placa: rgba(0, 0, 0, 0.66);
+  --sd-radio: 8px;
+}

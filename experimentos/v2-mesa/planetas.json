@@ -1,0 +1,263 @@
+{
+  "_como_editar": "Cambia nombres, colores, datos y voces sin programar. radio_km decide qué bola es cada planeta (la más grande se lleva el más grande). prioridad 1 entra siempre; 2 y 3 solo si sobran bolas. Los colores son de la textura proyectada (de claro a oscuro). textura: bandas, rocosa, tierra, nubes, hielo o anillos. voz.mac es el nombre exacto de una voz de macOS (lista: say -v '?'); si no existe en el computador de la demo se usa Paulina.",
+  "guia": {
+    "id": "lumo",
+    "nombre": "Lumo",
+    "voz": {
+      "mac": "Paulina",
+      "velocidad": 185,
+      "personaje": "chico, curioso y cariñoso; vuela de planeta en planeta y habla con la sobrina como un amigo que sabe mucho del espacio"
+    }
+  },
+  "sol": {
+    "id": "sol",
+    "nombre": "Sol",
+    "colores": [
+      "#fff4c2",
+      "#ffd34d",
+      "#ff9f1c"
+    ],
+    "datos": [
+      "Es una estrella: una bola de gas tan caliente que brilla sola",
+      "Adentro cabrían más de un millón de Tierras",
+      "Su luz tarda 8 minutos en llegar hasta aquí"
+    ],
+    "voz": {
+      "mac": "Grandma (Spanish (Mexico))",
+      "velocidad": 170,
+      "personaje": "cálido, el abuelo de todos"
+    }
+  },
+  "planetas": [
+    {
+      "id": "mercurio",
+      "nombre": "Mercurio",
+      "orden": 1,
+      "radio_km": 2440,
+      "prioridad": 1,
+      "textura": "rocosa",
+      "colores": [
+        "#d9d4cc",
+        "#a39d94",
+        "#6e6862"
+      ],
+      "datos": [
+        "Es el más cercano al Sol",
+        "Un año allá dura solo 88 días",
+        "No tiene lunas"
+      ],
+      "voz": {
+        "mac": "Eddy (Spanish (Mexico))",
+        "velocidad": 205,
+        "personaje": "apurado, siempre corriendo alrededor del Sol"
+      }
+    },
+    {
+      "id": "venus",
+      "nombre": "Venus",
+      "orden": 2,
+      "radio_km": 6052,
+      "prioridad": 1,
+      "textura": "nubes",
+      "colores": [
+        "#fff1c9",
+        "#f2c879",
+        "#c98f3c"
+      ],
+      "datos": [
+        "Es el planeta más caliente",
+        "Sus nubes no dejan ver el suelo",
+        "Gira al revés que casi todos"
+      ],
+      "voz": {
+        "mac": "Shelley (Spanish (Mexico))",
+        "velocidad": 165,
+        "personaje": "misteriosa, escondida entre nubes"
+      }
+    },
+    {
+      "id": "tierra",
+      "nombre": "Tierra",
+      "orden": 3,
+      "radio_km": 6371,
+      "prioridad": 1,
+      "textura": "tierra",
+      "colores": [
+        "#3fa7ff",
+        "#1b5fbf",
+        "#5fd06b"
+      ],
+      "datos": [
+        "Es nuestra casa",
+        "Tres cuartas partes son agua",
+        "Tiene una luna"
+      ],
+      "voz": {
+        "mac": "Paulina",
+        "velocidad": 175,
+        "personaje": "amable, le encanta que la cuiden"
+      }
+    },
+    {
+      "id": "marte",
+      "nombre": "Marte",
+      "orden": 4,
+      "radio_km": 3390,
+      "prioridad": 1,
+      "textura": "rocosa",
+      "colores": [
+        "#ff8a5c",
+        "#d2552b",
+        "#8a2e14"
+      ],
+      "datos": [
+        "Le dicen el planeta rojo por su polvo",
+        "Tiene el volcán más alto que se conoce",
+        "Tiene dos lunas chiquitas"
+      ],
+      "voz": {
+        "mac": "Rocko (Spanish (Mexico))",
+        "velocidad": 180,
+        "personaje": "aventurero, lleno de polvo rojo"
+      }
+    },
+    {
+      "id": "jupiter",
+      "nombre": "Júpiter",
+      "orden": 5,
+      "radio_km": 69911,
+      "prioridad": 1,
+      "textura": "bandas",
+      "colores": [
+        "#f6e3c4",
+        "#d9a36b",
+        "#a8673a"
+      ],
+      "datos": [
+        "Es el más grande de todos",
+        "Su mancha roja es una tormenta más grande que la Tierra",
+        "Tiene decenas de lunas"
+      ],
+      "voz": {
+        "mac": "Grandpa (Spanish (Mexico))",
+        "velocidad": 150,
+        "personaje": "grandote y bonachón"
+      }
+    },
+    {
+      "id": "saturno",
+      "nombre": "Saturno",
+      "orden": 6,
+      "radio_km": 58232,
+      "prioridad": 1,
+      "textura": "anillos",
+      "colores": [
+        "#fbe9b7",
+        "#e2c27d",
+        "#b38b4a"
+      ],
+      "datos": [
+        "Sus anillos son de hielo y roca",
+        "Es tan liviano que flotaría en una piscina gigante",
+        "Un año allá dura 29 de los nuestros"
+      ],
+      "voz": {
+        "mac": "Reed (Spanish (Mexico))",
+        "velocidad": 160,
+        "personaje": "elegante y un poco presumido de sus anillos"
+      }
+    },
+    {
+      "id": "urano",
+      "nombre": "Urano",
+      "orden": 7,
+      "radio_km": 25362,
+      "prioridad": 1,
+      "textura": "hielo",
+      "colores": [
+        "#d4fbff",
+        "#8fe3ef",
+        "#4fb8c9"
+      ],
+      "datos": [
+        "Gira acostado, de lado",
+        "Es un gigante de hielo",
+        "Es muy, muy frío"
+      ],
+      "voz": {
+        "mac": "Flo (Spanish (Mexico))",
+        "velocidad": 150,
+        "personaje": "tranquilo, siempre recostado"
+      }
+    },
+    {
+      "id": "neptuno",
+      "nombre": "Neptuno",
+      "orden": 8,
+      "radio_km": 24622,
+      "prioridad": 1,
+      "textura": "hielo",
+      "colores": [
+        "#9fc3ff",
+        "#3d6fe0",
+        "#1d3a8f"
+      ],
+      "datos": [
+        "Es el más lejano del Sol",
+        "Tiene los vientos más fuertes",
+        "Un año allá dura 165 de los nuestros"
+      ],
+      "voz": {
+        "mac": "Sandy (Spanish (Mexico))",
+        "velocidad": 160,
+        "personaje": "lejano y soñador"
+      }
+    },
+    {
+      "id": "pluton",
+      "nombre": "Plutón",
+      "orden": 9,
+      "radio_km": 1188,
+      "prioridad": 2,
+      "textura": "rocosa",
+      "colores": [
+        "#f1e2d0",
+        "#c7a88a",
+        "#8a6d55"
+      ],
+      "datos": [
+        "Es un planeta enano",
+        "Tiene un corazón dibujado de hielo",
+        "Vive más allá de Neptuno"
+      ],
+      "voz": {
+        "mac": "Eddy (Spanish (Mexico))",
+        "velocidad": 220,
+        "personaje": "chiquitito y orgulloso"
+      }
+    },
+    {
+      "id": "luna",
+      "nombre": "Luna",
+      "orden": 3.5,
+      "radio_km": 1737,
+      "prioridad": 3,
+      "textura": "rocosa",
+      "colores": [
+        "#f2f2f2",
+        "#bdbdbd",
+        "#7d7d7d"
+      ],
+      "datos": [
+        "Da una vuelta a la Tierra cada 27 días",
+        "Siempre nos muestra la misma cara",
+        "Doce personas han caminado en ella"
+      ],
+      "voz": {
+        "mac": "Mónica",
+        "velocidad": 170,
+        "personaje": "curiosa, siempre mirando a la Tierra"
+      }
+    }
+  ]
+}

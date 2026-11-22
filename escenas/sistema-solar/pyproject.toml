@@ -1,0 +1,18 @@
+[project]
+name = "escena-sistema-solar"
+version = "0.1.0"
+description = "WUI · escena Sistema solar: percepción (bolas, engranaje, lámina, pose del canasto) y conductor"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "opencv-python-headless>=4.9",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["percepcion/tests", "visual/tests"]

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>WUI · Vista de Matilda</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: #171717; color: #F4F4F2; font: 18px/1.35 -apple-system, system-ui, sans-serif; overflow: hidden; touch-action: manipulation; }
+  video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #171717; }
+  #barra { position: fixed; left: 0; right: 0; top: 0; padding: calc(env(safe-area-inset-top) + 12px) 16px 12px; display: flex; align-items: center; gap: 10px; background: linear-gradient(#171717cc, #17171700); font-weight: 600; }
+  #punto { width: 14px; height: 14px; border-radius: 50%; background: #777; flex: none; }
+  .vivo #punto { background: #ff3b30; animation: p 1.2s infinite; }
+  .espera #punto { background: #ffb020; }
+  @keyframes p { 50% { opacity: .35; } }
+  #inicio { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 24px; text-align: center; background: #171717; }
+  #inicio h1 { font-size: 28px; margin: 0; }
+  #inicio p { margin: 0; color: #a9a9a6; max-width: 22em; }
+  button { font: inherit; font-size: 24px; font-weight: 700; color: #171717; background: #F4F4F2; border: 0; border-radius: 18px; padding: 22px 34px; width: min(88vw, 420px); }
+  button:active { opacity: .7; }
+  #pie { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px); font-size: 14px; color: #d0d0cc; background: linear-gradient(#17171700, #171717cc); text-align: center; }
+  #err { color: #ff8a80; }
+</style>
+</head>
+<body class="espera">
+<video id="v" autoplay muted playsinline></video>
+<div id="barra"><span id="punto"></span><span id="txt">Sin iniciar</span></div>
+<div id="pie"><span id="det"></span> <span id="err"></span></div>
+<div id="inicio">
+  <h1>Vista de Matilda</h1>
+  <p>Toca el botón y permite el uso de la cámara. Deja esta página abierta y la pantalla encendida.</p>
+  <button id="b">Empezar a transmitir</button>
+  <p id="err0" style="color:#ff8a80"></p>
+</div>
+<script>
+(() => {
+  const Q = new URLSearchParams(location.search), SALA = Q.get('sala') || 'demo', K = Q.get('k') || '';
+  const url = (p, extra) => `/api/${p}?sala=${encodeURIComponent(SALA)}&k=${encodeURIComponent(K)}&de=pov${extra || ''}`;
+  const $ = id => document.getElementById(id), dormir = ms => new Promise(r => setTimeout(r, ms));
+  const yo = Math.random().toString(36).slice(2, 8);
+  let stream = null, pc = null, n = 0, sid = null, desde = 0, malDesde = 0, ofreciendo = false, wl = null, servidor = true;
+  window.POV = { get pc() { return pc; }, get stream() { return stream; } };
+
+  function pinta() {
+    const s = pc ? pc.connectionState : 'nada';
+    const vivo = s === 'connected';
+    document.body.className = vivo ? 'vivo' : 'espera';
+    $('txt').textContent = !stream ? 'Sin cámara' : vivo ? 'Transmitiendo' : !servidor ? 'Sin conexión con el computador…' : 'Conectando con la presentación…';
+    const t = stream && stream.getVideoTracks()[0], c = t && t.getSettings ? t.getSettings() : {};
+    $('det').textContent = (c.width ? `${c.width}×${c.height}` : '') + (wl ? ' · pantalla despierta' : '');
+  }
+  async function enviar(a, m) {
+    try { const r = await fetch(url('enviar', '&a=' + a), { method: 'POST', body: JSON.stringify(m) }); servidor = r.ok; } catch (e) { servidor = false; }
+  }
+  function iceListo(p, ms) {
+    return new Promise(res => {
+      if (p.iceGatheringState === 'complete') return res();
+      const t = setTimeout(res, ms);
+      p.addEventListener('icegatheringstatechange', () => { if (p.iceGatheringState === 'complete') { clearTimeout(t); res(); } });
+    });
+  }
+  async function camara() {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } });
+    const t = stream.getVideoTracks()[0];
+    try { t.contentHint = 'motion'; } catch (e) {}
+    t.addEventListener('ended', () => { stream = null; pinta(); recuperarCamara(); });
+    $('v').srcObject = stream;
+    $('v').play().catch(() => {});
+  }
+  let recuperando = false;
+  async function recuperarCamara() {
+    if (recuperando) return; recuperando = true;
+    while (!stream) {
+      if (document.visibilityState === 'visible') { try { await camara(); $('err').textContent = ''; ofrecer(); break; } catch (e) { $('err').textContent = 'Cámara: ' + e.message; } }
+      await dormir(1500);
+    }
+    recuperando = false;
+  }
+  async function ofrecer() {
+    if (!stream || ofreciendo) return;
+    ofreciendo = true;
+    try {
+      if (pc) { try { pc.close(); } catch (e) {} }
+      const p = pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+      const miSid = sid = yo + '-' + (++n);
+      desde = Date.now(); malDesde = 0;
+      stream.getTracks().forEach(t => p.addTrack(t, stream));
+      p.onconnectionstatechange = pinta;
+      await p.setLocalDescription(await p.createOffer());
+      await iceListo(p, 2500);
+      if (pc !== p) return;
+      await enviar('pres', { tipo: 'oferta', sid: miSid, sdp: p.localDescription.sdp });
+    } catch (e) { $('err').textContent = 'WebRTC: ' + e.message; }
+    finally { ofreciendo = false; pinta(); }
+  }
+  // Vigilante: si la conexión no sube o se cae, se vuelve a ofrecer.
+  setInterval(() => {
+    pinta();
+    if (!stream || ofreciendo) return;
+    const s = pc ? pc.connectionState : 'closed', ah = Date.now();
+    if (s === 'connected') { malDesde = 0; return; }
+    if (s === 'failed' || s === 'closed') return void ofrecer();
+    if (s === 'disconnected') { malDesde = malDesde || ah; if (ah - malDesde > 5000) ofrecer(); return; }
+    if (ah - desde > 10000) ofrecer(); // new / connecting demasiado tiempo (la presentación no estaba)
+  }, 1000);
+
+  async function escuchar() {
+    let cursor = -1;
+    for (;;) {
+      try {
+        const ab = new AbortController(), t = setTimeout(() => ab.abort(), 40000);
+        const r = await fetch(url('poll', `&rol=pov&desde=${cursor}`), { signal: ab.signal });
+        clearTimeout(t);
+        if (!r.ok) throw new Error('http ' + r.status);
+        const j = await r.json(); cursor = j.cursor; servidor = true;
+        for (const x of j.msgs) {
+          const m = x.m || {};
+          if (j.ahora - x.ts > 8) continue;
+          if (m.tipo === 'respuesta' && m.sid === sid && pc && pc.signalingState === 'have-local-offer') {
+            pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }).catch(e => { $('err').textContent = 'Respuesta: ' + e.message; });
+          } else if (m.tipo === 'hola') ofrecer();
+        }
+      } catch (e) { servidor = false; cursor = -1; await dormir(2000); }
+    }
+  }
+  async function despierta() {
+    try { if ('wakeLock' in navigator && document.visibilityState === 'visible') { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; pinta(); }); } } catch (e) { wl = null; }
+    pinta();
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || $('inicio').style.display !== 'none') return;
+    despierta();
+    const t = stream && stream.getVideoTracks()[0];
+    if (!t || t.readyState !== 'live') { stream = null; recuperarCamara(); }
+    else if (!pc || pc.connectionState !== 'connected') ofrecer();
+  });
+  let empezado = false;
+  async function empezar() {
+    if (empezado) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $('err0').textContent = 'Este navegador no permite la cámara aquí (hace falta HTTPS).'; return; }
+    empezado = true;
+    try { await camara(); } catch (e) { empezado = false; $('err0').textContent = 'No se pudo abrir la cámara: ' + e.message; return; }
+    $('inicio').style.display = 'none';
+    despierta(); escuchar(); ofrecer();
+  }
+  $('b').addEventListener('click', empezar);
+  if (Q.get('auto')) empezar();
+})();
+</script>
+</body>
+</html>

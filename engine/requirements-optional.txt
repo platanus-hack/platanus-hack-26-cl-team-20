@@ -1,0 +1,12 @@
+# Instalar solo para voz, audio, MIDI, MCP y luces BLE.
+-r requirements.txt
+elevenlabs
+sounddevice
+mido
+python-rtmidi
+httpx
+mcp
+bleak
+pyserial
+pycryptodome
+coremltools; sys_platform == "darwin"   # personas con DAViD en el Neural Engine (playground/people, pedido 046)

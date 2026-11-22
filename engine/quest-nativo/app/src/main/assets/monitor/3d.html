@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quest 3D en vivo</title>
+<style>
+:root{--bg:#07090c;--pn:rgba(16,20,25,.88);--ln:#26303a;--tx:#d7dde4;--mu:#7d8a97;--ok:#4ade80;--wa:#fbbf24;--er:#f87171}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:12px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;overflow:hidden}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hud{position:fixed;background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:8px 10px;max-width:360px}
+#info{left:10px;top:10px}#capas{right:10px;top:10px;max-height:calc(100% - 20px);overflow:auto}
+#info b{font-size:13px}.ok{color:var(--ok)}.wa{color:var(--wa)}.er{color:var(--er)}.mu{color:var(--mu)}
+label{display:block;cursor:pointer;white-space:nowrap}input[type=number]{width:52px;background:#0d1116;color:var(--tx);border:1px solid var(--ln);border-radius:4px;padding:1px 3px;font:inherit}
+select{background:#0d1116;color:var(--tx);border:1px solid var(--ln);border-radius:4px;font:inherit}
+h3{margin:6px 0 3px;font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em}
+#aviso{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);background:var(--pn);border:1px solid var(--wa);color:var(--wa);border-radius:8px;padding:6px 12px;display:none;max-width:90%}
+body.embed #capas{display:none}body.embed #info{max-width:300px;font-size:11px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud" id="info"><b>Quest 3D en vivo</b><div id="txt" class="mu">cargando…</div></div>
+<div class="hud" id="capas">
+  <h3>Seguir</h3>
+  <select id="seguir"><option value="libre">libre</option><option value="cabeza">cabeza</option><option value="proyector">proyector</option><option value="ojo">ojo del proyector</option></select>
+  <h3>Capas</h3>
+  <div id="toggles"></div>
+  <h3>Rig sin calibración (cm, °)</h3>
+  <div>dx <input type="number" id="rdx" step="1"> dy <input type="number" id="rdy" step="1"> dz <input type="number" id="rdz" step="1"></div>
+  <div>pitch <input type="number" id="rpitch" step="1"> throw <input type="number" id="rthrow" step="0.05"></div>
+  <div class="mu">con calibración se usa T cabeza→proyector</div>
+</div>
+<div id="aviso"></div>
+<script type="importmap">{"imports":{"three":"./three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+if (params.has('embed')) document.body.classList.add('embed');
+
+// ---------------------------------------------------------------- conversión de marcos
+// Spatial SDK: x der, y arriba, z adelante (zurdo). three.js: diestro → z se invierte.
+const P = a => new THREE.Vector3(a[0], a[1], -a[2]);
+const Q = q => new THREE.Quaternion(-q[1], -q[2], q[3], q[0]);   // q = [w, x, y, z]
+
+// ---------------------------------------------------------------- escena
+const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07090c);
+const cam = new THREE.PerspectiveCamera(60, 1, 0.02, 100);
+cam.position.set(2.5, 2.2, 2.5);
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const sol = new THREE.DirectionalLight(0xffffff, 1.2); sol.position.set(2, 5, 3); scene.add(sol);
+
+const capas = {};
+function capa(nombre, def = true) {
+  const g = new THREE.Group(); g.name = nombre; scene.add(g);
+  const guard = (() => { try { return JSON.parse(localStorage.getItem('capa_' + nombre)); } catch { return null; } })();
+  g.visible = guard ?? def;
+  const l = document.createElement('label');
+  l.innerHTML = `<input type="checkbox" ${g.visible ? 'checked' : ''}> ${nombre}`;
+  l.firstChild.onchange = e => { g.visible = e.target.checked; try { localStorage.setItem('capa_' + nombre, g.visible); } catch {} };
+  $('toggles').appendChild(l);
+  capas[nombre] = g; return g;
+}
+const gPiso = capa('piso y ejes'), gSala = capa('malla de la pieza (MRUK)'), gAnclas = capa('anclas MRUK'),
+  gProfApp = capa('malla de profundidad (app)'), gNube = capa('nube de profundidad'), gProfVivo = capa('malla de profundidad en vivo', false),
+  gResp = capa('respaldo sala.glb (iPad)'), gQuest = capa('Quest 3 + cámara'), gProy = capa('proyector + frustum'),
+  gSup = capa('superficie proyectada'), gCtl = capa('controles / manos'), gTraza = capa('traza de la cabeza'),
+  gMarc = capa('marcadores detectados'), gMesa = capa('proyector de la mesa (PnP ArUco)'), gCuerpo = capa('cuerpo (body tracking)');
+
+gPiso.add(new THREE.GridHelper(10, 20, 0x2b3742, 0x161d24));
+gPiso.add(new THREE.AxesHelper(0.5));
+
+function etiqueta(texto, color = '#e5e7eb', escala = 0.5) {
+  const c = document.createElement('canvas'); const x = c.getContext('2d');
+  x.font = 'bold 44px ui-monospace,Menlo,monospace';
+  const w = Math.ceil(x.measureText(texto).width) + 24; c.width = w; c.height = 64;
+  x.font = 'bold 44px ui-monospace,Menlo,monospace';
+  x.fillStyle = 'rgba(8,10,14,.75)'; x.fillRect(0, 0, w, 64);
+  x.fillStyle = color; x.textBaseline = 'middle'; x.fillText(texto, 12, 34);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
+  s.scale.set(escala * w / 64 * 0.18, escala * 0.18, 1); s.renderOrder = 10;
+  return s;
+}
+
+function lineas(puntos, color, opac = 1) {
+  const g = new THREE.BufferGeometry().setFromPoints(puntos);
+  return new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color, transparent: opac < 1, opacity: opac }));
+}
+
+// ---------------------------------------------------------------- órbita simple
+const orb = { tgt: new THREE.Vector3(0, 1, 0), r: 4, az: 0.8, el: 0.5 };
+let arrastre = null, tocado = false;
+function encuadrar(obj) {
+  if (tocado) return;
+  const b = new THREE.Box3().setFromObject(obj); if (b.isEmpty()) return;
+  const c = b.getCenter(new THREE.Vector3()), t = b.getSize(new THREE.Vector3());
+  orb.tgt.copy(c); orb.r = Math.max(1.2, t.length() * 0.85); orb.el = 0.75; orb.az = 0.6;
+}
+// mouse: izquierdo = órbita · medio (arrastre) o derecho (arrastre vertical) = zoom · Shift/Ctrl/Alt + izquierdo = desplazar · rueda = zoom
+renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+renderer.domElement.addEventListener('mousedown', e => { if (e.button === 1) e.preventDefault(); });   // sin autoscroll del botón del medio
+renderer.domElement.addEventListener('auxclick', e => e.preventDefault());
+renderer.domElement.addEventListener('pointerdown', e => {
+  tocado = true;
+  const modo = e.button === 1 || e.button === 2 ? 'zoom' : (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) ? 'pan' : 'orbita';
+  arrastre = { x: e.clientX, y: e.clientY, modo }; renderer.domElement.setPointerCapture(e.pointerId); e.preventDefault();
+});
+renderer.domElement.addEventListener('pointerup', () => arrastre = null);
+renderer.domElement.addEventListener('pointercancel', () => arrastre = null);
+renderer.domElement.addEventListener('pointermove', e => {
+  if (!arrastre) return;
+  const dx = e.clientX - arrastre.x, dy = e.clientY - arrastre.y; arrastre.x = e.clientX; arrastre.y = e.clientY;
+  if (arrastre.modo === 'zoom') { orb.r = Math.max(0.15, Math.min(30, orb.r * Math.exp(dy * 0.006))); }
+  else if (arrastre.modo === 'pan') {
+    const der = new THREE.Vector3().setFromMatrixColumn(cam.matrix, 0), arr = new THREE.Vector3().setFromMatrixColumn(cam.matrix, 1);
+    orb.tgt.addScaledVector(der, -dx * orb.r * 0.0015).addScaledVector(arr, dy * orb.r * 0.0015);
+  } else { orb.az -= dx * 0.006; orb.el = Math.max(-1.5, Math.min(1.5, orb.el + dy * 0.006)); }
+});
+renderer.domElement.addEventListener('dblclick', () => { tocado = false; const g = S.objetivos.mruk ? gSala : gResp; encuadrar(g); });
+renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); orb.r = Math.max(0.15, Math.min(30, orb.r * Math.exp(e.deltaY * 0.001))); }, { passive: false });
+
+// ---------------------------------------------------------------- BVH (rayos contra la malla de la pieza)
+class BVH {
+  constructor(pos) {               // pos: Float32Array xyz por vértice, triángulos sueltos
+    const T = pos.length / 9; this.pos = pos; this.T = T;
+    const cen = new Float32Array(T * 3), ids = new Uint32Array(T);
+    for (let t = 0; t < T; t++) { ids[t] = t; for (let k = 0; k < 3; k++) cen[t * 3 + k] = (pos[t * 9 + k] + pos[t * 9 + 3 + k] + pos[t * 9 + 6 + k]) / 3; }
+    this.ids = ids; this.cen = cen;
+    this.nodos = []; this.raiz = T ? this.armar(0, T) : -1;
+  }
+  caja(a, b) {
+    const p = this.pos, ids = this.ids; const mn = [1e9, 1e9, 1e9], mx = [-1e9, -1e9, -1e9];
+    for (let i = a; i < b; i++) { const t = ids[i] * 9; for (let v = 0; v < 9; v += 3) for (let k = 0; k < 3; k++) { const x = p[t + v + k]; if (x < mn[k]) mn[k] = x; if (x > mx[k]) mx[k] = x; } }
+    return [mn, mx];
+  }
+  armar(a, b) {
+    const [mn, mx] = this.caja(a, b); const n = { mn, mx, a, b, i: -1, d: -1 }; const id = this.nodos.length; this.nodos.push(n);
+    if (b - a <= 8) return id;
+    const c = this.cen, ids = this.ids;
+    let cm = [1e9, 1e9, 1e9], cM = [-1e9, -1e9, -1e9];
+    for (let i = a; i < b; i++) for (let k = 0; k < 3; k++) { const x = c[ids[i] * 3 + k]; if (x < cm[k]) cm[k] = x; if (x > cM[k]) cM[k] = x; }
+    let ax = 0; for (let k = 1; k < 3; k++) if (cM[k] - cm[k] > cM[ax] - cm[ax]) ax = k;
+    const mid = (cm[ax] + cM[ax]) / 2;
+    let i = a, j = b - 1;
+    while (i <= j) { if (c[ids[i] * 3 + ax] < mid) i++; else { const tmp = ids[i]; ids[i] = ids[j]; ids[j] = tmp; j--; } }
+    let m = i; if (m === a || m === b) m = (a + b) >> 1;
+    n.i = this.armar(a, m); n.d = this.armar(m, b);
+    return id;
+  }
+  rayo(o, d, tmax = 20) {          // devuelve t del impacto más cercano o -1
+    if (this.raiz < 0) return -1;
+    const inv = [1 / d.x, 1 / d.y, 1 / d.z], O = [o.x, o.y, o.z], D = [d.x, d.y, d.z];
+    let mejor = tmax; const pila = [this.raiz]; const p = this.pos, ids = this.ids;
+    while (pila.length) {
+      const n = this.nodos[pila.pop()];
+      let t0 = 0, t1 = mejor;
+      for (let k = 0; k < 3; k++) {
+        let ta = (n.mn[k] - O[k]) * inv[k], tb = (n.mx[k] - O[k]) * inv[k];
+        if (ta > tb) { const s = ta; ta = tb; tb = s; }
+        t0 = Math.max(t0, ta); t1 = Math.min(t1, tb); if (t0 > t1) break;
+      }
+      if (t0 > t1) continue;
+      if (n.i < 0) {
+        for (let q = n.a; q < n.b; q++) {
+          const t = ids[q] * 9;
+          const e1x = p[t + 3] - p[t], e1y = p[t + 4] - p[t + 1], e1z = p[t + 5] - p[t + 2];
+          const e2x = p[t + 6] - p[t], e2y = p[t + 7] - p[t + 1], e2z = p[t + 8] - p[t + 2];
+          const hx = D[1] * e2z - D[2] * e2y, hy = D[2] * e2x - D[0] * e2z, hz = D[0] * e2y - D[1] * e2x;
+          const a = e1x * hx + e1y * hy + e1z * hz; if (Math.abs(a) < 1e-12) continue;
+          const f = 1 / a, sx = O[0] - p[t], sy = O[1] - p[t + 1], sz = O[2] - p[t + 2];
+          const u = f * (sx * hx + sy * hy + sz * hz); if (u < 0 || u > 1) continue;
+          const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x;
+          const v = f * (D[0] * qx + D[1] * qy + D[2] * qz); if (v < 0 || u + v > 1) continue;
+          const tt = f * (e2x * qx + e2y * qy + e2z * qz);
+          if (tt > 1e-4 && tt < mejor) mejor = tt;
+        }
+      } else { pila.push(n.i, n.d); }
+    }
+    return mejor < tmax ? mejor : -1;
+  }
+}
+
+// ---------------------------------------------------------------- estado global
+const S = { estado: null, fuente: '?', malla: null, mallaVer: -1, objetivos: {}, traza: [], render: null, aviso: '' };
+const rig = { dx: 0, dy: 12, dz: 0, pitch: 0, thr: 1.25 };
+try { Object.assign(rig, JSON.parse(localStorage.getItem('rig') || '{}')); } catch {}
+for (const [k, id] of [['dx', 'rdx'], ['dy', 'rdy'], ['dz', 'rdz'], ['pitch', 'rpitch'], ['thr', 'rthrow']]) {
+  $(id).value = rig[k]; $(id).oninput = () => { rig[k] = parseFloat($(id).value) || 0; try { localStorage.setItem('rig', JSON.stringify(rig)); } catch {} };
+}
+try { $('seguir').value = localStorage.getItem('seguir') || 'libre'; } catch {}
+$('seguir').onchange = () => { try { localStorage.setItem('seguir', $('seguir').value); } catch {} };
+
+// ---------------------------------------------------------------- modelos: Quest 3 y HY320
+function modeloQuest() {
+  const g = new THREE.Group();
+  const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.10, 0.08), new THREE.MeshStandardMaterial({ color: 0xe8e8ea, roughness: 0.6 }));
+  cuerpo.position.z = -0.05; g.add(cuerpo);
+  const frente = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.085, 0.004), new THREE.MeshBasicMaterial({ color: 0x1f2937 }));
+  frente.position.z = -0.092; g.add(frente);
+  for (const x of [-0.045, 0.045]) { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.006, 16), new THREE.MeshBasicMaterial({ color: 0x60a5fa })); l.rotation.x = Math.PI / 2; l.position.set(x, -0.015, -0.095); g.add(l); }
+  const ejes = new THREE.AxesHelper(0.15); g.add(ejes);
+  const fl = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 0, -0.09), 0.25, 0x60a5fa, 0.04, 0.025); g.add(fl);
+  return g;
+}
+function modeloProyector() {
+  const g = new THREE.Group();
+  const c = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.09, 0.17), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 }));
+  c.position.z = 0.085 - 0.17; g.add(c);
+  const lente = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.012, 24), new THREE.MeshBasicMaterial({ color: 0xfbbf24 }));
+  lente.rotation.x = Math.PI / 2; lente.position.set(0, 0, -0.006); g.add(lente);
+  g.add(new THREE.AxesHelper(0.12));
+  return g;
+}
+const quest = modeloQuest(); gQuest.add(quest); quest.visible = false;
+const etQuest = etiqueta('Quest 3', '#bfdbfe'); gQuest.add(etQuest); etQuest.visible = false;
+let frustumCam = null; gQuest.add(frustumCam = new THREE.Group());
+const proy = modeloProyector(); gProy.add(proy); proy.visible = false;
+const etProy = etiqueta('proyector', '#fde68a'); gProy.add(etProy); etProy.visible = false;
+const frustumProy = new THREE.Group(); gProy.add(frustumProy);
+const trazaGeo = new THREE.BufferGeometry(); const trazaLin = new THREE.Line(trazaGeo, new THREE.LineBasicMaterial({ color: 0xa78bfa })); gTraza.add(trazaLin);
+const ctlObjs = {};
+
+// ---------------------------------------------------------------- textura del render
+const texRender = new THREE.Texture(); texRender.colorSpace = THREE.SRGBColorSpace;
+let renderPend = false, renderOk = false;
+function pedirRender() {
+  if (renderPend || !gSup.visible) return; renderPend = true;
+  const im = new Image();
+  im.onload = () => { texRender.image = im; texRender.needsUpdate = true; renderOk = true; renderPend = false; };
+  im.onerror = () => { renderPend = false; };
+  im.src = 'render.jpg?w=480&t=' + Date.now();
+}
+const matSup = new THREE.MeshBasicMaterial({ map: texRender, side: THREE.DoubleSide, transparent: true, opacity: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+const supMesh = new THREE.Mesh(new THREE.BufferGeometry(), matSup); gSup.add(supMesh);
+const supBorde = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xff00ff })); gSup.add(supBorde);
+const supRej = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.35 })); gSup.add(supRej);
+
+// ---------------------------------------------------------------- malla de la pieza
+function geoDeSopa(pos, col, tipo, soloTipo) {
+  const nT = pos.length / 9; const out = [], cs = [];
+  for (let t = 0; t < nT; t++) {
+    if (soloTipo != null && tipo && tipo[t] !== soloTipo) continue;
+    for (let v = 0; v < 3; v++) { const b = t * 9 + v * 3; out.push(pos[b], pos[b + 1], -pos[b + 2]); if (col) cs.push(col[t * 3], col[t * 3 + 1], col[t * 3 + 2]); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
+  if (cs.length) g.setAttribute('color', new THREE.Float32BufferAttribute(cs, 3));
+  g.computeVertexNormals(); return g;
+}
+function limpiar(g) { while (g.children.length) { const c = g.children.pop(); c.geometry?.dispose?.(); } }
+
+async function cargarMalla() {
+  let m = null;
+  try { m = await (await fetch('malla.json', { cache: 'no-store' })).json(); } catch {}
+  S.malla = m; S.mallaVer = m?.version ?? -1;
+  limpiar(gSala); limpiar(gProfApp); delete S.objetivos.mruk; delete S.objetivos.prof;
+  if (m?.mruk?.pos?.length) {
+    const gGlob = geoDeSopa(m.mruk.pos, m.mruk.col, m.mruk.tipo, 0);
+    if (gGlob.attributes.position.count) {
+      gSala.add(new THREE.Mesh(gGlob, new THREE.MeshLambertMaterial({ color: 0x8aa4c0, side: THREE.DoubleSide, transparent: true, opacity: 0.4, depthWrite: false })));
+      gSala.add(new THREE.LineSegments(new THREE.WireframeGeometry(gGlob), new THREE.LineBasicMaterial({ color: 0x9fb7d0, transparent: true, opacity: 0.12 })));
+    }
+    const gAnc = geoDeSopa(m.mruk.pos, m.mruk.col, m.mruk.tipo, 1);
+    if (gAnc.attributes.position.count) gSala.add(new THREE.Mesh(gAnc, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true, opacity: 0.25 })));
+    encuadrar(gSala);
+    S.objetivos.mruk = new BVH(gGlob.attributes.position.count ? gGlob.attributes.position.array : geoDeSopa(m.mruk.pos).attributes.position.array);
+  }
+  if (m?.prof?.pos?.length) {
+    const g = geoDeSopa(m.prof.pos, m.prof.col);
+    gProfApp.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, wireframe: true, transparent: true, opacity: 0.45 })));
+    S.objetivos.prof = new BVH(g.attributes.position.array);
+  }
+  if (!S.objetivos.mruk && !S.objetivos.prof && !S.objetivos.glb) cargarRespaldo();
+}
+
+let respaldoPedido = false;
+async function cargarRespaldo() {
+  if (respaldoPedido) return; respaldoPedido = true;
+  try {
+    const r = await fetch('sala.glb', { method: 'HEAD' });
+    if (!r.ok) { S.aviso = 'sin malla de la pieza: la app no tiene Space Setup y no hay sala.glb de respaldo en esta URL'; return; }
+    const { GLTFLoader } = await import('./addons/loaders/GLTFLoader.js');
+    S.aviso = 'cargando sala.glb (respaldo, 18 MB)…';
+    new GLTFLoader().load('sala.glb', gl => {
+      gl.scene.updateMatrixWorld(true);
+      const sopa = [];
+      gl.scene.traverse(o => {
+        if (!o.isMesh) return;
+        const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+        g.applyMatrix4(o.matrixWorld);
+        const a = g.attributes.position.array; for (let i = 0; i < a.length; i++) sopa.push(a[i]);
+        if (o.material) { o.material.side = THREE.DoubleSide; }
+      });
+      gResp.add(gl.scene); encuadrar(gResp);
+      S.objetivos.glb = new BVH(new Float32Array(sopa));
+      S.aviso = 'malla de RESPALDO: escaneo iPad 30-oct (sala.glb, Y arriba). No está alineada con el mundo del casco: falta Space Setup / escaneo MRUK';
+    }, undefined, e => { S.aviso = 'no se pudo cargar sala.glb: ' + e; });
+  } catch (e) { S.aviso = 'sin malla de respaldo: ' + e; }
+}
+
+// ---------------------------------------------------------------- profundidad en vivo
+const nubeGeo = new THREE.BufferGeometry();
+const nube = new THREE.Points(nubeGeo, new THREE.PointsMaterial({ size: 0.025, vertexColors: true })); gNube.add(nube);
+async function cargarProfundidad() {
+  try {
+    // depth.json = el frame en vivo (no lanza rayos nuevos); profundidad.json solo si la app es vieja (404)
+    let d = null, r = null;
+    try { r = await fetch('depth.json', { cache: 'no-store' }); if (r.ok) d = await r.json(); } catch {}
+    if (!d && (!r || r.status === 404)) { if (performance.now() - (S.tProfVieja || 0) < 2500) return; S.tProfVieja = performance.now(); d = await (await fetch('profundidad.json?nx=48&ny=32', { cache: 'no-store' })).json(); }
+    if (!d) return;
+    if (d.error || !d.puntos) { S.profErr = d.error || 'sin datos'; return; }
+    S.profErr = null; S.prof = d;
+    const n = d.puntos.length / 3, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
+    const o = d.origen; const c = new THREE.Color();
+    for (let i = 0; i < n; i++) {
+      pos[i * 3] = d.puntos[i * 3]; pos[i * 3 + 1] = d.puntos[i * 3 + 1]; pos[i * 3 + 2] = -d.puntos[i * 3 + 2];
+      const dist = Math.hypot(d.puntos[i * 3] - o[0], d.puntos[i * 3 + 1] - o[1], d.puntos[i * 3 + 2] - o[2]);
+      c.setHSL((dist % 1.5) / 1.5 * 0.8, 0.9, 0.55); col.set([c.r, c.g, c.b], i * 3);
+    }
+    nubeGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); nubeGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    nubeGeo.computeBoundingSphere();
+    // malla de la rejilla (objetivo de proyección si no hay MRUK)
+    if (d.idx) {
+      const mapa = new Map(); d.idx.forEach((g, i) => mapa.set(g, i));
+      const tri = []; const v = i => [pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]];
+      const dO = i => Math.hypot(pos[i * 3] - o[0], pos[i * 3 + 1] - o[1], pos[i * 3 + 2] + o[2]);
+      for (let y = 0; y < d.ny - 1; y++) for (let x = 0; x < d.nx - 1; x++) {
+        const a = mapa.get(y * d.nx + x), b = mapa.get(y * d.nx + x + 1), cc = mapa.get((y + 1) * d.nx + x + 1), e = mapa.get((y + 1) * d.nx + x);
+        if (a == null || b == null || cc == null || e == null) continue;
+        const da = dO(a); if (Math.max(Math.abs(dO(b) - da), Math.abs(dO(cc) - da), Math.abs(dO(e) - da)) > 0.1 * da + 0.03) continue;
+        tri.push(...v(a), ...v(b), ...v(cc), ...v(a), ...v(cc), ...v(e));
+      }
+      const arr = new Float32Array(tri);
+      limpiar(gProfVivo);
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+      gProfVivo.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x22d3ee, wireframe: true, transparent: true, opacity: 0.3 })));
+      // la nube viene en coordenadas three; el BVH trabaja en three
+      S.objetivos.vivo = new BVH(arr);
+    }
+  } catch (e) { S.profErr = String(e); }
+}
+
+// ---------------------------------------------------------------- pose del proyector
+function poseProyector(e) {
+  const pr = e?.calibracion?.proyector;
+  if (pr?.esquinas_plano_1m) {
+    const O = P(pr.origen), C = pr.esquinas_plano_1m.map(P);
+    const cen = C.reduce((a, b) => a.add(b), new THREE.Vector3()).multiplyScalar(0.25);
+    const z = cen.clone().sub(O).normalize().negate();                      // local -z = adelante
+    const arriba = C[0].clone().add(C[1]).sub(C[2]).sub(C[3]).normalize();  // borde superior - inferior
+    const x = new THREE.Vector3().crossVectors(arriba, z).normalize(); const y = new THREE.Vector3().crossVectors(z, x);
+    const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+    return { O, C, q, fuente: 'calibración (' + (pr.tipo || e.calibracion.tipo || '?') + ')' };
+  }
+  const h = e?.cabeza; if (!h) return null;
+  const qh = Q(h.q), th = P(h.t);
+  const qp = qh.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(rig.pitch * Math.PI / 180, 0, 0)));
+  const O = th.clone().add(new THREE.Vector3(rig.dx / 100, rig.dy / 100, -rig.dz / 100).applyQuaternion(qh));
+  const hw = 0.5 / (rig.thr || 1.25), hh = hw * 1080 / 1920;
+  const C = [[-hw, hh], [hw, hh], [hw, -hh], [-hw, -hh]].map(([x, y]) => new THREE.Vector3(x, y, -1).applyQuaternion(qp).add(O));
+  return { O, C, q: qp, fuente: `rig por defecto (${rig.dx}, ${rig.dy}, ${rig.dz} cm; throw ${rig.thr})` };
+}
+
+// ---------------------------------------------------------------- superficie proyectada (rayos 32x18)
+const NX = 32, NY = 18;
+function objetivoActual() {
+  for (const k of ['mruk', 'prof', 'vivo', 'glb']) if (S.objetivos[k]?.T) return [k, S.objetivos[k]];
+  return [null, null];
+}
+function proyectarSuperficie(pp) {
+  const [nombre, bvh] = objetivoActual(); S.objetivo = nombre;
+  if (!pp || !bvh) { supMesh.visible = supBorde.visible = supRej.visible = false; S.supHits = 0; return; }
+  const hits = new Array((NX + 1) * (NY + 1)); let n = 0;
+  const top = new THREE.Vector3(), bot = new THREE.Vector3(), q = new THREE.Vector3(), d = new THREE.Vector3();
+  for (let j = 0; j <= NY; j++) {
+    const t = j / NY;
+    top.lerpVectors(pp.C[0], pp.C[3], t); bot.lerpVectors(pp.C[1], pp.C[2], t);
+    for (let i = 0; i <= NX; i++) {
+      const s = i / NX; q.lerpVectors(top, bot, s); d.subVectors(q, pp.O).normalize();
+      const tt = bvh.rayo(pp.O, d, 15);
+      if (tt > 0) { hits[j * (NX + 1) + i] = pp.O.clone().addScaledVector(d, tt - 0.004); n++; }
+    }
+  }
+  S.supHits = n;
+  const pos = [], uv = [], idx = [], mapa = new Map();
+  const id = k => { if (!mapa.has(k)) { mapa.set(k, pos.length / 3); const p = hits[k]; pos.push(p.x, p.y, p.z); uv.push((k % (NX + 1)) / NX, 1 - Math.floor(k / (NX + 1)) / NY); } return mapa.get(k); };
+  const rej = [];
+  for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+    const a = j * (NX + 1) + i, b = a + 1, c = a + NX + 2, e = a + NX + 1;
+    if (!hits[a] || !hits[b] || !hits[c] || !hits[e]) continue;
+    const da = hits[a].distanceTo(pp.O);
+    if (Math.max(Math.abs(hits[b].distanceTo(pp.O) - da), Math.abs(hits[c].distanceTo(pp.O) - da), Math.abs(hits[e].distanceTo(pp.O) - da)) > 0.12 * da + 0.03) continue;
+    idx.push(id(a), id(e), id(c), id(a), id(c), id(b));
+    if (i % 4 === 0) rej.push(hits[a], hits[e]); if (j % 3 === 0) rej.push(hits[a], hits[b]);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+  supMesh.geometry.dispose(); supMesh.geometry = g; supMesh.visible = true;
+  matSup.map = renderOk ? texRender : null; matSup.color.set(renderOk ? 0xffffff : 0xff00ff); matSup.opacity = renderOk ? 0.92 : 0.25; matSup.needsUpdate = true;
+  const borde = [];
+  for (let i = 0; i <= NX; i++) if (hits[i]) borde.push(hits[i]);
+  for (let j = 0; j <= NY; j++) if (hits[j * (NX + 1) + NX]) borde.push(hits[j * (NX + 1) + NX]);
+  for (let i = NX; i >= 0; i--) if (hits[NY * (NX + 1) + i]) borde.push(hits[NY * (NX + 1) + i]);
+  for (let j = NY; j >= 0; j--) if (hits[j * (NX + 1)]) borde.push(hits[j * (NX + 1)]);
+  supBorde.geometry.dispose(); supBorde.geometry = new THREE.BufferGeometry().setFromPoints(borde); supBorde.visible = borde.length > 1;
+  supRej.geometry.dispose(); supRej.geometry = new THREE.BufferGeometry().setFromPoints(rej); supRej.visible = true;
+}
+
+// ---------------------------------------------------------------- actualizar con /estado.json
+function actualizar(e) {
+  // cabeza
+  if (e.cabeza) {
+    quest.position.copy(P(e.cabeza.t)); quest.quaternion.copy(Q(e.cabeza.q));
+    if (!quest.visible && !S.objetivos.mruk && !S.objetivos.glb) { orb.tgt.copy(quest.position); }
+    quest.visible = true;
+    etQuest.position.copy(quest.position).add(new THREE.Vector3(0, 0.12, 0));
+    const ahora = performance.now();
+    S.traza.push([ahora, quest.position.clone()]); while (S.traza.length && ahora - S.traza[0][0] > 15000) S.traza.shift();
+    trazaGeo.setFromPoints(S.traza.map(x => x[1]));
+  } else quest.visible = false;
+  etQuest.visible = quest.visible;
+  // frustum de la cámara passthrough izquierda
+  limpiar(frustumCam);
+  const cj = e.camara;
+  if (cj?.pose && cj.frustum_1m) {
+    const O = P(cj.pose.t), C = cj.frustum_1m.map(p => O.clone().lerp(P(p), 0.6));
+    const ls = []; for (let i = 0; i < 4; i++) ls.push(O, C[i], C[i], C[(i + 1) % 4]);
+    frustumCam.add(lineas(ls, cj.abierta ? 0x60a5fa : 0x64748b, 0.9));
+    const et = etiqueta('cám izq ' + (cj.abierta ? Math.round(cj.fps) + ' fps' : '(' + cj.estado + ')'), '#93c5fd', 0.35); et.position.copy(C[0]); frustumCam.add(et);
+  }
+  // proyector
+  const pp = poseProyector(e); S.pp = pp;
+  limpiar(frustumProy);
+  if (pp) {
+    proy.position.copy(pp.O); proy.quaternion.copy(pp.q); proy.visible = true;
+    etProy.position.copy(pp.O).add(new THREE.Vector3(0, 0.1, 0));
+    const far = pp.C.map(c => pp.O.clone().add(c.clone().sub(pp.O).multiplyScalar(2.5)));
+    const ls = []; for (let i = 0; i < 4; i++) ls.push(pp.O, far[i], far[i], far[(i + 1) % 4]);
+    frustumProy.add(lineas(ls, 0xfbbf24, 0.6));
+  } else proy.visible = false;
+  etProy.visible = proy.visible;
+  // controles y manos
+  for (const [k, c] of Object.entries(e.controles || {})) {
+    if (!c || !c.t) continue;
+    let o = ctlObjs[k];
+    if (!o) {
+      o = new THREE.Group();
+      o.add(new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 12), new THREE.MeshStandardMaterial({ color: k === 'izq' ? 0x34d399 : 0xf472b6 })));
+      o.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), new THREE.Vector3(), 0.12, 0xffffff, 0.03, 0.02));
+      o.et = etiqueta(k, '#e5e7eb', 0.3); o.et.position.y = 0.06; o.add(o.et);
+      gCtl.add(o); ctlObjs[k] = o;
+    }
+    o.position.copy(P(c.t)); o.quaternion.copy(Q(c.q)); o.visible = c.activo !== false;
+  }
+  // anclas
+  const an = e.mruk?.anclas || [];
+  const firma = an.length + ':' + an.map(a => a.etiqueta).join(',');
+  if (firma !== S.firmaAnclas) {
+    S.firmaAnclas = firma; limpiar(gAnclas);
+    for (const a of an) {
+      const g = new THREE.Group(); g.position.copy(P(a.pose.t)); g.quaternion.copy(Q(a.pose.q));
+      const col = colorEtiqueta(a.etiqueta);
+      if (a.volumen) {
+        const [w, h, dd] = a.volumen; const c = a.centro_local || [0, 0, 0];
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, dd), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.15 }));
+        b.position.set(c[0], c[1], -c[2]); g.add(b);
+        const ed = new THREE.LineSegments(new THREE.EdgesGeometry(b.geometry), new THREE.LineBasicMaterial({ color: col })); ed.position.copy(b.position); g.add(ed);
+      } else if (a.plano) {
+        const [w, h] = a.plano; const pl = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.12, side: THREE.DoubleSide }));
+        g.add(pl); g.add(new THREE.LineSegments(new THREE.EdgesGeometry(pl.geometry), new THREE.LineBasicMaterial({ color: col })));
+      }
+      const et = etiqueta(a.etiqueta.toLowerCase(), '#' + new THREE.Color(col).getHexString(), 0.35); et.position.set(0, 0.05, 0); g.add(et);
+      gAnclas.add(g);
+    }
+  }
+  // marcadores detectados (si la app los publica)
+  limpiar(gMarc);
+  for (const m of e.marcadores?.detectados || []) {
+    if (!m.esquinas_mundo) continue;
+    const C = m.esquinas_mundo.map(P); const ls = []; for (let i = 0; i < 4; i++) ls.push(C[i], C[(i + 1) % 4]);
+    gMarc.add(lineas(ls, 0x22c55e));
+    const et = etiqueta('#' + m.id, '#86efac', 0.3); et.position.copy(C[0]); gMarc.add(et);
+  }
+  // ArUco de la mesa: esquinas 3D, panel AR y proyector de la mesa del PnP
+  const ar = e.aruco;
+  for (const m of ar?.marcas || []) {
+    const C = m.esq_mundo.filter(p => p).map(P); if (C.length < 2) continue;
+    const ls = []; for (let i = 0; i < C.length; i++) ls.push(C[i], C[(i + 1) % C.length]);
+    gMarc.add(lineas(ls, 0x22c55e)); const et = etiqueta('' + m.id, '#86efac', 0.25); et.position.copy(C[0]); gMarc.add(et);
+  }
+  if (ar?.panel) { const C = ar.panel.esquinas.map(P); gMarc.add(lineas([C[0], C[1], C[1], C[2], C[2], C[3], C[3], C[0]], 0xff00ff)); }
+  limpiar(gMesa);
+  const pm = ar?.pnp?.proyector;
+  if (pm) {
+    const O = P(pm.origen), C = pm.esquinas_plano_1m.map(P);
+    const far = C.map(c => O.clone().add(c.clone().sub(O).multiplyScalar(3)));
+    const ls = []; for (let i = 0; i < 4; i++) ls.push(O, far[i], far[i], far[(i + 1) % 4]);
+    gMesa.add(lineas(ls, 0xf472b6, 0.8));
+    const caja = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.09, 0.17), new THREE.MeshStandardMaterial({ color: 0x9d174d }));
+    caja.position.copy(O); gMesa.add(caja);
+    const et = etiqueta(`proyector mesa ${(+ar.pnp.mediana_px).toFixed(1)} px`, '#f9a8d4', 0.35); et.position.copy(O).add(new THREE.Vector3(0, 0.12, 0)); gMesa.add(et);
+  }
+  dibujarCuerpo(e.cuerpo);
+  if ((e.mruk?.malla_version ?? -1) !== S.mallaVer && e.mruk) cargarMalla();
+}
+// cuerpo: huesos como cilindros (más gruesos en el tronco) + esferas en las articulaciones, reutilizados
+const huesos = [], nudos = [];
+const matHueso = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6, transparent: true, opacity: 0.85 });
+const matNudo = new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.4 });
+const geoHueso = new THREE.CylinderGeometry(1, 1, 1, 10); geoHueso.translate(0, 0.5, 0);
+const geoNudo = new THREE.SphereGeometry(1, 10, 8);
+function dibujarCuerpo(c) {
+  const n = c?.n || 0;
+  while (huesos.length < n) { const m = new THREE.Mesh(geoHueso, matHueso); m.visible = false; gCuerpo.add(m); huesos.push(m); const k = new THREE.Mesh(geoNudo, matNudo); k.visible = false; gCuerpo.add(k); nudos.push(k); }
+  const arriba = new THREE.Vector3(0, 1, 0);
+  for (let i = 0; i < huesos.length; i++) {
+    const h = huesos[i], k = nudos[i];
+    const ok = i < n && c.valido[i] && c.t;
+    k.visible = !!ok; h.visible = false;
+    if (!ok) continue;
+    const p = P(c.t.slice(i * 3, i * 3 + 3));
+    const mano = i >= 18 && i < 70;
+    k.position.copy(p); k.scale.setScalar(mano ? 0.006 : 0.022);
+    const pa = c.padre[i];
+    if (pa >= 0 && pa < n && c.valido[pa]) {
+      const q = P(c.t.slice(pa * 3, pa * 3 + 3)); const d = p.clone().sub(q); const L = d.length();
+      if (L > 1e-4 && L < 0.8) {
+        h.visible = true; h.position.copy(q); h.quaternion.setFromUnitVectors(arriba, d.normalize());
+        const r = mano ? 0.005 : (i <= 7 ? 0.05 : i >= 70 ? 0.045 : 0.035);
+        h.scale.set(r, L, r);
+      }
+    }
+  }
+}
+
+function colorEtiqueta(l) {
+  const m = { FLOOR: 0x3373ff, CEILING: 0x80808c, WALL_FACE: 0x00e5ff, INVISIBLE_WALL_FACE: 0x00e5ff, TABLE: 0xffbf1a, COUCH: 0xff4d99, SCREEN: 0xa659ff, STORAGE: 0x4dff66, BED: 0xff8033, DOOR_FRAME: 0xffffff, WINDOW_FRAME: 0xffffff, LAMP: 0x99ff33, PLANT: 0x99ff33 };
+  return m[(l || '').toUpperCase()] ?? 0xcccccc;
+}
+
+// ---------------------------------------------------------------- bucles
+async function bucleEstado() {
+  try {
+    const e = await (await fetch('estado.json', { cache: 'no-store' })).json();
+    S.estado = e; S.fuente = e.fuente || 'app :8787'; S.tEstado = performance.now();
+    if (e.fuente && !S.avisoAdb) { S.avisoAdb = true; }
+    actualizar(e);
+  } catch (err) { S.fuente = 'sin conexión (' + err + ')'; }
+  setTimeout(bucleEstado, document.hidden ? 2000 : 200);   // pestaña oculta: solo /estado.json cada 2 s
+}
+setInterval(() => { if (gSup.visible && !document.hidden) { pedirRender(); proyectarSuperficie(S.pp); } }, 200);
+// nube en vivo a ~5 Hz (depth.json: el mismo frame que /depth.mjpg)
+let profPend = false;
+setInterval(async () => { if (profPend || document.hidden || !(gNube.visible || gProfVivo.visible || !S.objetivos.mruk)) return; profPend = true; try { await cargarProfundidad(); } finally { profPend = false; } }, 200);
+cargarMalla(); bucleEstado(); cargarProfundidad();
+
+function hud() {
+  const e = S.estado || {}; const f = (v, n = 2) => v == null ? '—' : (+v).toFixed(n);
+  const h = e.cabeza; const c = e.camara || {};
+  const vivo = S.tEstado && performance.now() - S.tEstado < 1500 && !e.fuente;
+  const lineasH = [
+    `<span class="${vivo ? 'ok' : 'wa'}">${vivo ? '● en vivo (app :8787)' : '○ sin feed en vivo'}</span> <span class="mu">${e.fuente || ''}</span>`,
+    `cabeza ${h ? `(${f(h.t[0])}, ${f(h.t[1])}, ${f(h.t[2])})` : '<span class="wa">sin pose</span>'}`,
+    `cámara ${c.estado || '—'}${e.app && !e.app.foco ? ' <span class="wa">· app sin foco</span>' : ''}`,
+    `proyector: ${S.pp ? S.pp.fuente : '—'}`,
+    `malla: ${S.malla?.mruk ? (S.malla.mruk.pos.length / 9) + ' tris MRUK' : 'sin MRUK'}${S.malla?.prof ? ' · ' + (S.malla.prof.pos.length / 9) + ' tris prof' : ''} · anclas ${(e.mruk?.anclas || []).length}`,
+    `profundidad: ${S.prof ? S.prof.aciertos + ' puntos (' + S.prof.ms + ' ms' + (S.prof.hz ? ', ' + S.prof.hz + ' Hz' : '') + ')' : (S.profErr || '—')}`,
+    `superficie: ${S.objetivo ? S.supHits + '/' + ((NX + 1) * (NY + 1)) + ' rayos sobre ' + S.objetivo : 'sin malla objetivo'} ${renderOk ? '· textura render.jpg' : ''}`,
+    `salida ${e.salida?.activa || '—'} · render ${f(e.render?.fps, 0)} fps · calib ${e.calibracion?.fase || '—'}`,
+  ];
+  if (e.marcadores?.tracker && e.marcadores.tracker !== 'apagado') lineasH.push(`QR: ${(e.marcadores.detectados || []).length} detectados`);
+  if (e.cuerpo) lineasH.push(`cuerpo: ${e.cuerpo.estado || '—'}`);
+  const pf = e.aruco?.pnp;
+  if (pf?.pose_fija) lineasH.push(`<span class="${pf.verificacion?.rig_movido ? 'er' : 'ok'}">proyector mesa: POSE FIJA</span> · verificación ${pf.verificacion?.residuo_mediana_px != null ? (+pf.verificacion.residuo_mediana_px).toFixed(1) + ' px' : '—'}${pf.verificacion?.rig_movido ? ' · RIG MOVIDO' : ''}`);
+  if (e.aruco?.activo) lineasH.push(`ArUco: ${e.aruco.n ?? 0} vistos (${e.aruco.modo || ''})${e.aruco.plano ? ' · plano ' + (+e.aruco.plano.rms_mm).toFixed(1) + ' mm' : ''}${e.aruco.pnp?.mediana_px != null ? ' · PnP mesa ' + (+e.aruco.pnp.mediana_px).toFixed(2) + ' px' : ''}`);
+  $('txt').innerHTML = lineasH.join('<br>');
+  const av = S.aviso; $('aviso').style.display = av ? 'block' : 'none'; $('aviso').textContent = av;
+}
+setInterval(hud, 300);
+
+function tam() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+addEventListener('resize', tam); tam();
+const ultimoSeg = new THREE.Vector3(); let seguirAntes = 'libre';
+function frame() {
+  const modo = $('seguir').value;
+  let obj = null; if (modo === 'cabeza' && quest.visible) obj = quest; if ((modo === 'proyector' || modo === 'ojo') && proy.visible) obj = proy;
+  if (modo === 'ojo' && obj) {
+    cam.position.copy(proy.position); cam.quaternion.copy(proy.quaternion);
+    const pp = S.pp; if (pp) { const v = pp.C[0].clone().sub(pp.C[3]).length(), dist = pp.C[0].clone().lerp(pp.C[2], 0.5).distanceTo(pp.O); cam.fov = 2 * Math.atan(v / 2 / dist) * 180 / Math.PI; cam.updateProjectionMatrix(); }
+  } else {
+    if (cam.fov !== 60) { cam.fov = 60; cam.updateProjectionMatrix(); }
+    if (obj) { if (seguirAntes !== modo) ultimoSeg.copy(obj.position); orb.tgt.add(obj.position.clone().sub(ultimoSeg)); ultimoSeg.copy(obj.position); }
+    cam.position.set(orb.tgt.x + orb.r * Math.cos(orb.el) * Math.sin(orb.az), orb.tgt.y + orb.r * Math.sin(orb.el), orb.tgt.z + orb.r * Math.cos(orb.el) * Math.cos(orb.az));
+    cam.lookAt(orb.tgt);
+  }
+  seguirAntes = modo;
+  renderer.render(scene, cam);
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>

@@ -1,0 +1,590 @@
+{
+ "google-pirata.png": {
+  "recall": 0.505,
+  "precision": 0.251,
+  "f1": 0.335,
+  "chamfer_in_a_out_mm": 9.69,
+  "chamfer_out_a_in_mm": 20.54,
+  "control_desplazada_15mm": {
+   "recall": 0.391,
+   "precision": 0.188,
+   "f1": 0.254,
+   "chamfer_in_a_out_mm": 11.33,
+   "chamfer_out_a_in_mm": 22.39
+  },
+  "global_afin": {
+   "escala_x": 1.01,
+   "escala_y": 1.0134,
+   "rot_grados": 0.27,
+   "tx_mm": 2.3,
+   "ty_mm": -6.6
+  },
+  "objetos": {
+   "libreta": {
+    "dx_mm": 1,
+    "dy_mm": -2,
+    "ncc": 0.625,
+    "ncc_sin_mover": 0.619,
+    "confiable": true
+   },
+   "telefono": {
+    "dx_mm": 4,
+    "dy_mm": -3,
+    "ncc": 0.847,
+    "ncc_sin_mover": 0.694,
+    "confiable": true
+   },
+   "viales azules": {
+    "dx_mm": 19,
+    "dy_mm": -12,
+    "ncc": 0.495,
+    "ncc_sin_mover": 0.342,
+    "confiable": true
+   },
+   "caja organizadora": {
+    "dx_mm": -30,
+    "dy_mm": -22,
+    "ncc": 0.211,
+    "ncc_sin_mover": 0.15,
+    "confiable": false
+   },
+   "vaso": {
+    "dx_mm": 10,
+    "dy_mm": 6,
+    "ncc": 0.199,
+    "ncc_sin_mover": 0.009,
+    "confiable": false
+   },
+   "plato 1 + engranaje": {
+    "dx_mm": 2,
+    "dy_mm": 2,
+    "ncc": 0.279,
+    "ncc_sin_mover": 0.263,
+    "confiable": false
+   },
+   "plato 2": {
+    "dx_mm": 0,
+    "dy_mm": 4,
+    "ncc": 0.552,
+    "ncc_sin_mover": 0.472,
+    "confiable": true
+   },
+   "plato 3": {
+    "dx_mm": 2,
+    "dy_mm": 4,
+    "ncc": 0.406,
+    "ncc_sin_mover": 0.329,
+    "confiable": true
+   },
+   "caja de viales": {
+    "dx_mm": 15,
+    "dy_mm": -1,
+    "ncc": 0.241,
+    "ncc_sin_mover": -0.154,
+    "confiable": false
+   },
+   "tapa caja viales": {
+    "dx_mm": 5,
+    "dy_mm": 12,
+    "ncc": 0.415,
+    "ncc_sin_mover": 0.261,
+    "confiable": true
+   }
+  },
+  "desplazamiento_objetos_mm": {
+   "n_confiables": 6,
+   "mediana": 4.7,
+   "max": 22.5
+  }
+ },
+ "google-scifi.png": {
+  "recall": 0.73,
+  "precision": 0.317,
+  "f1": 0.442,
+  "chamfer_in_a_out_mm": 3.81,
+  "chamfer_out_a_in_mm": 23.73,
+  "control_desplazada_15mm": {
+   "recall": 0.486,
+   "precision": 0.217,
+   "f1": 0.3,
+   "chamfer_in_a_out_mm": 5.92,
+   "chamfer_out_a_in_mm": 25.07
+  },
+  "global_afin": {
+   "escala_x": 0.9997,
+   "escala_y": 1.0096,
+   "rot_grados": 0.09,
+   "tx_mm": -0.4,
+   "ty_mm": -3.8
+  },
+  "objetos": {
+   "libreta": {
+    "dx_mm": 1,
+    "dy_mm": -1,
+    "ncc": 0.548,
+    "ncc_sin_mover": 0.545,
+    "confiable": true
+   },
+   "telefono": {
+    "dx_mm": 16,
+    "dy_mm": -40,
+    "ncc": 0.257,
+    "ncc_sin_mover": 0.003,
+    "confiable": false
+   },
+   "viales azules": {
+    "dx_mm": -32,
+    "dy_mm": -36,
+    "ncc": 0.299,
+    "ncc_sin_mover": 0.036,
+    "confiable": false
+   },
+   "caja organizadora": {
+    "dx_mm": -2,
+    "dy_mm": 1,
+    "ncc": 0.38,
+    "ncc_sin_mover": 0.372,
+    "confiable": true
+   },
+   "vaso": {
+    "dx_mm": 0,
+    "dy_mm": 2,
+    "ncc": 0.374,
+    "ncc_sin_mover": 0.365,
+    "confiable": true
+   },
+   "plato 1 + engranaje": {
+    "dx_mm": 0,
+    "dy_mm": 3,
+    "ncc": 0.593,
+    "ncc_sin_mover": 0.562,
+    "confiable": true
+   },
+   "plato 2": {
+    "dx_mm": 0,
+    "dy_mm": 3,
+    "ncc": 0.499,
+    "ncc_sin_mover": 0.431,
+    "confiable": true
+   },
+   "plato 3": {
+    "dx_mm": 1,
+    "dy_mm": 2,
+    "ncc": 0.439,
+    "ncc_sin_mover": 0.405,
+    "confiable": true
+   },
+   "caja de viales": {
+    "dx_mm": 15,
+    "dy_mm": -19,
+    "ncc": 0.212,
+    "ncc_sin_mover": 0.018,
+    "confiable": false
+   },
+   "tapa caja viales": {
+    "dx_mm": 4,
+    "dy_mm": 3,
+    "ncc": 0.514,
+    "ncc_sin_mover": 0.447,
+    "confiable": true
+   }
+  },
+  "desplazamiento_objetos_mm": {
+   "n_confiables": 7,
+   "mediana": 2.2,
+   "max": 5.0
+  }
+ },
+ "google-jardin.png": {
+  "recall": 0.697,
+  "precision": 0.194,
+  "f1": 0.304,
+  "chamfer_in_a_out_mm": 4.6,
+  "chamfer_out_a_in_mm": 29.08,
+  "control_desplazada_15mm": {
+   "recall": 0.567,
+   "precision": 0.159,
+   "f1": 0.248,
+   "chamfer_in_a_out_mm": 5.86,
+   "chamfer_out_a_in_mm": 29.64
+  },
+  "global_afin": {
+   "escala_x": 1.0009,
+   "escala_y": 1.0105,
+   "rot_grados": 0.07,
+   "tx_mm": -0.1,
+   "ty_mm": -5.5
+  },
+  "objetos": {
+   "libreta": {
+    "dx_mm": 1,
+    "dy_mm": 1,
+    "ncc": 0.626,
+    "ncc_sin_mover": 0.622,
+    "confiable": true
+   },
+   "telefono": {
+    "dx_mm": 3,
+    "dy_mm": 2,
+    "ncc": 0.371,
+    "ncc_sin_mover": 0.339,
+    "confiable": true
+   },
+   "viales azules": {
+    "dx_mm": -19,
+    "dy_mm": 28,
+    "ncc": 0.289,
+    "ncc_sin_mover": 0.034,
+    "confiable": false
+   },
+   "caja organizadora": {
+    "dx_mm": 0,
+    "dy_mm": -1,
+    "ncc": 0.304,
+    "ncc_sin_mover": 0.304,
+    "confiable": true
+   },
+   "vaso": {
+    "dx_mm": 1,
+    "dy_mm": -3,
+    "ncc": 0.025,
+    "ncc_sin_mover": 0.013,
+    "confiable": false
+   },
+   "plato 1 + engranaje": {
+    "dx_mm": -3,
+    "dy_mm": -23,
+    "ncc": 0.072,
+    "ncc_sin_mover": 0.036,
+    "confiable": false
+   },
+   "plato 2": {
+    "dx_mm": 0,
+    "dy_mm": 2,
+    "ncc": 0.239,
+    "ncc_sin_mover": 0.228,
+    "confiable": false
+   },
+   "plato 3": {
+    "dx_mm": 2,
+    "dy_mm": 5,
+    "ncc": 0.241,
+    "ncc_sin_mover": 0.142,
+    "confiable": false
+   },
+   "caja de viales": {
+    "dx_mm": 40,
+    "dy_mm": -11,
+    "ncc": 0.161,
+    "ncc_sin_mover": -0.037,
+    "confiable": false
+   },
+   "tapa caja viales": {
+    "dx_mm": 26,
+    "dy_mm": -39,
+    "ncc": 0.109,
+    "ncc_sin_mover": -0.192,
+    "confiable": false
+   }
+  },
+  "desplazamiento_objetos_mm": {
+   "n_confiables": 3,
+   "mediana": 1.4,
+   "max": 3.6
+  }
+ },
+ "openai-pirata.png": {
+  "recall": 0.657,
+  "precision": 0.246,
+  "f1": 0.357,
+  "chamfer_in_a_out_mm": 3.37,
+  "chamfer_out_a_in_mm": 20.27,
+  "control_desplazada_15mm": {
+   "recall": 0.522,
+   "precision": 0.191,
+   "f1": 0.28,
+   "chamfer_in_a_out_mm": 4.74,
+   "chamfer_out_a_in_mm": 20.74
+  },
+  "global_afin": {
+   "escala_x": 1.0038,
+   "escala_y": 0.9967,
+   "rot_grados": 0.1,
+   "tx_mm": -3.7,
+   "ty_mm": -3.4
+  },
+  "objetos": {
+   "libreta": {
+    "dx_mm": -1,
+    "dy_mm": -9,
+    "ncc": 0.19,
+    "ncc_sin_mover": 0.126,
+    "confiable": false
+   },
+   "telefono": {
+    "dx_mm": 2,
+    "dy_mm": -1,
+    "ncc": 0.409,
+    "ncc_sin_mover": 0.374,
+    "confiable": true
+   },
+   "viales azules": {
+    "dx_mm": 15,
+    "dy_mm": -30,
+    "ncc": 0.344,
+    "ncc_sin_mover": 0.243,
+    "confiable": true
+   },
+   "caja organizadora": {
+    "dx_mm": -2,
+    "dy_mm": 0,
+    "ncc": 0.223,
+    "ncc_sin_mover": 0.219,
+    "confiable": false
+   },
+   "vaso": {
+    "dx_mm": -1,
+    "dy_mm": -4,
+    "ncc": 0.427,
+    "ncc_sin_mover": 0.401,
+    "confiable": true
+   },
+   "plato 1 + engranaje": {
+    "dx_mm": -2,
+    "dy_mm": -4,
+    "ncc": 0.199,
+    "ncc_sin_mover": 0.165,
+    "confiable": false
+   },
+   "plato 2": {
+    "dx_mm": -3,
+    "dy_mm": -6,
+    "ncc": 0.331,
+    "ncc_sin_mover": 0.181,
+    "confiable": true
+   },
+   "plato 3": {
+    "dx_mm": -4,
+    "dy_mm": -5,
+    "ncc": 0.198,
+    "ncc_sin_mover": 0.098,
+    "confiable": false
+   },
+   "caja de viales": {
+    "dx_mm": 40,
+    "dy_mm": -28,
+    "ncc": 0.231,
+    "ncc_sin_mover": 0.033,
+    "confiable": false
+   },
+   "tapa caja viales": {
+    "dx_mm": 1,
+    "dy_mm": 8,
+    "ncc": 0.445,
+    "ncc_sin_mover": 0.415,
+    "confiable": true
+   }
+  },
+  "desplazamiento_objetos_mm": {
+   "n_confiables": 5,
+   "mediana": 6.7,
+   "max": 33.5
+  }
+ },
+ "openai-scifi.png": {
+  "recall": 0.747,
+  "precision": 0.29,
+  "f1": 0.418,
+  "chamfer_in_a_out_mm": 2.43,
+  "chamfer_out_a_in_mm": 18.08,
+  "control_desplazada_15mm": {
+   "recall": 0.565,
+   "precision": 0.221,
+   "f1": 0.318,
+   "chamfer_in_a_out_mm": 4.39,
+   "chamfer_out_a_in_mm": 18.31
+  },
+  "global_afin": {
+   "escala_x": 1.0019,
+   "escala_y": 0.9917,
+   "rot_grados": 0.18,
+   "tx_mm": -0.9,
+   "ty_mm": -1.3
+  },
+  "objetos": {
+   "libreta": {
+    "dx_mm": 3,
+    "dy_mm": -13,
+    "ncc": 0.378,
+    "ncc_sin_mover": 0.317,
+    "confiable": true
+   },
+   "telefono": {
+    "dx_mm": 1,
+    "dy_mm": -2,
+    "ncc": 0.385,
+    "ncc_sin_mover": 0.353,
+    "confiable": true
+   },
+   "viales azules": {
+    "dx_mm": 15,
+    "dy_mm": -2,
+    "ncc": 0.438,
+    "ncc_sin_mover": 0.386,
+    "confiable": true
+   },
+   "caja organizadora": {
+    "dx_mm": 0,
+    "dy_mm": 0,
+    "ncc": 0.342,
+    "ncc_sin_mover": 0.342,
+    "confiable": true
+   },
+   "vaso": {
+    "dx_mm": 3,
+    "dy_mm": -2,
+    "ncc": 0.537,
+    "ncc_sin_mover": 0.511,
+    "confiable": true
+   },
+   "plato 1 + engranaje": {
+    "dx_mm": -1,
+    "dy_mm": -3,
+    "ncc": 0.22,
+    "ncc_sin_mover": 0.2,
+    "confiable": false
+   },
+   "plato 2": {
+    "dx_mm": -1,
+    "dy_mm": -5,
+    "ncc": 0.364,
+    "ncc_sin_mover": 0.247,
+    "confiable": true
+   },
+   "plato 3": {
+    "dx_mm": -1,
+    "dy_mm": -8,
+    "ncc": 0.26,
+    "ncc_sin_mover": 0.137,
+    "confiable": false
+   },
+   "caja de viales": {
+    "dx_mm": 36,
+    "dy_mm": -3,
+    "ncc": 0.239,
+    "ncc_sin_mover": 0.084,
+    "confiable": false
+   },
+   "tapa caja viales": {
+    "dx_mm": 8,
+    "dy_mm": 3,
+    "ncc": 0.446,
+    "ncc_sin_mover": 0.375,
+    "confiable": true
+   }
+  },
+  "desplazamiento_objetos_mm": {
+   "n_confiables": 7,
+   "mediana": 5.1,
+   "max": 15.1
+  }
+ },
+ "openai-jardin.png": {
+  "recall": 0.704,
+  "precision": 0.204,
+  "f1": 0.316,
+  "chamfer_in_a_out_mm": 3.03,
+  "chamfer_out_a_in_mm": 29.79,
+  "control_desplazada_15mm": {
+   "recall": 0.584,
+   "precision": 0.17,
+   "f1": 0.263,
+   "chamfer_in_a_out_mm": 4.18,
+   "chamfer_out_a_in_mm": 30.83
+  },
+  "global_afin": {
+   "escala_x": 1.0009,
+   "escala_y": 0.9924,
+   "rot_grados": 0.16,
+   "tx_mm": -0.2,
+   "ty_mm": -1.5
+  },
+  "objetos": {
+   "libreta": {
+    "dx_mm": 0,
+    "dy_mm": 1,
+    "ncc": 0.516,
+    "ncc_sin_mover": 0.514,
+    "confiable": true
+   },
+   "telefono": {
+    "dx_mm": -40,
+    "dy_mm": 4,
+    "ncc": 0.305,
+    "ncc_sin_mover": 0.023,
+    "confiable": false
+   },
+   "viales azules": {
+    "dx_mm": 17,
+    "dy_mm": -20,
+    "ncc": 0.311,
+    "ncc_sin_mover": 0.159,
+    "confiable": true
+   },
+   "caja organizadora": {
+    "dx_mm": -2,
+    "dy_mm": 0,
+    "ncc": 0.214,
+    "ncc_sin_mover": 0.212,
+    "confiable": false
+   },
+   "vaso": {
+    "dx_mm": 2,
+    "dy_mm": -6,
+    "ncc": 0.305,
+    "ncc_sin_mover": 0.266,
+    "confiable": true
+   },
+   "plato 1 + engranaje": {
+    "dx_mm": -2,
+    "dy_mm": -6,
+    "ncc": 0.352,
+    "ncc_sin_mover": 0.198,
+    "confiable": true
+   },
+   "plato 2": {
+    "dx_mm": -4,
+    "dy_mm": -15,
+    "ncc": 0.256,
+    "ncc_sin_mover": 0.038,
+    "confiable": false
+   },
+   "plato 3": {
+    "dx_mm": -4,
+    "dy_mm": -7,
+    "ncc": 0.363,
+    "ncc_sin_mover": 0.187,
+    "confiable": true
+   },
+   "caja de viales": {
+    "dx_mm": 1,
+    "dy_mm": -2,
+    "ncc": 0.302,
+    "ncc_sin_mover": 0.292,
+    "confiable": true
+   },
+   "tapa caja viales": {
+    "dx_mm": 4,
+    "dy_mm": -1,
+    "ncc": 0.444,
+    "ncc_sin_mover": 0.406,
+    "confiable": true
+   }
+  },
+  "desplazamiento_objetos_mm": {
+   "n_confiables": 7,
+   "mediana": 6.3,
+   "max": 26.2
+  }
+ }
+}

@@ -1,0 +1,7 @@
+<!-- Marcas de corte donde va la libreta y el botón para que el agente la lea. Lo arma dibujo.marco(). -->
+<div class="marco">
+  <svg width="{{ancho}}" height="{{alto}}" viewBox="0 0 {{ancho}} {{alto}}">
+    {{#cortes}}<path class="corte" d="{{d}}"/>{{/cortes}}
+  </svg>
+  <div class="boton" data-press="responde" style="left:{{boton_x}}px;top:{{boton_y}}px;width:{{boton_w}}px;height:{{boton_h}}px">{{boton}}</div>
+</div>

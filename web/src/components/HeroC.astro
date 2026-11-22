@@ -1,0 +1,430 @@
+---
+// Editorial: titular enorme iluminado por un haz; al bajar, la interfaz se proyecta y se rectifica sobre la mesa.
+---
+
+<section data-c class="hero-c relative isolate min-h-[100svh] overflow-hidden" aria-labelledby="titulo-c">
+  <div class="cono pointer-events-none absolute inset-0" aria-hidden="true"></div>
+  <div class="haz-c pointer-events-none absolute inset-0" aria-hidden="true"></div>
+
+  <!-- Escena sobre la mesa: Contorno + Punto + etiquetas -->
+  <div class="escena pointer-events-none absolute inset-0" aria-hidden="true">
+    <svg class="escena-svg" viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMaxYMid meet">
+      <!--
+        Contorno: bracket cuadrado abierto en el lado derecho.
+        Dimensiones: 180×120 px en espacio SVG.
+        Centrado aproximado en la zona iluminada (centro X≈370, Y≈240).
+      -->
+      <g class="g-contorno">
+        <path
+          class="contorno-path"
+          d="
+            M 460,180
+            L 280,180
+            L 280,300
+            L 460,300
+          "
+          fill="none"
+          stroke="#F4F4F2"
+          stroke-width="2"
+          stroke-linecap="square"
+          stroke-linejoin="miter"
+        />
+        <!-- Abertura de 18 px en el lado derecho: dejamos el gap sin trazar -->
+        <!-- Tramo superior derecho hasta la abertura superior -->
+        <line class="abertura-sup" x1="460" y1="180" x2="460" y2="219" stroke="#F4F4F2" stroke-width="2" stroke-linecap="square"/>
+        <!-- Tramo inferior derecho desde la abertura inferior -->
+        <line class="abertura-inf" x1="460" y1="261" x2="460" y2="300" stroke="#F4F4F2" stroke-width="2" stroke-linecap="square"/>
+        <!-- Abertura: de y=219 a y=261 (42px ≈ 18px scaled) vacía -->
+      </g>
+
+      <!-- Punto central: círculo principal r=5, 4 satélites r=1.5 -->
+      <g class="g-punto" transform="translate(370,240)">
+        <circle class="punto-nucleo" cx="0" cy="0" r="5" fill="#F4F4F2"/>
+        <circle class="punto-satelite" cx="0"  cy="-14" r="1.5" fill="#F4F4F2" opacity="0.65"/>
+        <circle class="punto-satelite" cx="14" cy="0"   r="1.5" fill="#F4F4F2" opacity="0.65"/>
+        <circle class="punto-satelite" cx="0"  cy="14"  r="1.5" fill="#F4F4F2" opacity="0.65"/>
+        <circle class="punto-satelite" cx="-14" cy="0"  r="1.5" fill="#F4F4F2" opacity="0.65"/>
+      </g>
+
+      <!-- Línea curva Bezier del contorno → etiqueta "Toca la libreta" -->
+      <path
+        class="linea-etiqueta"
+        d="M 465,240 C 510,230 530,210 575,205"
+        fill="none"
+        stroke="#F4F4F2"
+        stroke-width="1"
+        stroke-opacity="0.5"
+        stroke-linecap="round"
+        pathLength="1"
+      />
+
+      <!-- Etiqueta principal -->
+      <text class="etiqueta etiqueta-principal" x="580" y="208" fill="#F4F4F2" font-family="'Instrument Sans', sans-serif" font-size="18" font-weight="400">
+        Toca la libreta
+      </text>
+
+      <!-- Elemento secundario: Arco pequeño en zona inferior izquierda del haz -->
+      <g class="g-arco">
+        <path
+          class="arco-path"
+          d="M 220,330 A 30,30 0 0 1 280,330"
+          fill="none"
+          stroke="#F4F4F2"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          opacity="0.7"
+        />
+        <!-- Línea curva del arco → etiqueta corta -->
+        <path
+          class="linea-arco"
+          d="M 250,318 C 250,295 265,282 290,275"
+          fill="none"
+          stroke="#F4F4F2"
+          stroke-width="1"
+          stroke-opacity="0.4"
+          stroke-linecap="round"
+          pathLength="1"
+        />
+        <text class="etiqueta etiqueta-arco" x="295" y="274" fill="#F4F4F2" font-family="'Instrument Sans', sans-serif" font-size="14" font-weight="400" opacity="0.75">
+          La pieza ·
+        </text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="relative z-10 mx-auto flex min-h-[100svh] max-w-[1440px] flex-col justify-center px-5 pt-24 sm:px-8">
+    <h1 id="titulo-c" data-lit class="lit display text-[clamp(3rem,10.4vw,10.5rem)]">
+      La interfaz sale de la pantalla.
+    </h1>
+    <div class="mt-10 grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
+      <p class="max-w-[48ch] text-luz-2 md:text-lg md:leading-snug">
+        WUI le da a tu agente ojos sobre la mesa y voz sobre los objetos. Botones en la madera, guías sobre la masa, avisos junto a las llaves.
+      </p>
+      <a href="/#instalar" class="btn-luz justify-self-start"><span class="marca" aria-hidden="true"></span><span data-os-cta>Instalar</span></a>
+    </div>
+  </div>
+</section>
+
+<section data-c-pin class="relative h-[260vh]" aria-labelledby="titulo-c2">
+  <div class="sticky top-0 grid h-[100svh] items-center overflow-hidden">
+    <div class="mx-auto grid w-full max-w-[1440px] gap-10 px-5 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+      <h2 id="titulo-c2" data-split class="display text-[clamp(2.3rem,5vw,4.6rem)]">Cualquier objeto puede ser una pantalla.</h2>
+
+      <div class="superficie relative mx-auto aspect-[4/3] w-full max-w-[640px]" aria-hidden="true">
+        <div class="plano absolute inset-0">
+          <div class="tablero absolute inset-0"></div>
+          <div class="bol absolute"></div>
+          <div class="proy absolute inset-0">
+            <div class="anillo-bol absolute"></div>
+            <div class="tarjeta absolute">
+              <p class="num text-[11px] text-luz-2">paso 3 de 6</p>
+              <p class="mt-1 text-lg leading-tight wide">Agrega 120 g de harina</p>
+              <div class="barra mt-3"><i></i></div>
+              <p class="num mt-2 text-[11px] text-luz-2"><span data-gramos>0</span> / 120 g</p>
+            </div>
+            <div class="flecha-c absolute"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* ── Haz atmosférico (sin cambios) ─────────────────────────────── */
+  .cono {
+    background:
+      conic-gradient(from 198deg at 78% -12%, transparent 0deg, color-mix(in srgb, var(--color-haz) 6%, transparent) 9deg, color-mix(in srgb, var(--color-haz) 10%, transparent) 14deg, transparent 26deg),
+      radial-gradient(60% 50% at 70% 10%, color-mix(in srgb, var(--color-haz) 5%, transparent), transparent 70%);
+    animation: respira 9s ease-in-out infinite alternate;
+    transform-origin: 78% -12%;
+  }
+  @keyframes respira {
+    from { transform: rotate(-3deg); opacity: 0.85; }
+    to { transform: rotate(4deg); opacity: 1; }
+  }
+  .lit {
+    color: var(--color-luz);
+    font-weight: 280;
+  }
+  .hero-c {
+    --bx: 30%;
+    --by: 45%;
+  }
+  .haz-c {
+    background: radial-gradient(
+      30vw 22vw at var(--bx) var(--by),
+      color-mix(in srgb, var(--color-haz) 20%, transparent) 0%,
+      color-mix(in srgb, var(--color-haz) 7%, transparent) 45%,
+      transparent 75%
+    );
+  }
+
+  /* ── Escena SVG ─────────────────────────────────────────────────── */
+  .escena {
+    z-index: 1;
+  }
+  .escena-svg {
+    position: absolute;
+    top: 15%;
+    right: 0;
+    bottom: 0;
+    width: 60%;
+    height: 85%;
+  }
+  @media (max-width: 767px) {
+    .escena-svg {
+      width: 100%;
+      top: auto;
+      bottom: 0;
+      height: 46svh;
+    }
+  }
+
+  /* ── Animaciones de entrada (secuencial) ────────────────────────── */
+  @media (prefers-reduced-motion: no-preference) {
+    /* 1. Contorno: aparece en dur-forma con ease-tinta */
+    .g-contorno {
+      animation:
+        fadein var(--dur-forma, 1.28s) var(--ease-tinta, cubic-bezier(0.16,1,0.3,1)) 0.6s both;
+    }
+    .contorno-path,
+    .abertura-sup,
+    .abertura-inf {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation:
+        draw-stroke var(--dur-forma, 1.28s) var(--ease-tinta, cubic-bezier(0.16,1,0.3,1)) 0.6s both;
+    }
+    .abertura-sup { animation-delay: 0.65s; }
+    .abertura-inf { animation-delay: 0.7s; }
+
+    /* 2. Punto: scale-in en dur-entra, después del contorno */
+    .g-punto {
+      transform-origin: 370px 240px;
+      animation:
+        scale-in var(--dur-entra, 0.42s) var(--ease-tinta, cubic-bezier(0.16,1,0.3,1)) 1.4s both;
+    }
+
+    /* 3. Línea etiqueta: se dibuja con stroke-dashoffset en dur-ondula */
+    .linea-etiqueta {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation:
+        draw-stroke var(--dur-ondula, 0.88s) var(--ease-tinta, cubic-bezier(0.16,1,0.3,1)) 1.9s both;
+    }
+
+    /* 4. Etiqueta texto: fade-in en dur-forma */
+    .etiqueta-principal {
+      animation:
+        fadein var(--dur-forma, 1.28s) var(--ease-tinta, cubic-bezier(0.16,1,0.3,1)) 2.5s both;
+    }
+
+    /* 5. Arco secundario + etiqueta: más tardío */
+    .g-arco {
+      animation:
+        fadein var(--dur-forma, 1.28s) var(--ease-tinta, cubic-bezier(0.16,1,0.3,1)) 2.1s both;
+    }
+    .linea-arco {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation:
+        draw-stroke var(--dur-ondula, 0.88s) var(--ease-tinta, cubic-bezier(0.16,1,0.3,1)) 2.4s both;
+    }
+    .etiqueta-arco {
+      animation:
+        fadein var(--dur-forma, 1.28s) var(--ease-tinta, cubic-bezier(0.16,1,0.3,1)) 2.9s both;
+    }
+  }
+
+  /* prefers-reduced-motion: todo visible desde el inicio */
+  @media (prefers-reduced-motion: reduce) {
+    .g-contorno,
+    .g-punto,
+    .linea-etiqueta,
+    .etiqueta,
+    .g-arco,
+    .linea-arco {
+      opacity: 1;
+      animation: none;
+    }
+    .contorno-path,
+    .abertura-sup,
+    .abertura-inf,
+    .linea-etiqueta,
+    .linea-arco {
+      stroke-dasharray: none;
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.4); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes draw-stroke {
+    from { stroke-dashoffset: 1; }
+    to   { stroke-dashoffset: 0; }
+  }
+
+  /* ── Mobile: simplificación a Contorno + Punto + 1 etiqueta ─────── */
+  @media (max-width: 767px) {
+    .escena-svg {
+      top: 30%;
+    }
+    /* En mobile el viewBox se reescala; ocultamos el arco para limpiar */
+    .g-arco {
+      display: none;
+    }
+    /* Reposicionamos la escena para que quepa bien en 390px */
+    .escena-svg {
+      /* Zoom out suave: se ve el centro del viewBox en mobile */
+      viewBox: 0 0 800 480;
+    }
+  }
+
+  /* ── Sección pin (sin cambios) ──────────────────────────────────── */
+  .superficie {
+    perspective: 1100px;
+  }
+  .plano {
+    transform: rotateX(48deg) rotateZ(-14deg);
+    transform-style: preserve-3d;
+  }
+  .tablero {
+    background:
+      linear-gradient(color-mix(in srgb, var(--color-luz) 4.3%, transparent) 1px, transparent 1px) 0 0 / 32px 32px,
+      linear-gradient(90deg, color-mix(in srgb, var(--color-luz) 4.3%, transparent) 1px, transparent 1px) 0 0 / 32px 32px,
+      radial-gradient(70% 60% at 50% 45%, var(--k-1a1c17), var(--k-0d0e0b));
+    outline: 1px solid var(--k-2b2e28);
+  }
+  .bol {
+    left: 14%;
+    top: 22%;
+    width: 38%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle at 45% 40%, var(--k-2b2e27), var(--k-12130f) 70%);
+    box-shadow: 18px 26px 40px #000a;
+    outline: 1px solid var(--k-3a3d35);
+  }
+  .proy {
+    transform-origin: 50% 50%;
+  }
+  .anillo-bol {
+    left: calc(14% - 3%);
+    top: calc(22% - 4%);
+    width: 44%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid var(--color-luz);
+    filter: drop-shadow(1.5px 0 0 rgb(255 61 46 / 0.55)) drop-shadow(-1.5px 0 0 rgb(46 201 255 / 0.55));
+  }
+  .tarjeta {
+    left: 58%;
+    top: 26%;
+    width: 36%;
+    padding: 14px 14px 12px;
+    border: 1px solid color-mix(in srgb, var(--color-luz) 70%, transparent);
+    background: color-mix(in srgb, var(--color-luz) 6%, transparent);
+  }
+  .barra {
+    height: 4px;
+    background: color-mix(in srgb, var(--color-luz) 15%, transparent);
+  }
+  .barra i {
+    display: block;
+    height: 100%;
+    width: var(--g, 0%);
+    background: var(--color-senal);
+  }
+  .flecha-c {
+    left: 50%;
+    top: 40%;
+    width: 9%;
+    height: 2px;
+    background: var(--color-luz);
+  }
+</style>
+
+<script>
+  import { bucleVisible, cuandoOcioso, reducido } from "../scripts/suave";
+
+  const quieto = reducido();
+  const lit = document.querySelector<HTMLElement>("[data-lit]");
+  const hero = document.querySelector<HTMLElement>("[data-c]");
+
+  // Haz detrás del titular: se mueve solo y sigue al puntero.
+  if (lit && hero && !quieto) {
+    let bx = 30, by = 40, tx = 30, ty = 40, ultimo = -1e9;
+    hero.addEventListener("pointermove", (e) => {
+      const r = hero.getBoundingClientRect();
+      tx = ((e.clientX - r.left) / r.width) * 100;
+      ty = ((e.clientY - r.top) / r.height) * 100;
+      ultimo = performance.now();
+    });
+    bucleVisible(hero, (t, dt) => {
+      if (t - ultimo > 2000) {
+        tx = 50 + Math.sin(t / 2300) * 42;
+        ty = 50 + Math.cos(t / 1700) * 38;
+      }
+      const k = 1 - Math.pow(0.94, dt / 16);
+      bx += (tx - bx) * k;
+      by += (ty - by) * k;
+      hero.style.setProperty("--bx", `${bx.toFixed(2)}%`);
+      hero.style.setProperty("--by", `${by.toFixed(2)}%`);
+    });
+  }
+
+  // Revelado con scroll: GSAP + ScrollTrigger + SplitText, cargados cuando el hilo está libre.
+  cuandoOcioso(async () => {
+    const pin = document.querySelector<HTMLElement>("[data-c-pin]");
+    if (!pin) return;
+    const proy = pin.querySelector<HTMLElement>(".proy")!;
+    const gramos = pin.querySelector<HTMLElement>("[data-gramos]")!;
+    const barra = pin.querySelector<HTMLElement>(".barra")!;
+    if (quieto) {
+      gramos.textContent = "120";
+      barra.style.setProperty("--g", "100%");
+      return;
+    }
+    const [{ gsap }, { ScrollTrigger }, { SplitText }] = await Promise.all([
+      import("gsap"),
+      import("gsap/ScrollTrigger"),
+      import("gsap/SplitText"),
+    ]);
+    gsap.registerPlugin(ScrollTrigger, SplitText);
+    const lenis = (window as any).__lenis;
+    if (lenis) lenis.on("scroll", ScrollTrigger.update);
+
+    const h2 = pin.querySelector<HTMLElement>("[data-split]")!;
+    const split = SplitText.create(h2, { type: "words,chars", aria: "auto" });
+    gsap.set(split.chars, { opacity: 0.16 });
+
+    const tl = gsap.timeline({
+      scrollTrigger: { trigger: pin, start: "top top", end: "bottom bottom", scrub: 0.6 },
+    });
+    tl.to(split.chars, { opacity: 1, stagger: 0.02, ease: "none", duration: 0.6 }, 0)
+      // Encendido con parpadeo de lámpara, desalineado.
+      .fromTo(
+        proy,
+        { opacity: 0, transform: "perspective(600px) rotateX(-16deg) rotateY(12deg) skewX(8deg) scale(1.12) translate(6%, -4%)" },
+        { opacity: 1, duration: 0.25, ease: "steps(5)" },
+        0.15,
+      )
+      // Homografía corregida: calza con la mesa.
+      .to(proy, { transform: "perspective(600px) rotateX(0deg) rotateY(0deg) skewX(0deg) scale(1) translate(0%, 0%)", duration: 0.45, ease: "power3.inOut" }, 0.42)
+      .to({ g: 0 }, {
+        g: 120, duration: 0.4, ease: "none",
+        onUpdate() {
+          const g = Math.round((this.targets()[0] as { g: number }).g);
+          gramos.textContent = String(g);
+          barra.style.setProperty("--g", `${(g / 120) * 100}%`);
+        },
+      }, 0.75);
+  });
+</script>

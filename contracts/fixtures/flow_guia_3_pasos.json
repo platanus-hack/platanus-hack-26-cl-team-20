@@ -1,0 +1,60 @@
+{
+  "type": "run_flow",
+  "request_id": "req-guia-cafe-1",
+  "flow": {
+    "id": "guia-cafe",
+    "initial": "paso1",
+    "cleanup": true,
+    "timeout_s": 600,
+    "states": [
+      {
+        "id": "paso1",
+        "on_enter": [
+          {"type": "project", "widgets": [
+            {"type": "halo", "id": "g-halo", "anchor": {"object_id": "taza"}},
+            {"type": "panel", "id": "g-panel", "rect_mm": [470, 220, 200, 110], "title": "Paso 1 de 3",
+             "body": "Pon la taza al centro de la mesa."},
+            {"type": "button", "id": "g-next", "rect_mm": [470, 340, 110, 45], "label": "Listo",
+             "on_press": {"value": "next"}}
+          ]}
+        ],
+        "transitions": [
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "g-next"}}, "to": "paso2"},
+          {"on": {"event": "object_moved", "where": {"object_id": "taza"}}, "to": "paso2"}
+        ]
+      },
+      {
+        "id": "paso2",
+        "on_enter": [
+          {"type": "update", "id": "g-panel", "set": {"title": "Paso 2 de 3", "body": "Agrega el café molido."}},
+          {"type": "project", "widgets": [
+            {"type": "arrow", "id": "g-arrow", "anchor": {"object_id": "frasco"}}
+          ]}
+        ],
+        "transitions": [
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "g-next"}}, "to": "paso3",
+           "actions": [{"type": "remove", "ids": ["g-arrow"]}]}
+        ]
+      },
+      {
+        "id": "paso3",
+        "on_enter": [
+          {"type": "update", "id": "g-panel", "set": {"title": "Paso 3 de 3", "body": "Sirve el agua. Enciendo la luz."}},
+          {"type": "home_call", "domain": "light", "service": "turn_on",
+           "data": {"entity_id": "light.cocina", "brightness_pct": 80}}
+        ],
+        "transitions": [
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "g-next"}}, "to": "fin"},
+          {"after_s": 120, "to": "fin"}
+        ]
+      },
+      {
+        "id": "fin",
+        "final": true,
+        "on_enter": [
+          {"type": "emit", "event": "guia_terminada", "data": {"guia": "cafe", "pasos": 3}}
+        ]
+      }
+    ]
+  }
+}

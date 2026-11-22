@@ -1,0 +1,18 @@
+{
+  "request_id": "lab-dilucion-verif2-ok-001",
+  "flow": {
+    "id": "lab-dilucion-senal",
+    "initial": "avisar",
+    "cleanup": true,
+    "timeout_s": 5,
+    "states": [
+      {
+        "id": "avisar",
+        "final": true,
+        "on_enter": [
+          {"type": "emit", "event": "paso_verificado", "data": {"paso": "2", "ok": true}}
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "descripcion": "Pesos que viajan en models/ de cada paquete del motor (release.yml). URL fija a una revisión de Hugging Face y sha256 verificado. Los mismos sha256 están en node/crates/pcx-objects/src/models.rs y node/crates/pcx-hands/src/models.rs.",
+  "modelos": [
+    {
+      "nombre": "mobile_sam_image_encoder.onnx",
+      "uso": "sam",
+      "bytes": 28157093,
+      "sha256": "580f5fb648ea1062c0aabc26217aed56921985f03f0cbbd852bba81d760cc749",
+      "url": "https://huggingface.co/Acly/MobileSAM/resolve/0d3b403339b4674a82493d5e97964dd78089ddc8/mobile_sam_image_encoder.onnx",
+      "licencia": "Apache-2.0",
+      "fuente": "MobileSAM (https://github.com/ChaoningZhang/MobileSAM, Apache-2.0), export ONNX de https://huggingface.co/Acly/MobileSAM",
+      "nota": "Pesos de MobileSAM (Apache-2.0). El repo del export (Acly/MobileSAM) está etiquetado MIT en Hugging Face y no trae archivo de licencia."
+    },
+    {
+      "nombre": "sam_mask_decoder_single.onnx",
+      "uso": "sam",
+      "bytes": 16501323,
+      "sha256": "93915fc7c993ab9d59ab8c9ccd3bce37f7509c81ab4150a74abd4d2abbd8570d",
+      "url": "https://huggingface.co/Acly/MobileSAM/resolve/0d3b403339b4674a82493d5e97964dd78089ddc8/sam_mask_decoder_single.onnx",
+      "licencia": "Apache-2.0",
+      "fuente": "Decodificador de máscaras de Segment Anything (https://github.com/facebookresearch/segment-anything, Apache-2.0) exportado con MobileSAM, de https://huggingface.co/Acly/MobileSAM",
+      "nota": "Una sola máscara por consulta. El repo del export está etiquetado MIT en Hugging Face."
+    },
+    {
+      "nombre": "palm_detection_mediapipe_2023feb.onnx",
+      "uso": "manos",
+      "bytes": 3905734,
+      "sha256": "78ff51c38496b7fc8b8ebdb6cc8c1abb02fa6c38427c6848254cdaba57fcce7c",
+      "url": "https://huggingface.co/opencv/palm_detection_mediapipe/resolve/233e619dcea1759bf6de707b9b904fe30881ea55/palm_detection_mediapipe_2023feb.onnx",
+      "licencia": "Apache-2.0",
+      "fuente": "OpenCV Model Zoo (https://github.com/opencv/opencv_zoo/tree/main/models/palm_detection_mediapipe), espejo oficial https://huggingface.co/opencv/palm_detection_mediapipe",
+      "nota": "Modelo de MediaPipe convertido por OpenCV. Su README: «All files in this directory are licensed under Apache 2.0»."
+    },
+    {
+      "nombre": "handpose_estimation_mediapipe_2023feb.onnx",
+      "uso": "manos",
+      "bytes": 4099621,
+      "sha256": "db0898ae717b76b075d9bf563af315b29562e11f8df5027a1ef07b02bef6d81c",
+      "url": "https://huggingface.co/opencv/handpose_estimation_mediapipe/resolve/4b2a0b446e5cf2f11fb6b2c7251091c035d2c1f7/handpose_estimation_mediapipe_2023feb.onnx",
+      "licencia": "Apache-2.0",
+      "fuente": "OpenCV Model Zoo (https://github.com/opencv/opencv_zoo/tree/main/models/handpose_estimation_mediapipe), espejo oficial https://huggingface.co/opencv/handpose_estimation_mediapipe",
+      "nota": "Modelo de MediaPipe convertido por OpenCV. Su README: «All files in this directory are licensed under Apache 2.0»."
+    }
+  ],
+  "licencias": [
+    {
+      "nombre": "LICENSES/Apache-2.0.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "url": "https://huggingface.co/opencv/palm_detection_mediapipe/resolve/233e619dcea1759bf6de707b9b904fe30881ea55/LICENSE"
+    }
+  ]
+}

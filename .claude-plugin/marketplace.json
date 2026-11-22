@@ -1,0 +1,12 @@
+{
+  "name": "pcx-agentes",
+  "description": "Plugin de pcx para agentes de código: contexto físico (cámaras + proyector) por MCP.",
+  "owner": { "name": "Equipo pcx (Platanus Hack 26)" },
+  "plugins": [
+    {
+      "name": "pcx",
+      "source": "./integrations/claude-plugin",
+      "description": "Skills, /pcx-estado y servidor MCP para operar, crear flujos y efectos, calibrar, controlar domótica y extender pcx."
+    }
+  ]
+}

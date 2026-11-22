@@ -1,0 +1,16 @@
+# Demo calibrada en el techo (fuera del workspace del repo; depende de sus crates por ruta).
+[package]
+name = "demo-techo"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+pcx-calib = { path = "../../node/crates/pcx-calib" }
+pcx-shm = { path = "../../node/crates/pcx-shm" }
+pcx-hands = { path = "../../node/crates/pcx-hands" }
+tungstenite = "0.26"
+serde_json = "1"
+image = { version = "0.25", default-features = false, features = ["png"] }

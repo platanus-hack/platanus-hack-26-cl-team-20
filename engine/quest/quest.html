@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quest proyector</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --fondo: #0d0f13; --panel: #171b22; --borde: #2a3140; --texto: #dfe5ee; --tenue: #8b96a8; --acento: #ffd166; --ok: #1f7a4d; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--fondo); color: var(--texto); font: 15px/1.4 system-ui, sans-serif; }
+  #vista { position: fixed; inset: 0; display: none; }
+  body.sim #vista { display: block; }
+  #ui { position: relative; max-width: 760px; padding: 16px; }
+  body.sim #ui { position: fixed; top: 10px; left: 10px; width: 440px; max-width: calc(100vw - 20px); padding: 10px 12px;
+    background: rgba(13, 15, 19, 0.82); border: 1px solid var(--borde); border-radius: 10px; }
+  h1 { font-size: 18px; margin: 0 0 10px; font-weight: 650; }
+  #entrar { font: 600 18px system-ui; padding: 12px 22px; border-radius: 10px; border: 0; background: var(--acento); color: #111; margin-bottom: 12px; }
+  #entrar:disabled { background: #444; color: #aaa; }
+  #botones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  #botones button { font: 600 13px system-ui; padding: 8px 4px; border-radius: 8px; border: 1px solid var(--borde); background: var(--panel); color: var(--texto); cursor: pointer; }
+  #botones button.activo { background: var(--ok); }
+  #estado { white-space: pre-wrap; font: 12px/1.45 ui-monospace, monospace; color: var(--tenue); margin: 10px 0 6px; }
+  #estado::first-line { color: var(--acento); }
+  .archivo { font-size: 12px; color: var(--tenue); }
+  .ayuda { font-size: 12px; color: var(--tenue); margin: 6px 0 0; }
+  body:not(.sim) .solo-sim, body.sim .solo-casco { display: none; }
+  #preview { margin: 12px 16px; max-width: 760px; }
+  #preview canvas { width: 100%; aspect-ratio: 16 / 9; background: #000; border: 1px solid var(--borde); border-radius: 6px; display: block; }
+  #preview span { font-size: 12px; color: var(--tenue); }
+  body.sim #preview { position: fixed; right: 10px; bottom: 10px; width: 420px; max-width: 40vw; margin: 0; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three-0.170.0/three.module.js", "three/addons/": "./vendor/three-0.170.0/addons/" } }
+</script>
+</head>
+<body>
+<div id="vista"></div>
+<div id="ui">
+  <h1>Quest → proyector</h1>
+  <button id="entrar" class="solo-casco">Entrar AR</button>
+  <div id="botones"></div>
+  <pre id="estado"></pre>
+  <label class="archivo">Importar calib.json <input type="file" id="importar" accept=".json,application/json"></label>
+  <p class="ayuda solo-casco">En el casco: gatillo = tocar cruz / botón del panel · A = tocar · B = rehacer (o mostrar panel) ·
+    stick izq. = ajuste fino (grip = más fino) · X = modo de ajuste · Y = traer el panel.</p>
+  <p class="ayuda solo-sim">WASD/RF mover · arrastrar = mirar · C calibrar · clic/espacio = tocar la cruz · N saltar · ⌫ rehacer ·
+    T calibración sintética · 1-5 efectos · P pozo · M ajuste (flechas, shift fino) · G patrón · V modo · [ ] latencia · E exportar.</p>
+</div>
+<div id="preview"><canvas id="proy"></canvas><span>vista del proyector (lo que se transmite)</span></div>
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

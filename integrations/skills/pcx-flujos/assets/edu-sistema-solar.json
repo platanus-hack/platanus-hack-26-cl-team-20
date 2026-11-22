@@ -1,0 +1,98 @@
+{
+  "request_id": "edu-sistema-solar-001",
+  "flow": {
+    "id": "edu-sistema-solar",
+    "initial": "intro",
+    "cleanup": true,
+    "timeout_s": 600,
+    "states": [
+      {
+        "id": "intro",
+        "on_enter": [
+          {"type": "project", "widgets": [
+            {"type": "panel", "id": "edu-panel", "rect_mm": [20, 20, 260, 100],
+             "title": "Sistema solar", "body": "Soy Cometa, tu guía. Toca «Empezar».", "z": 5},
+            {"type": "button", "id": "edu-empezar", "rect_mm": [20, 130, 120, 45], "label": "Empezar",
+             "on_press": {"value": "empezar"}, "z": 6},
+            {"type": "effect", "id": "edu-sol", "shader": "halo_glow", "anchor": {"object_id": "sol"},
+             "params": {"color": "#FFB300", "pulse_hz": 0.4, "glow_mm": 26}, "z": -1}
+          ]}
+        ],
+        "transitions": [
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "edu-empezar"}}, "to": "busca_jupiter",
+           "actions": [{"type": "remove", "ids": ["edu-empezar"]}]},
+          {"after_s": 20, "to": "busca_jupiter", "actions": [{"type": "remove", "ids": ["edu-empezar"]}]}
+        ]
+      },
+      {
+        "id": "busca_jupiter",
+        "on_enter": [
+          {"type": "update", "id": "edu-panel",
+           "set": {"title": "Reto 1", "body": "Agarra Júpiter, el planeta más grande.", "color": "#FFFFFF"}}
+        ],
+        "transitions": [
+          {"on": {"event": "object_moved", "where": {"object_id": "jupiter"}}, "to": "jupiter_ok"},
+          {"on": {"event": "object_removed", "where": {"object_id": "jupiter"}}, "to": "jupiter_ok"},
+          {"on": {"event": "touch_down", "where": {"touch.object_id": "jupiter"}}, "to": "jupiter_ok"},
+          {"on": {"event": "object_moved", "where": {"object_id": "marte"}}, "to": "ese_es_marte"},
+          {"on": {"event": "object_removed", "where": {"object_id": "marte"}}, "to": "ese_es_marte"},
+          {"on": {"event": "touch_down", "where": {"touch.object_id": "marte"}}, "to": "ese_es_marte"},
+          {"after_s": 25, "to": "pista_jupiter"}
+        ]
+      },
+      {
+        "id": "ese_es_marte",
+        "on_enter": [
+          {"type": "update", "id": "edu-panel",
+           "set": {"title": "Casi…", "body": "No, ese es Marte: rojo y pequeño. Júpiter es el más grande.", "color": "#FF8A65"}},
+          {"type": "project", "widgets": [
+            {"type": "halo", "id": "edu-halo-marte", "anchor": {"object_id": "marte"}, "color": "#FF5252", "ttl_s": 4},
+            {"type": "label", "id": "edu-lbl-marte", "anchor": {"object_id": "marte"}, "text": "Marte", "size_mm": 14, "ttl_s": 4}
+          ]}
+        ],
+        "transitions": [{"after_s": 4, "to": "busca_jupiter"}]
+      },
+      {
+        "id": "pista_jupiter",
+        "on_enter": [
+          {"type": "update", "id": "edu-panel", "set": {"title": "Una pista", "body": "Mira el planeta que brilla."}},
+          {"type": "project", "widgets": [
+            {"type": "halo", "id": "edu-halo-pista", "anchor": {"object_id": "jupiter"}, "color": "#FFD400", "pulse_hz": 1.5}
+          ]}
+        ],
+        "transitions": [
+          {"on": {"event": "object_moved", "where": {"object_id": "jupiter"}}, "to": "jupiter_ok"},
+          {"on": {"event": "object_removed", "where": {"object_id": "jupiter"}}, "to": "jupiter_ok"},
+          {"on": {"event": "touch_down", "where": {"touch.object_id": "jupiter"}}, "to": "jupiter_ok"},
+          {"after_s": 30, "to": "despedida"}
+        ]
+      },
+      {
+        "id": "jupiter_ok",
+        "on_enter": [
+          {"type": "remove", "ids": ["edu-halo-pista"]},
+          {"type": "project", "widgets": [
+            {"type": "effect", "id": "edu-fx-jupiter", "shader": "halo_glow", "anchor": {"object_id": "jupiter"},
+             "params": {"color": "#FFB74D", "pulse_hz": 0.8}},
+            {"type": "label", "id": "edu-lbl-jupiter", "anchor": {"object_id": "jupiter"}, "text": "Júpiter", "size_mm": 16}
+          ]},
+          {"type": "update", "id": "edu-panel",
+           "set": {"title": "¡Muy bien!", "body": "En Júpiter caben más de 1.300 Tierras.", "color": "#00E676"}},
+          {"type": "emit", "event": "reto_superado", "data": {"reto": "jupiter"}}
+        ],
+        "transitions": [{"after_s": 8, "to": "despedida"}]
+      },
+      {
+        "id": "despedida",
+        "on_enter": [
+          {"type": "remove", "ids": ["edu-halo-pista", "edu-fx-jupiter", "edu-lbl-jupiter"]},
+          {"type": "update", "id": "edu-panel",
+           "set": {"title": "Fin del recorrido", "body": "Pide otro reto cuando quieras.", "color": "#FFFFFF"}},
+          {"type": "emit", "event": "guia_terminada", "data": {"guia": "sistema-solar"}}
+        ],
+        "transitions": [{"after_s": 6, "to": "fin"}]
+      },
+      {"id": "fin", "final": true}
+    ]
+  }
+}

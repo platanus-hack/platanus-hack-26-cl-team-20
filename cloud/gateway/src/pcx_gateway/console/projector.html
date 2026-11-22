@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WUI · proyector</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+      #html {
+        isolation: isolate;
+      }
+      #html,
+      #top {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      #hint {
+        z-index: 10;
+        position: fixed;
+        inset: auto 0 6vh 0;
+        display: grid;
+        place-items: center;
+        pointer-events: none;
+      }
+      #hint button {
+        pointer-events: auto;
+        font: 600 clamp(16px, 2.2vw, 30px) "Instrument Sans", system-ui, sans-serif;
+        color: #171717;
+        background: #f4f4f2;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.7em 1.5em;
+        cursor: pointer;
+      }
+      #hint small {
+        margin-top: 1em;
+        font: 400 13px "Instrument Sans", system-ui, sans-serif;
+        color: #b3b3b1;
+      }
+      :fullscreen #hint,
+      .quiet #hint {
+        display: none;
+      }
+      :fullscreen {
+        cursor: none;
+      }
+      /* Foto limpia del motor local: negro total por encima de todo (canvas, html, manos y el botón). */
+      #blank {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        background: #000;
+        cursor: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="out"></canvas>
+    <div id="html"></div>
+    <canvas id="top"></canvas>
+    <div id="hint">
+      <button id="full">Pantalla completa aquí</button>
+      <small>o aprieta F · Esc para salir</small>
+    </div>
+    <div id="blank" hidden></div>
+    <script type="module" src="projector.js"></script>
+  </body>
+</html>

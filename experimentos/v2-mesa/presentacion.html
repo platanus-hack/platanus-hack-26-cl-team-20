@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>WUI · Presentación</title>
+<style>
+@font-face { font-family: 'Instrument Sans'; font-weight: 400 700; font-stretch: 75% 100%; src: url(marca/instrument-sans.woff2) format('woff2'); }
+:root { --tinta: #171717; --grafito: #242424; --gris: #626260; --niebla: #F4F4F2; --luz: #ffffff; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #000; color: var(--niebla); font-family: 'Instrument Sans', 'Helvetica Neue', Arial, sans-serif; overflow: hidden; }
+#arriba { position: absolute; left: 0; top: 0; width: 100vw; height: 50vh; background: var(--tinta); overflow: hidden; }
+#abajo { position: absolute; left: 0; top: 50vh; width: 100vw; height: 50vh; display: flex; gap: 3px; background: #000; }
+#mesa { flex: 2; position: relative; overflow: hidden; background: #0b0b0b; }
+#pov { flex: 1; position: relative; overflow: hidden; background: #0b0b0b; }
+#giro { position: absolute; inset: 0; transform: rotate(180deg); }
+#mesa video { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; }
+#pov video { width: 100%; height: 100%; object-fit: cover; }
+.rot { position: absolute; left: 14px; top: 12px; font: 600 1.25vh/1 'Instrument Sans'; letter-spacing: .14em; text-transform: uppercase; color: var(--niebla); background: rgba(0,0,0,.55); padding: .6vh 1vh; border-radius: 3px; z-index: 3; }
+.rot i { display: inline-block; width: .9vh; height: .9vh; border-radius: 50%; background: #ff5a3c; margin-right: .8vh; animation: par 1.2s steps(1) infinite; }
+@keyframes par { 50% { opacity: .2; } }
+.slide { position: absolute; inset: 0; padding: 4.2vh 5vw; display: none; }
+.slide.on { display: block; animation: entra .88s cubic-bezier(.16,1,.3,1) both; }
+@keyframes entra { from { opacity: 0; transform: translateY(1.6vh); } }
+.kicker { font-weight: 600; font-size: 1.7vh; letter-spacing: .16em; text-transform: uppercase; color: #a9a9a6; display: flex; align-items: center; gap: 1.2vh; }
+.kicker::before { content: ''; width: 4vh; height: 2px; background: var(--niebla); transform-origin: 0 50%; animation: guion 1.28s cubic-bezier(.1,.75,.15,1) both; }
+@keyframes guion { from { transform: scaleX(0); } }
+h1 { font-weight: 700; font-size: 7.6vh; line-height: 1.02; letter-spacing: -.02em; margin: 1.6vh 0 1.4vh; max-width: 62vw; }
+h1 em { font-style: normal; color: #a9a9a6; }
+p.sub { font-size: 2.6vh; line-height: 1.3; color: #c9c9c6; max-width: 46vw; margin: 0; font-weight: 500; }
+.col2 { position: absolute; right: 5vw; top: 4.6vh; width: 32vw; }
+.ficha { border-top: 2px solid var(--niebla); padding: 1.1vh 0 1.3vh; }
+.ficha b { display: block; font-size: 2.1vh; font-weight: 700; }
+.ficha span { font-size: 1.75vh; color: #a9a9a6; line-height: 1.25; display: block; margin-top: .3vh; }
+.tag { display: inline-block; font: 600 1.45vh 'Menlo', ui-monospace, monospace; color: var(--tinta); background: var(--niebla); padding: .35vh .8vh; border-radius: 2px; margin: .7vh .5vh 0 0; }
+#logo { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); height: 30vh; filter: invert(1) contrast(1.25); mix-blend-mode: screen; }
+.lema { position: absolute; left: 0; right: 0; bottom: 6.4vh; text-align: center; font-size: 3.4vh; font-weight: 700; letter-spacing: -.01em; }
+.lema small { display: block; font-size: 2vh; font-weight: 500; color: #a9a9a6; margin-top: .8vh; letter-spacing: 0; }
+.flujo { position: absolute; left: 5vw; right: 5vw; top: 15.5vh; display: flex; align-items: stretch; gap: .9vw; }
+.caja { flex: 1; border: 1.5px solid var(--niebla); border-radius: 3px; padding: 1.2vh 1vw; opacity: 0; animation: entra .6s cubic-bezier(.16,1,.3,1) both; }
+.caja b { display: block; font-size: 1.95vh; }
+.caja span { display: block; font-size: 1.45vh; color: #a9a9a6; margin-top: .4vh; line-height: 1.25; }
+.caja.agente { background: var(--niebla); color: var(--tinta); } .caja.agente span { color: #444; }
+.flecha { align-self: center; font-size: 2.4vh; color: #a9a9a6; }
+.fila2 { position: absolute; left: 5vw; right: 5vw; top: 32vh; display: flex; gap: .9vw; }
+.fila2 .caja { border-style: dashed; }
+.grilla { position: absolute; left: 5vw; right: 5vw; top: 13.5vh; display: grid; grid-template-columns: repeat(5, 1fr); gap: 1vh 1vw; }
+.grilla div { border-top: 2px solid var(--gris); padding-top: .8vh; font-size: 1.85vh; font-weight: 600; opacity: 0; animation: entra .5s cubic-bezier(.16,1,.3,1) both; }
+.grilla div small { display: block; color: #a9a9a6; font-weight: 500; font-size: 1.4vh; margin-top: .2vh; }
+.grilla div.hecho { border-top-color: var(--niebla); }
+.cierre { position: absolute; left: 5vw; bottom: 4vh; font-size: 3.6vh; font-weight: 700; }
+h1 + .roles { margin-top: 1vh; } .roles span { display: inline-block; font-size: 2.6vh; font-weight: 600; border: 1.5px solid var(--niebla); border-radius: 99px; padding: .7vh 1.8vh; margin: 0 1vh 1vh 0; opacity: 0; animation: entra .6s cubic-bezier(.16,1,.3,1) both; }
+.roles span:nth-child(1) { animation-delay: .5s; background: var(--niebla); color: var(--tinta); } .roles span:nth-child(2) { animation-delay: .9s; } .roles span:nth-child(3) { animation-delay: 1.3s; } .roles span:nth-child(4) { animation-delay: 1.7s; }
+.arte { position: absolute; right: 4vw; top: 3vh; height: 44vh; } .arte * { fill: none; stroke: var(--niebla); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.arte .pant { animation: brilla 2.6s ease-in-out infinite; } @keyframes brilla { 50% { stroke-opacity: .35; } } .arte .ojos circle { fill: var(--niebla); stroke: none; animation: mira 3.2s ease-in-out infinite; } @keyframes mira { 0%, 100% { transform: translateX(-10px); } 50% { transform: translateX(10px); } }
+.arte .mesa { stroke: var(--gris); stroke-dasharray: 8 8; animation: corre 6s linear infinite; } @keyframes corre { to { stroke-dashoffset: -160; } } .arte .q { fill: var(--gris); stroke: none; font: 700 44px 'Instrument Sans'; text-anchor: middle; animation: par 1.6s steps(1) infinite; } .arte .hilo { stroke: var(--gris); stroke-dasharray: 3 9; }
+.arte .proy { fill: var(--niebla); } .arte .haz { fill: rgba(244,244,242,.14); stroke: rgba(244,244,242,.5); stroke-width: 1.5; animation: brilla 2.2s ease-in-out infinite; } .arte .gente circle { fill: var(--tinta); } .arte .luces circle { fill: var(--niebla); stroke: none; animation: late 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; } .arte .luces circle:nth-child(2) { animation-delay: .4s; } .arte .luces circle:nth-child(3) { animation-delay: .8s; } @keyframes late { 50% { transform: scale(1.5); opacity: .5; } }
+.arte .cola rect { stroke-width: 2; animation: espera 2.4s ease-in-out infinite; } @keyframes espera { 0%, 100% { transform: translateX(0); stroke-opacity: 1; } 50% { transform: translateX(14px); stroke-opacity: .4; } } .arte .embudo { stroke-width: 4; } .arte .mano { animation: late 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; } .arte .tic { stroke-width: 5; }
+.ficha { opacity: 0; animation: entra .6s cubic-bezier(.16,1,.3,1) both; } .ficha:nth-child(1) { animation-delay: .5s; } .ficha:nth-child(2) { animation-delay: 1.1s; } .ficha:nth-child(3) { animation-delay: 1.7s; }
+.flecha { animation: pulso 1.2s ease-in-out infinite; } @keyframes pulso { 50% { transform: translateX(.5vw); color: var(--niebla); } }
+.tec { position: absolute; left: 5vw; right: 5vw; top: 14.5vh; bottom: 2.5vh; display: grid; grid-template-columns: 1.15fr 1.15fr .9fr; gap: 1.6vw; }
+.tec figure { margin: 0; } .tec .marco { position: relative; width: 100%; aspect-ratio: 1340 / 710; overflow: hidden; background: #000; border: 1.5px solid var(--gris); border-radius: 3px; }
+#tf { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; } #tf img { display: block; }
+.pila img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; animation: pila 9s infinite; } .pila img:nth-child(2) { animation-delay: 3s; } .pila img:nth-child(3) { animation-delay: 6s; }
+@keyframes pila { 0% { opacity: 0; } 6% { opacity: 1; } 33% { opacity: 1; } 39% { opacity: 0; } 100% { opacity: 0; } }
+.tec figcaption { font-size: 1.5vh; color: #a9a9a6; line-height: 1.3; margin-top: .9vh; } .tec figcaption b { display: block; color: var(--niebla); font-size: 1.9vh; margin-bottom: .2vh; }
+.tec .lista { display: flex; flex-direction: column; gap: .8vh; } .tec .lista .caja { flex: 0 0 auto; padding: .8vh .9vw; }
+#hud { position: fixed; right: 10px; top: 10px; z-index: 20; background: rgba(0,0,0,.82); border: 1px solid #333; border-radius: 8px; padding: 10px 12px; font: 600 12px system-ui; color: var(--niebla); width: 320px; }
+#hud.oculto { display: none; } #hud select { width: 100%; margin: 3px 0 7px; } #hud button { font: 700 12px system-ui; padding: 6px 9px; border: 0; border-radius: 6px; cursor: pointer; margin: 2px 2px 0 0; }
+#reloj { position: fixed; left: 12px; top: 10px; z-index: 20; font: 700 13px 'Menlo', monospace; color: #a9a9a6; background: rgba(0,0,0,.6); padding: 4px 8px; border-radius: 5px; }
+#reloj.oculto { display: none; } #reloj b { color: var(--niebla); } #reloj .pas { color: #ff5a3c; }
+#barra { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--niebla); width: 0; z-index: 5; }
+</style>
+</head>
+<body>
+<div id="arriba">
+  <!-- 1 -->
+  <section class="slide">
+    <div class="kicker">Hoy</div>
+    <h1>Matilda</h1>
+    <div class="roles"><span>CTO</span><span>programa con agentes</span><span>tía</span><span>investigadora</span></div>
+    <svg class="arte" viewBox="0 0 520 300"><rect x="150" y="20" width="220" height="130" rx="6" class="pant"/><g class="ojos"><circle cx="230" cy="80" r="9"/><circle cx="290" cy="80" r="9"/></g><path d="M40 210 H480 L500 270 H20 Z" class="mesa"/><text x="260" y="250" class="q">?</text><path d="M260 150 V205" class="hilo"/></svg>
+  </section>
+  <!-- 2 -->
+  <section class="slide">
+    <video id="logo" src="marca/wui-logo-apertura.mp4" muted playsinline></video>
+    <div class="lema">El mundo es tu interfaz.<small>El motor para que los agentes trabajen contigo en el mundo físico.</small></div>
+  </section>
+  <!-- 3 -->
+  <section class="slide">
+    <div class="kicker">1 · Personal</div>
+    <h1>Super Dev Desk</h1>
+    
+    <div class="col2">
+      <div class="ficha"><b>Objetos al milímetro</b><span>Una foto, detección abierta y Segment Anything. Sin entrenar nada.</span></div>
+      <div class="ficha"><b>Manos como puntero</b><span>Posar la mano aprueba, elige o dibuja.</span></div>
+      <div class="ficha"><b>Tinta en papel</b><span>Un modelo de decisión lee el gato de la libreta en medio segundo.</span></div>
+    </div>
+  </section>
+  <!-- 4 -->
+  <section class="slide">
+    <div class="kicker">La idea</div>
+    <h1>Realidad mixta<br><em>sin lentes.</em></h1>
+    <svg class="arte" viewBox="0 0 520 300"><circle cx="260" cy="26" r="12" class="proy"/><path d="M260 38 L120 220 H400 Z" class="haz"/><path d="M90 220 H430 L450 262 H70 Z" class="mesa"/><g class="gente"><circle cx="110" cy="170" r="14"/><circle cx="410" cy="170" r="14"/><circle cx="260" cy="286" r="14"/></g><g class="luces"><circle cx="200" cy="238" r="9"/><circle cx="262" cy="232" r="13"/><circle cx="326" cy="240" r="8"/></g></svg>
+  </section>
+  <!-- 5 -->
+  <section class="slide">
+    <div class="kicker">2 · Educación</div>
+    <h1>Sistema solar</h1>
+    
+    <div class="col2">
+      <div class="ficha"><b>Seguimiento en vivo</b><span>50 lecturas por segundo con una cámara común. Sin marcadores.</span></div>
+      <div class="ficha"><b>Lumo, una voz que ve la mesa</b><span>Señala planetas, escribe y dibuja en la libreta.</span></div>
+      <div class="ficha"><b>Tocar es preguntar</b><span>El objeto físico es el botón.</span></div>
+    </div>
+  </section>
+  <!-- 6 -->
+  <section class="slide">
+    <div class="kicker">El problema real</div>
+    <h1>La IA diseña experimentos.<br><em>Faltan manos.</em></h1>
+    <svg class="arte" viewBox="0 0 520 300"><g class="cola"><rect x="30" y="60" width="26" height="34" rx="3" style="animation-delay:0.00s"/><rect x="64" y="112" width="26" height="34" rx="3" style="animation-delay:0.12s"/><rect x="98" y="164" width="26" height="34" rx="3" style="animation-delay:0.24s"/><rect x="132" y="60" width="26" height="34" rx="3" style="animation-delay:0.36s"/><rect x="166" y="112" width="26" height="34" rx="3" style="animation-delay:0.48s"/><rect x="200" y="164" width="26" height="34" rx="3" style="animation-delay:0.60s"/><rect x="234" y="60" width="26" height="34" rx="3" style="animation-delay:0.72s"/><rect x="268" y="112" width="26" height="34" rx="3" style="animation-delay:0.84s"/><rect x="302" y="164" width="26" height="34" rx="3" style="animation-delay:0.96s"/></g><path d="M350 30 L372 150 L350 270 M372 150 H410" class="embudo"/><circle cx="460" cy="150" r="26" class="mano"/><path d="M448 150 l9 9 l16 -18" class="tic"/></svg>
+  </section>
+  <!-- 7 -->
+  <section class="slide">
+    <div class="kicker">3 · Trabajo</div>
+    <h1>Laboratorio</h1>
+    
+    <div class="col2">
+      <div class="ficha"><b>Pasos verificados</b><span>Sigue la pipeta y avisa si entra al vial equivocado.</span></div>
+      <div class="ficha"><b>Mide sin instrumentos</b><span>Nivel del vaso y tapas abiertas, leídos por la cámara.</span></div>
+      <div class="ficha"><b>Cuida el experimento</b><span>Detecta lo que no debería estar ahí. Sabe dónde está cada pieza.</span></div>
+    </div>
+  </section>
+  <!-- 8 -->
+  <section class="slide">
+    <div class="kicker">El motor</div>
+    <h1 style="font-size:4.6vh;max-width:90vw;margin-bottom:0">Lo que vieron no es el producto. Son tres experiencias hechas con WUI, <em>sin escribir código.</em></h1>
+    <div class="tec">
+      <figure id="f-tf"><div class="marco"><div id="tf"><img src="marca/tec/1-camara.jpg" width="1280" height="720"><video id="v-tf" autoplay muted playsinline width="1280" height="720" style="position:absolute;left:0;top:0;display:none"></video></div></div><figcaption><b>1 · De la cámara a milímetros · en vivo</b>La imagen se endereza con la calibración: cada píxel pasa a ser un punto real de la mesa.</figcaption></figure>
+      <figure><div class="marco pila"><img src="marca/tec/2-normalizada.jpg"><img src="marca/tec/3-deteccion.jpg"><img src="marca/tec/4-mascaras.jpg"></div><figcaption><b>2 · Qué hay y dónde</b>Detección abierta y Segment Anything sobre la foto real. Sin entrenar nada.</figcaption></figure>
+      <div class="lista">
+        <div class="caja agente" style="animation-delay:.2s"><b>3 · Tu agente decide</b><span>Claude o Codex reciben los objetos en milímetros y eligen qué proyectar.</span></div>
+        <div class="caja" style="animation-delay:.5s"><b>Manos</b><span>MediaPipe en el navegador.</span></div>
+        <div class="caja" style="animation-delay:.7s"><b>Decisiones rápidas</b><span>Jev lee el gato, las tapas y el vaso.</span></div>
+        <div class="caja" style="animation-delay:.9s"><b>Seguimiento</b><span>Formas y color. Sin marcadores.</span></div>
+        <div class="caja" style="animation-delay:1.1s"><b>Proyector de $50.000</b><span>Y cualquier cámara. Sin sensor de profundidad.</span></div>
+      </div>
+    </div>
+  </section>
+  <!-- 9 -->
+  <section class="slide">
+    <div class="kicker">Un motor, muchas mesas</div>
+    <div class="grilla">
+      <div class="hecho" style="animation-delay:.05s">Escritorio<small>hecho esta noche</small></div>
+      <div class="hecho" style="animation-delay:.1s">Sala de clases<small>hecho esta noche</small></div>
+      <div class="hecho" style="animation-delay:.15s">Laboratorio<small>hecho esta noche</small></div>
+      <div style="animation-delay:.2s">Cocina<small>recetas paso a paso</small></div>
+      <div style="animation-delay:.25s">Taller<small>armado y reparación</small></div>
+      <div style="animation-delay:.3s">Bodega<small>picking guiado</small></div>
+      <div style="animation-delay:.35s">Salud<small>rehabilitación en casa</small></div>
+      <div style="animation-delay:.4s">Música<small>partituras sobre el teclado</small></div>
+      <div style="animation-delay:.45s">Juegos<small>tablero vivo</small></div>
+      <div style="animation-delay:.5s">Línea de producción<small>control de calidad</small></div>
+    </div>
+    <div class="cierre">El mundo es el lienzo de los agentes.<br><span style="color:#a9a9a6">WUI · El mundo es tu interfaz.</span></div>
+  </section>
+  <div id="barra"></div>
+</div>
+<div id="abajo">
+  <div id="mesa"><div class="rot"><i></i>Mesa · vista rectificada</div><div id="giro"><video id="v-mesa" autoplay muted playsinline></video></div></div>
+  <div id="pov"><div class="rot"><i></i>Vista de Matilda</div><video id="v-pov" autoplay muted playsinline></video></div>
+</div>
+<div id="reloj"><b id="r-t">0:00</b> · lámina <span id="r-n">1</span>/9 · <span id="r-s"></span></div>
+<div id="hud">
+  Cámara de la mesa <select id="s-mesa"></select>
+  Cámara de Matilda (teléfono) <select id="s-pov"></select>
+  <div>Demo: <span id="c-e">…</span></div>
+  <button id="b-fin" style="background:#ff5a3c;color:#fff">Terminar (T)</button><button id="b-prep" style="background:#f4f4f2">Preparar (P)</button><button id="b-dale" style="background:#86f5a0">Dale (D)</button>
+  <div style="margin-top:8px;font-weight:500;color:#a9a9a6;line-height:1.45">Tab: siguiente (el primero parte el reloj) · → ← lámina · Espacio: pausa · A: avance automático · V: ensayo con narración · R: reiniciar · H: ocultar este panel · C: ocultar reloj</div>
+</div>
+<script>
+// Tiempos del storyboard (PITCH.md): segundo en que empieza cada lámina.
+const INICIO = [0, 12, 27, 57, 72, 102, 117, 147, 167], FIN = 180;
+const S = [...document.querySelectorAll('.slide')]; let n = 0, t0 = null, pausa = 0, auto = false;
+const voz = new Audio(); let ensayo = false;      // modo ensayo (tecla V): cada lámina suena con la narración grabada, para medir tiempos
+function ir(k) { n = Math.max(0, Math.min(S.length - 1, k)); S.forEach((s, i) => s.classList.toggle('on', i === n)); document.getElementById('r-n').textContent = n + 1;
+  if (n === 7) setTimeout(transformacion, 60);
+  const lg = document.getElementById('logo'); if (n === 1) { lg.currentTime = 0; lg.play().catch(() => {}); }
+  if (ensayo) { voz.src = 'narracion/bloque-' + (n + 1) + '.mp3'; voz.play().catch(() => {}); } else voz.pause(); }
+function reloj() { const t = t0 === null ? pausa : (performance.now() - t0) / 1000; const m = Math.floor(t / 60), s = Math.floor(t % 60);
+  document.getElementById('r-t').textContent = m + ':' + String(s).padStart(2, '0'); const fin = INICIO[n + 1] ?? FIN, q = Math.round(fin - t);
+  const e = document.getElementById('r-s'); e.textContent = (q >= 0 ? 'quedan ' + q + ' s' : 'pasado ' + (-q) + ' s') + (auto ? ' · auto' : ''); e.className = q < 0 ? 'pas' : '';
+  document.getElementById('barra').style.width = Math.min(100, t / FIN * 100) + 'vw';
+  if (auto && t0 !== null && n < S.length - 1 && t >= INICIO[n + 1]) ir(n + 1); requestAnimationFrame(reloj); }
+const lg = document.getElementById('logo'); lg.addEventListener('ended', () => { lg.src = 'marca/wui-logo-loop.mp4'; lg.loop = true; lg.play().catch(() => {}); });
+// Control de la demo (mesa_ctl.py)
+async function ctl(r) { try { const j = await (await fetch('http://127.0.0.1:9301/' + r)).json(); document.getElementById('c-e').textContent = (j.nombre ? j.nombre + ' · ' : '') + j.fase + ' · sigue: ' + j.siguiente; document.getElementById('b-prep').textContent = 'Preparar ' + j.siguiente + ' (P)'; } catch (e) { document.getElementById('c-e').textContent = 'sin control'; } }
+document.getElementById('b-fin').onclick = () => ctl('fin'); document.getElementById('b-prep').onclick = () => ctl('preparar'); document.getElementById('b-dale').onclick = () => ctl('dale'); setInterval(() => ctl('estado'), 2000);
+addEventListener('keydown', e => { if (e.metaKey || e.ctrlKey || e.altKey || e.target.tagName === 'SELECT') return; const k = e.key;
+  if (k === 'Tab') { e.preventDefault(); if (e.shiftKey) ir(n - 1); else { if (t0 === null && pausa === 0) t0 = performance.now(); else ir(n + 1); } }
+  else if (k === 'ArrowRight' || k === 'PageDown') ir(n + 1); else if (k === 'ArrowLeft' || k === 'PageUp') ir(n - 1);
+  else if (k === ' ') { e.preventDefault(); if (t0 === null) t0 = performance.now() - pausa * 1000; else { pausa = (performance.now() - t0) / 1000; t0 = null; } }
+  else if (k === 'r' || k === 'R') { t0 = null; pausa = 0; ir(0); } else if (k === 'a' || k === 'A') auto = !auto;
+  else if (k === 'v' || k === 'V') { ensayo = !ensayo; ir(n); }
+  else if (k === 'h' || k === 'H') document.getElementById('hud').classList.toggle('oculto'); else if (k === 'c' || k === 'C') document.getElementById('reloj').classList.toggle('oculto');
+  else if (k === 't' || k === 'T') ctl('fin'); else if (k === 'p' || k === 'P') ctl('preparar'); else if (k === 'd' || k === 'D' || k === 'Enter') ctl('dale'); });
+// Video en vivo: la mesa se rectifica en el navegador con la homografía de la calibración (fp-metric.json)
+async function rectificar() { const m = await (await fetch('fp-metric.json?' + Date.now())).json(); const H = m.px_to_mm, c = document.getElementById('mesa'), k = Math.max(c.clientWidth / 1340, c.clientHeight / 710);
+  const A = [[k, 0, 10 * k], [0, k, 10 * k], [0, 0, 1]], M = A.map(r => [0, 1, 2].map(j => r[0] * H[0][j] + r[1] * H[1][j] + r[2] * H[2][j]));
+  document.getElementById('v-mesa').style.transform = `matrix3d(${M[0][0]},${M[1][0]},0,${M[2][0]},${M[0][1]},${M[1][1]},0,${M[2][1]},0,0,1,0,${M[0][2]},${M[1][2]},0,${M[2][2]})`; }
+// Lámina técnica: la foto real de la cámara se transforma en la vista en milímetros, ida y vuelta
+async function transformacion() { const m = await (await fetch('fp-metric.json?' + Date.now())).json(); const H = m.px_to_mm, caja = document.querySelector('#f-tf .marco'); if (!caja.clientWidth) return;
+  const k = caja.clientWidth / 1340, A = [[k, 0, 10 * k], [0, k, 10 * k], [0, 0, 1]], M = A.map(r => [0, 1, 2].map(j => r[0] * H[0][j] + r[1] * H[1][j] + r[2] * H[2][j])), s0 = caja.clientWidth / 1280;
+  const recto = `rotate(180deg) matrix3d(${M[0][0]},${M[1][0]},0,${M[2][0]},${M[0][1]},${M[1][1]},0,${M[2][1]},0,0,1,0,${M[0][2]},${M[1][2]},0,${M[2][2]})`; const el = document.getElementById('tf'); el.style.transformOrigin = '0 0';
+  const vm_ = document.getElementById('v-mesa'), vt = document.getElementById('v-tf'); if (vm_.srcObject) { vt.srcObject = vm_.srcObject; vt.style.display = 'block'; }      // en vivo si hay cámara
+  if (window.__tf) window.__tf.cancel(); window.__tf = el.animate([{ transform: `matrix3d(${s0},0,0,0,0,${s0},0,0,0,0,1,0,0,0,0,1)`, offset: 0 }, { transform: `matrix3d(${s0},0,0,0,0,${s0},0,0,0,0,1,0,0,0,0,1)`, offset: .25 }, { transform: `matrix3d(${M[0][0]},${M[1][0]},0,${M[2][0]},${M[0][1]},${M[1][1]},0,${M[2][1]},0,0,1,0,${M[0][2]},${M[1][2]},0,${M[2][2]})`, offset: .6 }, { transform: `matrix3d(${M[0][0]},${M[1][0]},0,${M[2][0]},${M[0][1]},${M[1][1]},0,${M[2][1]},0,0,1,0,${M[0][2]},${M[1][2]},0,${M[2][2]})`, offset: 1 }], { duration: 5200, iterations: Infinity, direction: 'alternate', easing: 'cubic-bezier(.16,1,.3,1)' }); }
+async function camaras() { try { await navigator.mediaDevices.getUserMedia({ video: true }).then(s => s.getTracks().forEach(t => t.stop())); } catch (e) {}
+  const ds = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+  for (const [sel, vid, clave, pref] of [['s-mesa', 'v-mesa', 'cam-mesa', /osmo/i], ['s-pov', 'v-pov', 'cam-pov', /iphone|continuity|teléfono|phone/i]]) { const s = document.getElementById(sel);
+    s.innerHTML = '<option value="">(ninguna)</option>' + ds.map(d => `<option value="${d.deviceId}">${d.label || 'cámara'}</option>`).join('');
+    let g = null; try { g = localStorage.getItem(clave); } catch (e) {} const d0 = ds.find(d => d.deviceId === g) || ds.find(d => pref.test(d.label)); if (d0) s.value = d0.deviceId;
+    const abrir = async () => { try { localStorage.setItem(clave, s.value); } catch (e) {} const v = document.getElementById(vid); if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop()); if (!s.value) { v.srcObject = null; return; }
+      try { v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: s.value }, width: { ideal: 1920 }, height: { ideal: 1080 } } }); } catch (e) { console.warn(e); } };
+    s.onchange = abrir; abrir(); } }
+window.WUI = { ir, siguiente: () => { if (t0 === null && pausa === 0) t0 = performance.now(); else ir(n + 1); }, anterior: () => ir(n - 1), pausa: () => { if (t0 === null) t0 = performance.now() - pausa * 1000; else { pausa = (performance.now() - t0) / 1000; t0 = null; } }, reiniciar: () => { t0 = null; pausa = 0; ir(0); }, estado: () => ({ lamina: n + 1, total: S.length, corriendo: t0 !== null, t: t0 === null ? pausa : (performance.now() - t0) / 1000 }), ponerPov: st => { document.getElementById('v-pov').srcObject = st; }, ctl };
+setInterval(() => { if (n !== 7) return; const t = Date.now(); document.querySelectorAll('.pila img').forEach((im, i) => { const u = 'out/' + ['2-normalizada', '3-deteccion', '4-mascaras'][i] + '.jpg?' + t, pr = new Image(); pr.onload = () => { im.src = u; }; pr.src = u; }); }, 6000);      // lo último que segmentó la mesa
+ir(0); reloj(); rectificar(); camaras(); ctl('estado'); addEventListener('resize', rectificar);
+</script>
+<script src="remoto/presentacion-remoto.js" onerror="console.log('sin remoto')"></script>
+</body>
+</html>

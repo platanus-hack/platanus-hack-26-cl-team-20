@@ -1,0 +1,14 @@
+{
+  "_que_es": "Dónde está dibujado cada planeta en la lámina impresa, en coordenadas de la lámina: u va del extremo lejano al Sol (0) al Sol (1); v va del borde naranjo (0) a la franja azul con el título (1). r es el radio dividido por el largo de la lámina. Medido con la foto cenital del 21-nov (lámina de 165×107 mm). Si cambias la lámina, vuelve a medir con: uv run python -m percepcion.medir_lamina foto.jpg",
+  "planetas": {
+    "neptuno":  {"uv": [0.072, 0.352], "r": 0.040},
+    "urano":    {"uv": [0.179, 0.638], "r": 0.050},
+    "saturno":  {"uv": [0.262, 0.351], "r": 0.066},
+    "jupiter":  {"uv": [0.367, 0.634], "r": 0.075},
+    "marte":    {"uv": [0.478, 0.296], "r": 0.044},
+    "tierra":   {"uv": [0.577, 0.680], "r": 0.050},
+    "venus":    {"uv": [0.641, 0.382], "r": 0.038},
+    "mercurio": {"uv": [0.735, 0.579], "r": 0.028},
+    "sol":      {"uv": [0.911, 0.459], "r": 0.120}
+  }
+}

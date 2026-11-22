@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WUI · World User Interface</title>
+    <meta name="description" content="WUI le da a tu agente una cámara y un proyector: ve lo que hay sobre la mesa y proyecta encima de las cosas reales." />
+    <link rel="preload" href="/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+      .top {
+        border-bottom: 0;
+      }
+      .top nav {
+        display: flex;
+        gap: 24px;
+        font-size: 0.9rem;
+      }
+      .top nav a,
+      .suave {
+        color: var(--luz-2);
+        text-decoration: underline;
+        text-decoration-color: var(--linea);
+        text-underline-offset: 5px;
+      }
+      .top nav a:hover,
+      .suave:hover {
+        color: var(--luz);
+        text-decoration-color: var(--luz-3);
+      }
+      main.portada {
+        max-width: 1440px;
+        padding: 0 clamp(16px, 4vw, 48px);
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+        gap: clamp(24px, 5vw, 80px);
+        align-items: center;
+        min-height: calc(100svh - 150px);
+        padding: 24px 0 56px;
+      }
+      .sigla {
+        margin: 0 0 22px;
+        font: 400 0.75rem var(--mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--luz-3);
+      }
+      .sigla b {
+        color: var(--senal);
+        font-weight: 500;
+      }
+      h1 {
+        margin: 0;
+        max-width: 11ch;
+        font: 640 clamp(2.75rem, 7vw, 6.6rem) / 0.96 var(--sans);
+        font-stretch: 118%;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+      }
+      .bajada {
+        margin: 26px 0 0;
+        max-width: 42ch;
+        font-size: clamp(1.05rem, 1.5vw, 1.35rem);
+        line-height: 1.35;
+        color: var(--luz-2);
+      }
+      .acciones {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 16px 28px;
+        margin-top: 36px;
+      }
+      .copiar {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        padding: 18px 30px 18px 24px;
+        border: 0;
+        background: var(--luz);
+        color: var(--mesa);
+        font: 640 clamp(1.05rem, 1.4vw, 1.3rem) var(--sans);
+        font-stretch: 108%;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .copiar:hover {
+        background: #fff;
+      }
+      .copiar:focus-visible,
+      .suave:focus-visible {
+        outline: 2px solid var(--senal);
+        outline-offset: 3px;
+      }
+      /* Marca de registro: el naranja solo aparece donde se toca. */
+      .copiar i {
+        position: relative;
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--senal);
+        border-radius: 50%;
+      }
+      .copiar i::before,
+      .copiar i::after {
+        content: "";
+        position: absolute;
+        background: var(--senal);
+      }
+      .copiar i::before {
+        left: 50%;
+        top: -6px;
+        bottom: -6px;
+        width: 2px;
+        margin-left: -1px;
+      }
+      .copiar i::after {
+        top: 50%;
+        left: -6px;
+        right: -6px;
+        height: 2px;
+        margin-top: -1px;
+      }
+      .mensaje {
+        margin: 18px 0 0;
+        max-width: 56ch;
+        font: 400 0.72rem/1.7 var(--mono);
+        color: var(--luz-3);
+        overflow-wrap: anywhere;
+      }
+      .mensaje span {
+        color: var(--luz-2);
+        user-select: all;
+      }
+      .lamina {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .pasos {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border-top: 1px solid var(--linea);
+      }
+      .pasos li {
+        padding: 28px 28px 44px 0;
+      }
+      .pasos li + li {
+        padding-left: 28px;
+        border-left: 1px solid var(--linea);
+      }
+      .pasos b {
+        font: 500 0.75rem var(--mono);
+        color: var(--senal);
+      }
+      .pasos h2 {
+        margin: 10px 0 8px;
+        font: 600 1.2rem/1.15 var(--sans);
+        font-stretch: 110%;
+        letter-spacing: -0.01em;
+      }
+      .pasos p {
+        margin: 0;
+        max-width: 38ch;
+        font-size: 0.95rem;
+        color: var(--luz-2);
+      }
+      footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 8px 24px;
+        padding: 22px clamp(16px, 4vw, 48px) 32px;
+        border-top: 1px solid var(--linea);
+        font-size: 0.85rem;
+        color: var(--luz-3);
+      }
+      .pulso {
+        transform-origin: 318px 196px;
+        animation: pulso 2.6s cubic-bezier(0.2, 0.7, 0.1, 1) infinite;
+      }
+      @keyframes pulso {
+        from {
+          transform: scale(0.5);
+          opacity: 1;
+        }
+        to {
+          transform: scale(1.7);
+          opacity: 0;
+        }
+      }
+      @media (max-width: 860px) {
+        .hero {
+          grid-template-columns: minmax(0, 1fr);
+          min-height: 0;
+          padding-top: 8px;
+        }
+        .pasos {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .pasos li,
+        .pasos li + li {
+          padding: 24px 0;
+          border-left: 0;
+        }
+        .pasos li + li {
+          border-top: 1px solid var(--linea);
+        }
+        .top nav a:first-child {
+          display: none;
+        }
+        .top nav a {
+          white-space: nowrap;
+        }
+        .marca span {
+          display: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .pulso {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <a class="marca" href="/">WUI<span>World User Interface</span></a>
+      <nav>
+        <a href="/agente">Instrucciones para agentes</a>
+        <a href="/mesa" data-mesa>Abrir la mesa</a>
+      </nav>
+    </header>
+
+    <main class="portada">
+      <section class="hero" aria-labelledby="titulo">
+        <div>
+          <p class="sigla"><b>WUI</b> · interfaz de usuario del mundo</p>
+          <h1 id="titulo">La mesa es la interfaz.</h1>
+          <p class="bajada">
+            WUI le da a tu agente una cámara y un proyector: ve lo que hay sobre la mesa y proyecta botones, guías y
+            respuestas encima de las cosas reales.
+          </p>
+          <div class="acciones">
+            <button class="copiar" id="copiar" type="button"><i aria-hidden="true"></i><span>Copiar para tu agente</span></button>
+            <a class="suave" href="/mesa" data-mesa>Abrir la mesa sin instalar nada</a>
+          </div>
+          <p class="mensaje">Pégalo en Claude Code o Codex: <span id="mensaje"></span></p>
+          <p class="sr" id="aviso" aria-live="polite"></p>
+        </div>
+
+        <!-- Lámina: la mesa vista desde arriba, con lo que el agente proyecta sobre los objetos. -->
+        <svg class="lamina" viewBox="0 0 560 400" role="img" aria-label="Una mesa vista desde arriba: una taza y una libreta rodeadas por luz proyectada, con etiquetas y un botón que un dedo está tocando.">
+          <rect x="1" y="1" width="558" height="398" fill="#141612" stroke="#2b2e28" />
+          <g stroke="#ff5b24" stroke-width="1.5">
+            <path d="M22 14v16M14 22h16M538 14v16M530 22h16M22 370v16M14 378h16M538 370v16M530 378h16" />
+          </g>
+          <g fill="none" stroke="#2b2e28">
+            <path d="M140 1v398M280 1v398M420 1v398M1 134h558M1 267h558" />
+          </g>
+          <!-- taza -->
+          <circle cx="150" cy="128" r="42" fill="#1c1e19" stroke="#3a3d36" />
+          <circle cx="150" cy="128" r="30" fill="#0b0c0a" />
+          <path d="M190 116c20 0 20 26 0 26" fill="none" stroke="#3a3d36" stroke-width="7" />
+          <circle cx="150" cy="128" r="56" fill="none" stroke="#f1eee4" stroke-width="2.5" />
+          <path d="M197 96l34-26h70" fill="none" stroke="#f1eee4" stroke-width="1.5" />
+          <text x="238" y="60" fill="#f1eee4" font-family="Archivo, sans-serif" font-size="19" font-weight="600">Café · 62 °C</text>
+          <!-- libreta -->
+          <g transform="rotate(-8 400 250)">
+            <rect x="330" y="176" width="150" height="150" fill="#1c1e19" stroke="#3a3d36" />
+            <path d="M350 206h110M350 228h110M350 250h74" stroke="#3a3d36" stroke-width="3" />
+            <rect x="320" y="166" width="170" height="170" fill="none" stroke="#f1eee4" stroke-width="2.5" stroke-dasharray="10 7" />
+          </g>
+          <text x="330" y="372" fill="#aaa79a" font-family="Martian Mono, monospace" font-size="11">libreta · 148 × 210 mm</text>
+          <!-- botón proyectado y toque -->
+          <rect x="60" y="262" width="190" height="64" fill="none" stroke="#f1eee4" stroke-width="2.5" />
+          <text x="155" y="301" text-anchor="middle" fill="#f1eee4" font-family="Archivo, sans-serif" font-size="21" font-weight="640">Siguiente paso</text>
+          <g transform="translate(-84 126)">
+            <circle class="pulso" cx="318" cy="196" r="20" fill="none" stroke="#ff5b24" stroke-width="2" />
+            <circle cx="318" cy="196" r="7" fill="#ff5b24" />
+          </g>
+        </svg>
+      </section>
+
+      <ol class="pasos" aria-label="Qué pasa cuando le pegas el mensaje a tu agente">
+        <li>
+          <b>01</b>
+          <h2>Tu agente lee las instrucciones</h2>
+          <p>El mensaje lo manda a una página de texto pensada para agentes. Prepara este computador y crea una mesa nueva solo para ti.</p>
+        </li>
+        <li>
+          <b>02</b>
+          <h2>Te abre la mesa</h2>
+          <p>Te pide tres permisos en el navegador: las cámaras, la pantalla del proyector y el micrófono.</p>
+        </li>
+        <li>
+          <b>03</b>
+          <h2>Se conecta y proyecta</h2>
+          <p>Se conecta por MCP con la llave de esa mesa, mira lo que hay encima y te saluda proyectando sobre ella.</p>
+        </li>
+      </ol>
+    </main>
+
+    <footer>
+      <span>WUI, World User Interface. Hecho en Platanus Hack 26, Santiago de Chile.</span>
+      <a class="suave" href="/agente">/agente</a>
+    </footer>
+
+    <script>
+      const url = `${location.origin}/agente`;
+      const texto = `Quiero usar WUI (una mesa con cámara y proyector que tú ves y sobre la que proyectas). Lee ${url} y sigue los pasos.`;
+      const boton = document.getElementById("copiar");
+      const rotulo = boton.querySelector("span");
+      document.getElementById("mensaje").textContent = texto;
+      boton.onclick = async () => {
+        let ok = true;
+        try {
+          await navigator.clipboard.writeText(texto);
+        } catch {
+          ok = false;
+          getSelection().selectAllChildren(document.getElementById("mensaje"));
+        }
+        rotulo.textContent = ok ? "Copiado: pégalo en tu agente" : "Selecciónalo y cópialo";
+        document.getElementById("aviso").textContent = ok ? "Mensaje copiado" : "No se pudo copiar solo: el mensaje quedó seleccionado";
+        setTimeout(() => (rotulo.textContent = "Copiar para tu agente"), 2400);
+      };
+      // Quien ya tiene una mesa abierta en este navegador vuelve a ella.
+      try {
+        if (localStorage.getItem("pcx.session")) for (const a of document.querySelectorAll("[data-mesa]")) a.textContent = "Volver a tu mesa";
+      } catch {}
+    </script>
+  </body>
+</html>

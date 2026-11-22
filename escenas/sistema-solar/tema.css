@@ -1,0 +1,13 @@
+/* Sistema solar · la guía conserva la tipografía y la señal de WUI. El color de
+   la actividad vive en el cielo, los planetas, las órbitas, el Sol y Lumo. */
+:root {
+  --sd-placa: rgba(0, 0, 0, 0.84);
+  --sd-radio: 20px;
+  --sd-trazo: 4px;
+  --sd-toque: 84px;
+  --solar-pincel: 1.8px;
+  --solar-orbita-opacidad: 0.52;
+  --solar-noche: rgba(6, 8, 40, 0.74);
+  --solar-lumo: #ffd23f;
+  --solar-lumo-brillo: #fff6c9;
+}

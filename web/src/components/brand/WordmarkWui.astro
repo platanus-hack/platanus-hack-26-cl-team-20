@@ -1,0 +1,46 @@
+---
+interface Props {
+  height?: number;
+  color?: string;
+  class?: string;
+  label?: string;
+}
+
+const {
+  height = 18,
+  color = "currentColor",
+  class: className,
+  label = "WUI",
+} = Astro.props;
+
+// viewBox nativo: 0 0 193 97 → escalamos manteniendo aspecto
+const viewW = 193;
+const viewH = 97;
+const width = Math.round((height * viewW) / viewH);
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 193 97"
+  preserveAspectRatio="xMinYMid meet"
+  width={width}
+  height={height}
+  role="img"
+  aria-label={label}
+  class:list={[className]}
+>
+  <!-- W -->
+  <path
+    d="M0 24 H23 L33 63 L44 24 H60 L71 63 L82 24 H104 L84 88 H63 L52 56 L41 88 H20 Z"
+    fill={color}
+  />
+  <!-- U -->
+  <path
+    d="M108 24 H129 V60 C129 67 132 71 139 71 C146 71 150 66 150 59 V24 H170 V88 H151 V82 C146 87 140 89 133 89 C118 89 108 78 108 61 Z"
+    fill={color}
+  />
+  <!-- I: barra principal -->
+  <path d="M175 24 H193 V88 H175 Z" fill={color} />
+  <!-- I: punto superior -->
+  <path d="M175 1 H193 V17 H175 Z" fill={color} />
+</svg>

@@ -1,0 +1,246 @@
+# Release del nodo pcx: compila `pcx`, `pcx-renderer` y `pcx-capture` por target, empaqueta cada uno con sus
+# librerías nativas y los pesos de los modelos (SAM y manos), genera checksums SHA-256 y crea el GitHub Release.
+# Lo consumen scripts/install/install.{sh,ps1}. Se dispara con un tag `v*` (p. ej. `git tag v0.1.0 && git push
+# origin v0.1.0`). Detalle en docs/INSTALAR.md y docs/DISTRIBUCION.md.
+#
+# Artefactos (nombres sin versión para que `releases/latest/download/<archivo>` sirva siempre):
+#   pcx-<target>.tar.gz (zip en Windows)  carpeta pcx-<target>/ con bin/ (binarios + librerías), models/ (pesos ONNX,
+#                                         manifest.json, SHA256SUMS y licencias), pcx.toml y VERSION
+#   pcx-integrations.tar.gz               skills y MCP para agentes (integrations/ + .claude-plugin/), si existen
+#   install.sh, install.ps1               los instaladores de esta versión
+#   SHA256SUMS                            sha256 de todo lo anterior (formato de `sha256sum`)
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  # Pesos de los modelos, una sola vez para todos los targets: URL fija a una revisión de Hugging Face y sha256
+  # verificado (scripts/install/modelos.json). No se suben al repo. El artefacto no empieza con `pcx-` para que el
+  # job `release` no lo publique suelto.
+  modelos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - name: Bajar y verificar los pesos
+        run: scripts/install/bajar-modelos.sh modelos
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: modelos
+          path: modelos
+          if-no-files-found: error
+          retention-days: 1
+
+  build:
+    name: build (${{ matrix.target }})
+    needs: modelos
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # onnx: compila `pcx` con la feature `onnx` (SAM en el motor) donde pyke publica ONNX Runtime.
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            rustflags: "-C link-arg=-Wl,-rpath,@executable_path"
+            onnx: true
+          # Compilación cruzada desde Apple Silicon: no depende de runners Intel, que GitHub está retirando.
+          # Experimental: `pcx` enlaza ONNX Runtime (pcxd -> pcx-hands -> ort) y pyke no publica ORT para este
+          # target, así que hoy falla al enlazar. Si falla, el release sale igual sin el paquete de Mac Intel
+          # (el instalador lo avisa). Para arreglarlo: ORT propio con ORT_LIB_LOCATION (docs/DISTRIBUCION.md).
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            rustflags: "-C link-arg=-Wl,-rpath,@executable_path"
+            experimental: true
+          # Sin `+crt-static`: el ORT precompilado de pyke es /MD (CRT dinámico) y no enlaza con CRT estático.
+          # En su lugar, el runtime de Visual C++ viaja app-local en bin/ (paso «Runtime de Visual C++»).
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            rustflags: ""
+            onnx: true
+          # ubuntu-22.04 (glibc 2.35) para que el binario corra también en distros algo más viejas que la 24.04.
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+            rustflags: "-C link-arg=-Wl,-rpath,$ORIGIN"
+            onnx: true
+          # Runner ARM nativo: compilar en cruzado con fontconfig y v4l es más frágil que esto. Sin `onnx` hasta probar
+          # el ORT de pyke en este target; los modelos viajan igual (las manos ya usan ORT).
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-22.04-arm
+            rustflags: "-C link-arg=-Wl,-rpath,$ORIGIN"
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    continue-on-error: ${{ matrix.experimental == true }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      # pkg-config + libfontconfig1-dev: fontique (renderer). libv4l-dev + libudev-dev + libclang-dev: nokhwa
+      # (feature `uvc` de pcx-capture, la cámara real; v4l2-sys genera bindings con bindgen).
+      - name: Dependencias del sistema (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libfontconfig1-dev libv4l-dev libudev-dev libclang-dev clang
+
+      # Fijada por SHA, la action no deduce la toolchain del ref: va explícita en `toolchain`.
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable (2026-11)
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: release-${{ matrix.target }}
+
+      # rpath a la carpeta del ejecutable: si ort copia librerías dinámicas (copy-dylibs), viajan en bin/ junto
+      # al binario y el cargador las encuentra ahí. En Windows basta con que la DLL esté al lado del .exe.
+      # `pcxd/onnx` (SAM en el motor) solo si el crate ya define esa feature: así el release no se rompe si el
+      # motor llega después que este workflow.
+      - name: cargo build --release
+        shell: bash
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
+          TARGET: ${{ matrix.target }}
+          ONNX: ${{ matrix.onnx == true }}
+        run: |
+          set -euo pipefail
+          features="pcx-capture/uvc"
+          if [ "$ONNX" = true ]; then
+            if awk '/^\[features\]/ {f=1; next} /^\[/ {f=0} f && /^onnx[[:space:]]*=/ {ok=1} END {exit !ok}' node/crates/pcxd/Cargo.toml; then
+              features="$features,pcxd/onnx"
+            else
+              echo "::warning::pcxd no define la feature onnx: $TARGET se compila sin SAM en el motor"
+            fi
+          fi
+          echo "features: $features"
+          cargo build --release --locked --target "$TARGET" \
+            -p pcxd -p pcx-renderer -p pcx-capture --features "$features"
+
+      # vcruntime140*.dll y msvcp140*.dll (el CRT de C++ que usan ORT y Rust con /MD) junto a los .exe: así pcx
+      # corre en un Windows sin el Visual C++ Redistributable. El UCRT ya viene con Windows 10 y 11.
+      # Microsoft permite este despliegue app-local de los archivos de Microsoft.VC14x.CRT.
+      - name: Runtime de Visual C++ (app-local)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+          $crt = Get-ChildItem "$vs\VC\Redist\MSVC" -Directory | Where-Object Name -match '^\d' |
+            Sort-Object { [version]$_.Name } -Descending |
+            ForEach-Object { Get-ChildItem (Join-Path $_.FullName 'x64') -Directory -Filter 'Microsoft.VC*.CRT' -ErrorAction SilentlyContinue } |
+            Select-Object -First 1
+          if (-not $crt) { throw "no encontré Microsoft.VC*.CRT en $vs" }
+          Write-Host "CRT: $($crt.FullName)"
+          Copy-Item "$($crt.FullName)\*.dll" "target\$env:TARGET\release\"
+
+      # Informativo: qué librerías del sistema piden los binarios (las que no viajan en el paquete las comprueba
+      # install.sh con ldd; hoy libfontconfig.so.1 es la única que no trae una instalación mínima).
+      - name: Dependencias dinámicas (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          for b in pcx pcx-renderer pcx-capture; do
+            echo "== $b"; ldd "target/${{ matrix.target }}/release/$b"
+          done
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: modelos
+          path: modelos
+
+      - name: Empaquetar
+        id: pkg
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          out="target/$TARGET/release"
+          name="pcx-$TARGET"
+          stage="dist/$name"
+          mkdir -p "$stage/bin"
+          ext=""
+          case "$TARGET" in *windows*) ext=".exe" ;; esac
+          for b in pcx pcx-renderer pcx-capture; do
+            cp "$out/$b$ext" "$stage/bin/"
+          done
+          # Librerías nativas que dejó `ort` (copy-dylibs) u otra dependencia junto a los binarios.
+          # Suelen ser symlinks a la caché de ort: `cp -L` copia el archivo real.
+          shopt -s nullglob
+          for lib in "$out"/*.dll "$out"/*.dylib "$out"/*.so "$out"/*.so.*; do
+            cp -L "$lib" "$stage/bin/"
+            echo "librería nativa: $(basename "$lib")"
+          done
+          # Pesos verificados por el job `modelos`; se vuelven a comprobar aquí contra su SHA256SUMS.
+          cp -R modelos "$stage/models"
+          (cd "$stage/models" && if command -v sha256sum >/dev/null; then sha256sum -c SHA256SUMS; else shasum -a 256 -c SHA256SUMS; fi)
+          cp node/pcx.toml "$stage/pcx.toml"
+          echo "$VERSION" > "$stage/VERSION"
+          cd dist
+          case "$TARGET" in
+            *windows*) 7z a -tzip -bd "$name.zip" "$name" >/dev/null; file="$name.zip" ;;
+            *) tar czf "$name.tar.gz" "$name"; file="$name.tar.gz" ;;
+          esac
+          ls -l "$file"
+          echo "file=dist/$file" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pcx-${{ matrix.target }}
+          path: ${{ steps.pkg.outputs.file }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: dist
+          pattern: pcx-*
+          merge-multiple: true
+
+      - name: Instaladores, integraciones y SHA256SUMS
+        run: |
+          set -euo pipefail
+          cp scripts/install/install.sh scripts/install/install.ps1 dist/
+          # Skills y MCP para agentes (integrations/install.sh); se empaquetan solo si están en este commit.
+          if [ -f integrations/install.sh ]; then
+            extra=""
+            [ -d .claude-plugin ] && extra=".claude-plugin"
+            # shellcheck disable=SC2086
+            tar czf dist/pcx-integrations.tar.gz integrations $extra
+          fi
+          cd dist
+          sha256sum -- * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Crear el GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          pre=""
+          case "$TAG" in *-*) pre="--prerelease" ;; esac
+          # shellcheck disable=SC2086
+          gh release create "$TAG" dist/* --verify-tag --generate-notes --title "pcx $TAG" $pre

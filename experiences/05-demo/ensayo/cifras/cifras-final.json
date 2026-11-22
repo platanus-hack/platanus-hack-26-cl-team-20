@@ -1,0 +1,151 @@
+{
+ "_que_es": "Cifras, apertura y cierre de la demo de WUI, listas para la tool `project`. Une el formato html de 02-parches/cifras-apertura-cierre-v2.json con las posiciones calculadas de 03-maquetas, con el nombre WUI. SIN PROBAR en la mesa.",
+ "_como_se_usa": "Ver como-cargar.md. Por cada bloque: project {request_id, scene: <nombre exacto de la pestaña>, widgets: <widgets del bloque>}. «escena» es el nombre de pestaña por defecto: «solar» es el del camino B (CORRER-SOLAR-MOTOR.md:86-88); con el camino A la pestaña se llama «Sistema solar». Quitar: remove {request_id, scene, ids}.",
+ "_por_que_html": "Los `label` se dibujan en el canvas y los html van encima del canvas (console/projector.html:82-84, console/html-layer.js:2): un label quedaría bajo el fondo html del solar. Entre widgets html manda `z` (html-layer.js: zIndex = z).",
+ "_por_que_z_4": "Encima del fondo del solar (z -5), órbitas (0), planetas (1) y Sol (2); debajo de la ficha (5), la burbuja (6) y Lumo (7) del solar, y de todo lo del escritorio (10–26) y el laboratorio (18–95). Si algo de la escena llega a caer encima, se lee lo de la escena.",
+ "_reglas": "Toda letra ≥ 28 mm (MOTOR.md §2.1). Texto sobre placa oscura rgba(0,0,0,.62) (MOTOR.md §2.2). Nada en x < 150 ni en la esquina de voz [870, 0, 130, 130] (MOTOR.md §2.6). Acento = el --sd-foco de cada escena (MOTOR.md §2.4).",
+ "bloques": [
+  {
+   "escena": "Inicio",
+   "nota": "Pestaña sin escena: solo este texto. Objetos supuestos en la mesa: los del escritorio (laptop arriba a la derecha, libreta en x 600–750). El texto queda en la columna libre x 160–554.",
+   "widgets": [
+    {
+     "type": "effect",
+     "id": "guion-inicio",
+     "shader": "html",
+     "z": 4,
+     "rect_mm": [
+      160,
+      24,
+      394,
+      340
+     ],
+     "params": {
+      "html": "<div class=\"p\"><div class=\"n\">WUI</div><div class=\"s\">World User Interface</div><div class=\"m\">Matilda · CTO, vibe coder,<br>tía, investigadora</div></div>",
+      "css": "body{display:flex;align-items:flex-start;justify-content:center}.p{display:inline-block;background:rgba(0,0,0,.62);border-radius:14px;white-space:nowrap}.p{padding:10px 10px 12px;text-align:center}.n{font:800 150px/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#F4F1EA;letter-spacing:4px}.s{font:600 34px/1.15 system-ui,-apple-system,'Segoe UI',sans-serif;color:#F4F1EA;margin-top:4px}.m{font:500 28px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif;color:#FFD400;margin-top:30px}"
+     }
+    }
+   ]
+  },
+  {
+   "escena": "Escritorio",
+   "nota": "Sobre el panel «Tus agentes» [170, 280, 240, 175] (escena.json:60), a la izquierda del botón «Responde» (x 560–594, y 274–288; dibujo.py:115-145) y de las marcas de corte (x ≥ 546). Termina en y 228: libra el panel del preset (y 280) y también el panel grande de escena.md (y 236).",
+   "widgets": [
+    {
+     "type": "effect",
+     "id": "guion-cifra-escritorio",
+     "shader": "html",
+     "z": 4,
+     "rect_mm": [
+      160,
+      14,
+      380,
+      214
+     ],
+     "params": {
+      "html": "<div class=\"p\"><div class=\"c\">+56 %</div><div class=\"l\">de espera por la<br>aprobación humana</div></div>",
+      "css": "body{display:flex;align-items:flex-start;justify-content:center}.p{display:inline-block;background:rgba(0,0,0,.62);border-radius:14px;white-space:nowrap}.p{padding:8px 18px 12px;text-align:center}.c{font:700 92px/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#FF5A3C;}.l{font:500 30px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif;color:#EFE6D6;margin-top:10px}"
+     }
+    }
+   ]
+  },
+  {
+   "escena": "solar",
+   "nota": "Arriba a la izquierda: la cifra en y 8–92 y la línea en x 160–436, y 98–192. Lejos de la lámina, la ficha de respaldo [620, 150, 360, 262] (conductor.py:669), el panel de Lumo de la voz [640, 380, 340, 160] y la franja de abajo (y > 523). Supone el canasto al centro (x ≥ 440). Compatible con fijar la ficha en mesa.json en [160, 196, 290, 240].",
+   "widgets": [
+    {
+     "type": "effect",
+     "id": "guion-cifra-solar",
+     "shader": "html",
+     "z": 4,
+     "rect_mm": [
+      160,
+      8,
+      380,
+      84
+     ],
+     "params": {
+      "html": "<div class=\"p\"><div class=\"c\">1 de cada 3</div></div>",
+      "css": "body{display:flex;align-items:flex-start;justify-content:flex-start}.p{display:inline-block;background:rgba(0,0,0,.62);border-radius:14px;white-space:nowrap}.p{padding:4px 10px}.c{font:700 62px/1.1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#FFC21A;}"
+     }
+    },
+    {
+     "type": "effect",
+     "id": "guion-cifra-solar-linea",
+     "shader": "html",
+     "z": 4,
+     "rect_mm": [
+      160,
+      98,
+      276,
+      94
+     ],
+     "params": {
+      "html": "<div class=\"p\"><div class=\"l\">estudiantes bajo el<br>nivel mínimo<br>en ciencias</div></div>",
+      "css": "body{display:flex;align-items:flex-start;justify-content:flex-start}.p{display:inline-block;background:rgba(0,0,0,.62);border-radius:14px;white-space:nowrap}.p{padding:0 8px}.l{font:500 28px/1.1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#FBF6E8;}"
+     }
+    }
+   ]
+  },
+  {
+   "escena": "Laboratorio",
+   "nota": "Franja de arriba (y 0–60): el panel del paso, el medidor y la lista empiezan en y 64 (escena.md, bloque yaml; también laboratorio-demo-2-pasos.yaml:21-23). La línea termina en x 862, antes del botón de voz (x ≥ 870).",
+   "widgets": [
+    {
+     "type": "effect",
+     "id": "guion-cifra-lab",
+     "shader": "html",
+     "z": 4,
+     "rect_mm": [
+      160,
+      2,
+      304,
+      58
+     ],
+     "params": {
+      "html": "<div class=\"p\"><div class=\"c\">1 de cada 5</div></div>",
+      "css": "body{display:flex;align-items:flex-start;justify-content:flex-start}.p{display:inline-block;background:rgba(0,0,0,.62);border-radius:14px;white-space:nowrap}.p{padding:3px 10px}.c{font:700 50px/1.04 system-ui,-apple-system,'Segoe UI',sans-serif;color:#5FE0D2;}"
+     }
+    },
+    {
+     "type": "effect",
+     "id": "guion-cifra-lab-linea",
+     "shader": "html",
+     "z": 4,
+     "rect_mm": [
+      472,
+      0,
+      390,
+      60
+     ],
+     "params": {
+      "html": "<div class=\"p\"><div class=\"l\">no pipetea con la<br>exactitud de la norma</div></div>",
+      "css": "body{display:flex;align-items:flex-start;justify-content:flex-start}.p{display:inline-block;background:rgba(0,0,0,.62);border-radius:14px;white-space:nowrap}.p{padding:0 12px}.l{font:500 28px/1.05 system-ui,-apple-system,'Segoe UI',sans-serif;color:#EEF4F3;}"
+     }
+    }
+   ]
+  },
+  {
+   "escena": "Cierre",
+   "nota": "Pestaña sin escena: solo este texto, en x 160–860, y 136–424 (fuera de la barra, de la esquina de voz y de donde suele quedar el vaso).",
+   "widgets": [
+    {
+     "type": "effect",
+     "id": "guion-cierre",
+     "shader": "html",
+     "z": 4,
+     "rect_mm": [
+      160,
+      136,
+      700,
+      288
+     ],
+     "params": {
+      "html": "<div class=\"p\"><div class=\"c\">+160 mil</div><div class=\"l\">estudiantes de educación técnica en Chile</div><div class=\"f\">Un motor.<br>El mundo es el canvas de nuestros agentes.</div></div>",
+      "css": "body{display:flex;align-items:flex-start;justify-content:center}.p{display:inline-block;background:rgba(0,0,0,.62);border-radius:14px;white-space:nowrap}.p{padding:8px 20px 14px;text-align:center}.c{font:700 104px/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#FFD400;}.l{font:500 30px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif;color:#F4F1EA;margin-top:8px}.f{font:600 30px/1.25 system-ui,-apple-system,'Segoe UI',sans-serif;color:#F4F1EA;margin-top:26px}"
+     }
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "request_id": {
+      "description": "Clave de idempotencia (obligatoria)",
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 1
+    }
+  },
+  "required": [
+    "ids",
+    "request_id"
+  ]
+}

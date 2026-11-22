@@ -1,0 +1,22 @@
+# referencia externa (clon de jhdewitt/sltk, 103 MB)
+sltk/
+# datos pesados: capturas crudas y salidas grandes
+captures/
+reports/**/*.ply
+reports/**/*.png
+reports/**/*.npz
+reports/pipeline/
+!reports/f*_*.png
+# entorno
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+reports/p3/
+reports/p7*/
+# worktrees de los subagentes
+.claude/
+# P2: synthetic benchmarks, private calibration sessions and isolated pytest data
+/reports/p2-*/
+/reports/pytest-p2-*/

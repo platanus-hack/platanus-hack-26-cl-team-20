@@ -1,0 +1,52 @@
+{
+  "_como": "Manifiesto del preset según escenas/CONTRATO-ASISTENTE.md. Cualquier agente (voz, Claude Code, Codex) lo lee con preset_leer y usa las mismas tools en toda escena. «valor» es el de fábrica; el vigente sale de mesa.json o del tema.",
+  "id": "solar",
+  "nombre": "Sistema solar",
+  "para_que": "Una niña hace su tarea con un canasto de bolas de plumavit y una lámina impresa: cada bola recibe su planeta con su órbita, todo sigue al canasto si se mueve, y Lumo, una guía que vuela, le cuenta de cada planeta con voz.",
+  "css": ["../../motor/sistema/base.css", "tema.css"],
+  "voz": {"persona": "escena.md#la-voz-lumo-para-el-agente-de-voz-de-h24-y-para-quien-conduzca", "idioma": "es-CL", "personaje": "Lumo"},
+  "conductor": "uv run python conductor.py seguir",
+
+  "objetos": [
+    {"id": "solar:sol", "label": "Sol", "que_es": "El engranaje blanco del canasto, que hace de Sol"},
+    {"id": "solar:<planeta>", "label": "Planeta", "que_es": "Una bola del canasto con su planeta (jupiter, saturno, tierra…), con center_mm y radius_mm"},
+    {"id": "solar:lamina-<n>", "label": "Lámina del sistema solar", "que_es": "La lámina impresa que la niña toca para elegir un planeta; mírala con mesa_ver para saber qué dibujos tiene"}
+  ],
+
+  "params": {
+    "giro_s": {"tipo": "numero", "min": 4, "max": 120, "unidad": "s", "valor": 26, "aplica": "config:ajuste.giro_s", "que_es": "Segundos que tarda cada planeta en girar sobre sí mismo; menos es más rápido"},
+    "orbita_lenta": {"tipo": "numero", "min": 0.25, "max": 8, "valor": 1, "aplica": "config:ajuste.orbita_lenta", "que_es": "Multiplica el tiempo del punto que recorre cada órbita; 2 es la mitad de rápido"},
+    "escala_planetas": {"tipo": "numero", "min": 0.6, "max": 1.4, "valor": 0.96, "aplica": "config:ajuste.escala_bola", "que_es": "Tamaño de la textura sobre cada bola; 1 es del tamaño medido"},
+    "correr_luz_mm": {"tipo": "punto_mm", "valor": [0, 0], "aplica": "config:ajuste.desplazamiento_mm", "que_es": "Corre toda la luz si cae corrida sobre las bolas, en mm [dx, dy]"},
+    "orbita_opacidad": {"tipo": "numero", "min": 0, "max": 1, "valor": 0.52, "aplica": "css:--solar-orbita-opacidad", "que_es": "Qué tanto se ven las órbitas; 0 las esconde"},
+    "pincel_mm": {"tipo": "numero", "min": 1, "max": 14, "unidad": "mm", "valor": 1.8, "aplica": "css:--solar-pincel", "que_es": "Grosor de la pincelada de las órbitas"},
+    "color_foco": {"tipo": "color", "valor": "#ffc21a", "aplica": "css:--sd-foco", "que_es": "Color de lo que se señala: halo, toques y la luz del Sol"},
+    "color_lumo": {"tipo": "color", "valor": "#ffd23f", "aplica": "css:--solar-lumo", "que_es": "Color del cuerpo de Lumo"}
+  },
+
+  "acciones": {
+    "ir_a": {"que_hace": "Lumo vuela al planeta del canasto, lo marca con un halo y abre su ficha con un dato. Si se repite, sale el dato siguiente", "args": {"planeta": {"tipo": "objeto", "prefijo": "solar:"}}},
+    "decir": {"que_hace": "Lumo vuela al planeta y deja junto a la bola una burbuja con la idea central; la voz la pone quien llama", "args": {"planeta": {"tipo": "objeto", "prefijo": "solar:"}, "texto": {"tipo": "texto", "que_es": "Lo que se dice completo"}, "corto": {"tipo": "texto", "que_es": "Lo que se proyecta, hasta 60 letras", "opcional": true}, "habla_el_planeta": {"tipo": "bool", "opcional": true}}},
+    "nombrar": {"que_hace": "Etiquetas con el nombre de hasta 3 planetas; sin planetas, las quita", "args": {"planetas": {"tipo": "lista", "de": {"tipo": "objeto", "prefijo": "solar:"}, "max": 3}}},
+    "escuchar": {"que_hace": "El halo del planeta late rápido: la mesa muestra que está escuchando", "args": {"planeta": {"tipo": "objeto", "prefijo": "solar:"}}},
+    "callar": {"que_hace": "Quita burbuja, halo y nombres", "args": {}},
+    "fijar": {"que_hace": "Decide qué planeta es una bola (resuelve una duda de tamaño). bola es el índice que muestra preset_leer en datos.cuerpos", "args": {"planeta": {"tipo": "texto"}, "bola": {"tipo": "numero"}}},
+    "armar": {"que_hace": "Vuelve a reconocer el canasto y las bolas desde una foto limpia y proyecta todo de nuevo", "args": {}},
+    "redibujar": {"que_hace": "Proyecta de nuevo con los parámetros y el tema vigentes", "args": {}}
+  },
+
+  "eventos": {
+    "solar_armado": {"que_es": "El sistema quedó armado", "data": ["planetas", "dudas", "sol"]},
+    "canasto_movido": {"que_es": "Alguien movió el canasto entero; todo lo siguió", "data": ["theta_deg", "t_mm", "bolas"]},
+    "canasto_perdido": {"que_es": "El canasto dejó de verse", "data": ["bolas_vistas"]},
+    "lamina_tocada": {"que_es": "La niña tocó un planeta en la lámina (llega como widget_pressed con widget_id solar-lamina y value <planeta>)", "data": ["value", "point_mm"]},
+    "preset_hecho": {"que_es": "Respuesta a un preset_accion o preset_ajustar", "data": ["id", "ok", "resultado", "error"]}
+  },
+
+  "efectos": {
+    "solar-planeta-<planeta>": {"params": ["giro_s", "escala_planetas", "correr_luz_mm"]},
+    "solar-orbitas": {"params": ["orbita_lenta", "orbita_opacidad", "pincel_mm"]},
+    "solar-foco": {"params": ["color_foco"]},
+    "solar-lumo": {"params": ["color_lumo"]}
+  }
+}

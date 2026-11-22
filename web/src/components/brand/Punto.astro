@@ -1,0 +1,26 @@
+---
+interface Props {
+  size?: number;
+  color?: string;
+  class?: string;
+}
+
+const { size = 32, color = "currentColor", class: className } = Astro.props;
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 32 32"
+  width={size}
+  height={size}
+  aria-hidden="true"
+  class:list={[className]}
+>
+  <!-- Núcleo central -->
+  <circle cx="16" cy="16" r="5" fill={color} />
+  <!-- Satélites cardinales -->
+  <circle cx="16" cy="8"  r="1.5" fill={color} />
+  <circle cx="16" cy="24" r="1.5" fill={color} />
+  <circle cx="8"  cy="16" r="1.5" fill={color} />
+  <circle cx="24" cy="16" r="1.5" fill={color} />
+</svg>

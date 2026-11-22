@@ -1,0 +1,29 @@
+---
+interface Props {
+  size?: number;
+  color?: string;
+  class?: string;
+}
+
+const { size = 32, color = "currentColor", class: className } = Astro.props;
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 32 32"
+  width={size}
+  height={size}
+  aria-hidden="true"
+  class:list={[className]}
+>
+  <!--
+    Media luna: anillo exterior r=9, interior r=6, centrado en (16, 20),
+    abertura hacia arriba.
+    Arco exterior: de (7,20) a (25,20) pasando por la parte inferior (sweep=1).
+    Arco interior: de (22,20) a (10,20) pasando por la parte inferior (sweep=0).
+  -->
+  <path
+    d="M 7 20 A 9 9 0 0 1 25 20 L 22 20 A 6 6 0 0 0 10 20 Z"
+    fill={color}
+  />
+</svg>

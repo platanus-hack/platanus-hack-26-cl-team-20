@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>WUI · en vivo</title>
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+      .mesa {
+        isolation: isolate;
+        background: #000;
+        border: 1px solid var(--linea);
+      }
+      .mesa > * {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .mesa #rect {
+        position: static;
+        display: block;
+        height: auto;
+        border: 0;
+        border-radius: 0;
+        cursor: default;
+      }
+      #proy {
+        mix-blend-mode: screen; /* lo proyectado es luz: se suma a la imagen real */
+      }
+      #proy canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: 0;
+        cursor: default;
+      }
+      #proy #previa {
+        background: none;
+      }
+      .controles {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 24px;
+        margin-top: 14px;
+      }
+      .controles .desliza {
+        flex: 1 1 240px;
+      }
+      .controles input[type="range"] {
+        flex: 1;
+        accent-color: var(--senal);
+      }
+      #cruda {
+        max-width: 100%;
+      }
+      /* Embebido en /presentar: solo la imagen, centrada y lo más grande que quepa. */
+      .embebido {
+        background: #000;
+        overflow: hidden;
+      }
+      .embebido header,
+      .embebido .controles,
+      .embebido #video-nota,
+      .embebido #escenas,
+      .embebido figcaption,
+      .embebido section + section {
+        display: none;
+      }
+      .embebido main {
+        max-width: none;
+        height: 100vh;
+        padding: 0;
+      }
+      .embebido .paso {
+        display: grid;
+        place-items: center;
+        height: 100%;
+        padding: 0;
+        border: 0;
+      }
+      .embebido .previa {
+        margin: 0;
+      }
+      .embebido .lienzo,
+      .embebido .mesa {
+        border: 0;
+        border-radius: 0;
+      }
+      .embebido #fig-mesa {
+        width: min(100vw, calc(100vh * var(--ar, 1.78)));
+      }
+      .embebido #cruda {
+        width: min(100vw, calc(100vh * var(--arc, 1.78)));
+        max-width: none;
+        border: 0;
+        border-radius: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <a class="marca" href="/">WUI<span>en vivo</span></a>
+      <div class="estado" id="estado" data-state="connecting"><i></i><span id="estado-texto">Conectando…</span></div>
+    </header>
+    <main>
+      <section class="paso">
+        <div class="tabs escenas" id="escenas"></div>
+        <figure class="previa" id="fig-mesa">
+          <div class="lienzo mesa">
+            <canvas id="rect" width="1280" height="720"></canvas>
+            <div id="proy">
+              <canvas id="previa" width="1280" height="720"></canvas>
+              <div id="previa-html"></div>
+              <canvas id="previa-top" width="1280" height="720"></canvas>
+            </div>
+          </div>
+          <figcaption id="mesa-nota">La mesa</figcaption>
+        </figure>
+        <figure class="previa" id="fig-cruda" hidden>
+          <div class="lienzo"><canvas id="cruda" width="640" height="360"></canvas></div>
+          <figcaption>Cámara, sin rectificar</figcaption>
+        </figure>
+        <div class="controles">
+          <label class="check desliza">Proyección <input type="range" id="mezcla" min="0" max="100" value="50" /> <span id="mezcla-valor">50 %</span></label>
+          <label class="check"><input type="checkbox" id="rectificar" checked /> Rectificar la cámara a la mesa</label>
+          <label class="check">Cámara <select id="camara-sel"></select></label>
+          <button class="btn" id="foto">Descargar foto</button>
+        </div>
+        <p class="chico" id="video-nota">Sin video todavía.</p>
+      </section>
+      <section class="paso">
+        <div class="actividad">
+          <h3 id="agente-estado">Esperando al agente…</h3>
+          <ol id="actividad"></ol>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/ver.js"></script>
+  </body>
+</html>

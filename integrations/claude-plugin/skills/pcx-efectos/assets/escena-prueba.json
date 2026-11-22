@@ -1,0 +1,13 @@
+{
+  "type": "scene",
+  "rev": 1,
+  "surface": {"width_mm": 800, "height_mm": 500},
+  "widgets": [
+    {"type": "effect", "id": "fx-rect", "shader": "barrido", "rect_mm": [80, 150, 280, 200],
+     "params": {"color": "#00E5FF"}},
+    {"type": "effect", "id": "fx-poly", "shader": "barrido",
+     "polygon_mm": [[470, 120], [720, 170], [690, 380], [500, 340]],
+     "params": {"color": "#FFB300", "speed": 0.6, "width_mm": 30}},
+    {"type": "label", "id": "fx-nombre", "anchor": {"point_mm": [400, 60]}, "text": "barrido", "size_mm": 16}
+  ]
+}

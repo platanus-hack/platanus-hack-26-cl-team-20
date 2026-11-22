@@ -1,0 +1,22 @@
+[project]
+name = "superhuman-desk-voz"
+version = "0.1.0"
+description = "Voz ElevenLabs de las escenas de WUI: agentes como código, servidor local de token y client tools hacia el MCP de la sesión"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.27",
+    "starlette>=0.40",
+    "uvicorn>=0.30",
+    "elevenlabs>=2.20",
+    "pillow>=10",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

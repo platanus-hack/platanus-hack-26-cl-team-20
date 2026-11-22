@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "pcx": {
+      "type": "http",
+      "url": "${PCX_MCP_URL:-http://127.0.0.1:9200/mcp}",
+      "headers": {
+        "Authorization": "Bearer ${PCX_MCP_TOKEN}"
+      }
+    }
+  }
+}

@@ -1,0 +1,384 @@
+---
+import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import HeroA from "../components/HeroA.astro";
+import LenguajeInteraccion from "../components/LenguajeInteraccion.astro";
+import Capacidades from "../components/Capacidades.astro";
+import Copiar from "../components/Copiar.astro";
+import Os from "../components/Os.astro";
+import { AGENTES, CIFRAS, HERRAMIENTAS, HOST, INSTALAR, MOTOR, NOMBRE, TAGLINE } from "../data/site";
+
+const pasos = [
+  {
+    titulo: "Instala el nodo",
+    texto: "Un binario para macOS, Windows o Linux. Detecta la cámara y el proyector, y calibra la superficie en 4,4 segundos.",
+    cmd: INSTALAR.unix,
+    prompt: "$",
+  },
+  {
+    titulo: "Conecta tu agente",
+    texto: "wui up vincula el nodo a tu cuenta y entrega una URL y un token. Tu agente los usa como cualquier servidor MCP.",
+    cmd: "wui up",
+    prompt: "$",
+  },
+  {
+    titulo: "Tu agente ve y actúa",
+    texto: "Pide la escena, espera un toque y proyecta encima. Todo con herramientas MCP, sin SDK nuevo.",
+    cmd: 'project({ on: "libreta", guide: "Dobla por la línea" })',
+    prompt: "›",
+  },
+];
+
+const so = [
+  { id: "mac", nombre: "macOS", cmd: INSTALAR.unix, prompt: "$" },
+  { id: "linux", nombre: "Linux", cmd: INSTALAR.unix, prompt: "$" },
+  { id: "windows", nombre: "Windows", cmd: INSTALAR.windows, prompt: "PS>" },
+];
+---
+
+<Base>
+  <Nav />
+  <main id="contenido" tabindex="-1">
+    <HeroA />
+
+    <LenguajeInteraccion />
+
+    <div class="graycode" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+    <!-- Cómo funciona -->
+    <section id="como" tabindex="-1" class="mx-auto max-w-[1440px] px-5 py-24 sm:px-8 md:py-36" aria-labelledby="titulo-como">
+      <div class="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
+        <div class="lg:sticky lg:top-24 lg:self-start">
+          <h2 id="titulo-como" class="display text-[clamp(2.2rem,4.6vw,4.2rem)]">De la caja a la mesa en tres pasos</h2>
+          <p class="mt-6 max-w-[40ch] text-luz-2">
+            Sin cuentas nuevas ni plugins. WUI habla MCP, el mismo protocolo que tu agente ya usa.
+          </p>
+        </div>
+        <ol class="pasos">
+          {
+            pasos.map((p, i) => (
+              <li data-paso class="paso grid gap-4 border-t border-linea py-10 md:grid-cols-[4.5rem_1fr]">
+                <span class="num text-sm text-luz-3" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                <div>
+                  <h3 class="text-xl wide font-[460] tracking-tight">{p.titulo}</h3>
+                  <p class="mt-2 max-w-[52ch] text-luz-2">{p.texto}</p>
+                  <div class="mt-5">
+                    <Copiar comando={p.cmd} etiqueta={p.titulo} prompt={p.prompt} />
+                  </div>
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <div class="graycode" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+    <Capacidades />
+
+    <!-- Agentes -->
+    <section id="agentes" tabindex="-1" class="border-y border-linea bg-mesa-2/60" aria-labelledby="titulo-agentes">
+      <div class="mx-auto max-w-[1440px] px-5 py-24 sm:px-8 md:py-32">
+        <div class="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
+          <div>
+            <h2 id="titulo-agentes" class="display text-[clamp(2.2rem,4.6vw,4.2rem)]">Funciona con el agente que ya usas</h2>
+            <p class="mt-6 max-w-[42ch] text-luz-2">
+              Una línea y tu agente suma {HERRAMIENTAS.length} herramientas:{" "}
+              <span class="num text-sm text-luz">{HERRAMIENTAS.join(", ")}</span>.
+            </p>
+          </div>
+          <div data-tabs class="min-w-0">
+            <div role="tablist" aria-label="Agentes compatibles" class="flex flex-wrap gap-2">
+              {
+                AGENTES.map((a, i) => (
+                  <button
+                    role="tab"
+                    id={`ag-${a.id}`}
+                    aria-controls={`agp-${a.id}`}
+                    aria-selected={i === 0 ? "true" : "false"}
+                    tabindex={i === 0 ? 0 : -1}
+                    class="tab-ag border border-linea px-4 py-2 text-sm"
+                  >
+                    {a.nombre}
+                  </button>
+                ))
+              }
+            </div>
+            {
+              AGENTES.map((a, i) => (
+                <div role="tabpanel" id={`agp-${a.id}`} aria-labelledby={`ag-${a.id}`} hidden={i !== 0} class="mt-6">
+                  <p class="mb-3 text-sm text-luz-3">{a.donde}, con tu token en <code class="num text-xs text-luz-2">WUI_USER_TOKEN</code>:</p>
+                  <Copiar comando={a.comando} etiqueta={a.nombre} prompt={a.id === "opencode" ? "{}" : "$"} />
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Privacidad -->
+    <section id="privacidad" tabindex="-1" class="mx-auto max-w-[1440px] px-5 py-24 sm:px-8 md:py-36" aria-labelledby="titulo-priv">
+      <h2 id="titulo-priv" class="display max-w-[14ch] text-[clamp(2.6rem,6.4vw,6.2rem)]">El video no sale de tu computador.</h2>
+      <div class="mt-14 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
+        <div class="max-w-[52ch] space-y-5 text-luz-2 md:text-lg md:leading-snug">
+          <p>La cámara y la detección corren en tu máquina. A tu agente le llegan objetos, posiciones y toques en texto, no imágenes de tu casa.</p>
+          <p>Las acciones que tocan el mundo, como prender una luz, esperan tu confirmación con un toque en la mesa o desde la consola.</p>
+        </div>
+        <figure class="flujo grid grid-cols-[1fr_auto_1fr] items-stretch gap-0 border border-linea" aria-label="Qué se queda en tu computador y qué recibe el agente">
+          <div class="p-5">
+            <p class="text-sm text-luz-3">Se queda aquí</p>
+            <p class="mt-3 wide text-lg">Cuadros de cámara</p>
+            <p class="num mt-1 text-sm text-luz-2"><span data-cuadros>184 233</span> procesados</p>
+            <div class="cuadros mt-4" aria-hidden="true"><i></i><i></i><i></i></div>
+          </div>
+          <div class="tubo relative w-10 border-x border-linea sm:w-16" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="min-w-0 p-5">
+            <p class="text-sm text-luz-3">Recibe tu agente</p>
+            <pre class="num mt-3 overflow-hidden text-[11px] leading-relaxed text-luz-2" aria-hidden="true"><code data-json>{`{"type":"touch",
+ "on":"celular",
+ "x":1185,"y":666}`}</code></pre>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Cifras -->
+    <section class="border-y border-linea" aria-labelledby="titulo-cifras">
+      <h2 id="titulo-cifras" class="sr-only">Cifras del montaje</h2>
+      <dl class="mx-auto grid max-w-[1440px] grid-cols-2 md:grid-cols-4">
+        <div class="cifra border-linea p-5 sm:p-8">
+          <dt class="text-sm text-luz-3">En el proyector real</dt>
+          <dd class="mt-3 display text-[clamp(2.4rem,4.6vw,4.4rem)]">{CIFRAS.fps}<span class="ml-2 text-lg text-luz-2">fps</span></dd>
+        </div>
+        <div class="cifra border-linea p-5 sm:p-8">
+          <dt class="text-sm text-luz-3">De punta a punta, antes {CIFRAS.latenciaAntes} ms</dt>
+          <dd class="mt-3 display text-[clamp(2.4rem,4.6vw,4.4rem)]">{CIFRAS.latencia}<span class="ml-2 text-lg text-luz-2">ms</span></dd>
+        </div>
+        <div class="cifra border-linea p-5 sm:p-8">
+          <dt class="text-sm text-luz-3">Escaneo de gray code</dt>
+          <dd class="mt-3 display text-[clamp(2.4rem,4.6vw,4.4rem)]">{CIFRAS.escaneoS}<span class="ml-2 text-lg text-luz-2">s</span></dd>
+        </div>
+        <div class="cifra border-linea p-5 sm:p-8">
+          <dt class="text-sm text-luz-3">Error sobre objetos altos, en simulación</dt>
+          <dd class="mt-3 display text-[clamp(2.4rem,4.6vw,4.4rem)]">{CIFRAS.calibracionMm}<span class="ml-2 text-lg text-luz-2">mm</span></dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- Instalar -->
+    <section id="instalar" tabindex="-1" class="mx-auto max-w-[1440px] px-5 py-24 sm:px-8 md:py-36" aria-labelledby="titulo-inst">
+      <div class="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
+        <div>
+          <h2 id="titulo-inst" class="display text-[clamp(2.2rem,4.6vw,4.2rem)]">Instala {NOMBRE}</h2>
+          <p class="mt-6 max-w-[40ch] text-luz-2">Necesitas una cámara USB y un proyector apuntando a la superficie. El instalador hace el resto.</p>
+        </div>
+        <div data-tabs data-os-tabs class="min-w-0">
+          <div role="tablist" aria-label="Sistema operativo" class="flex flex-wrap gap-2">
+            {
+              so.map((s, i) => (
+                <button role="tab" id={`so-${s.id}`} data-os={s.id} aria-controls={`sop-${s.id}`} aria-selected={i === 0 ? "true" : "false"} tabindex={i === 0 ? 0 : -1} class="tab-ag border border-linea px-4 py-2 text-sm">
+                  {s.nombre}
+                </button>
+              ))
+            }
+          </div>
+          {
+            so.map((s, i) => (
+              <div role="tabpanel" id={`sop-${s.id}`} aria-labelledby={`so-${s.id}`} hidden={i !== 0} class="mt-6 space-y-3">
+                <Copiar comando={s.cmd} etiqueta={`Instalar en ${s.nombre}`} prompt={s.prompt} />
+                <Copiar comando={INSTALAR.vincular} etiqueta="Vincular el nodo" prompt={s.prompt} />
+              </div>
+            ))
+          }
+          <p class="mt-5 text-sm text-luz-3">El dominio {HOST} es provisorio.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Motor local: se instala pidiéndoselo al agente -->
+    <section id="motor" tabindex="-1" class="border-t border-linea" aria-labelledby="titulo-motor">
+      <div class="mx-auto max-w-[1440px] px-5 py-24 sm:px-8 md:py-32">
+        <div class="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
+          <div>
+            <h2 id="titulo-motor" class="display text-[clamp(2.2rem,4.6vw,4.2rem)]">Instala el motor local</h2>
+            <p class="mt-6 max-w-[40ch] text-luz-2">
+              Pasa esta línea a tu agente. Descarga el motor PCX con los modelos incluidos, lo verifica y lo deja corriendo.
+            </p>
+          </div>
+          <div class="min-w-0 space-y-3">
+            <p class="text-sm text-luz-3">Para tu agente:</p>
+            <Copiar comando={MOTOR.agente} etiqueta="Instrucción para tu agente" prompt="›" />
+            <p class="pt-4 text-sm text-luz-3">O a mano, en macOS y Linux:</p>
+            <Copiar comando={MOTOR.unix} etiqueta="Instalar el motor en macOS y Linux" prompt="$" />
+            <p class="pt-4 text-sm text-luz-3">En Windows (PowerShell):</p>
+            <Copiar comando={MOTOR.windows} etiqueta="Instalar el motor en Windows" prompt="PS>" />
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-linea">
+    <div class="graycode" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="mx-auto flex max-w-[1440px] flex-col gap-6 px-5 py-12 text-sm text-luz-3 sm:px-8 md:flex-row md:items-end md:justify-between">
+      <div>
+        <p class="text-2xl text-luz" style="font-weight:600;letter-spacing:-0.04em">{NOMBRE}</p>
+        <p class="mt-1 text-xs text-luz-2 tracking-widest uppercase">{TAGLINE}</p>
+        <p class="mt-3 max-w-[44ch]">El mundo es tu interfaz. Hecho en Platanus Hack 26, Santiago de Chile.</p>
+      </div>
+      <ul class="flex flex-wrap gap-x-6 gap-y-2">
+        <li><a class="link-suave" href="#como">Cómo funciona</a></li>
+        <li><a class="link-suave" href="#agentes">Agentes</a></li>
+        <li><a class="link-suave" href="#privacidad">Privacidad</a></li>
+        <li><a class="link-suave" href="/a">Variantes de hero</a></li>
+      </ul>
+    </div>
+  </footer>
+  <Os />
+</Base>
+
+<style>
+  /* El paso se "enciende": la línea superior se traza como luz proyectada. */
+  .paso {
+    position: relative;
+  }
+  .paso::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: -1px;
+    height: 1px;
+    width: 0;
+    background: var(--color-luz);
+    transition: width 1.1s var(--ease-proyector);
+  }
+  .paso.visto::before {
+    width: 100%;
+  }
+  .paso > span {
+    transition: color 500ms;
+  }
+  .paso.visto > span {
+    color: var(--color-luz);
+  }
+  .tab-ag {
+    color: var(--color-luz-2);
+  }
+  .tab-ag:hover {
+    color: var(--color-luz);
+  }
+  .tab-ag[aria-selected="true"] {
+    background: var(--color-luz);
+    color: var(--color-mesa);
+    border-color: var(--color-luz);
+  }
+  .cifra + .cifra {
+    border-left-width: 1px;
+  }
+  @media (max-width: 767px) {
+    .cifra:nth-child(3) { border-left-width: 0; }
+    .cifra:nth-child(n + 3) { border-top-width: 1px; }
+  }
+  .tubo i {
+    position: absolute;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    margin-left: -3px;
+    background: var(--color-luz);
+    animation: paquete 2.4s linear infinite;
+  }
+  .tubo i:nth-child(2) { animation-delay: -0.8s; }
+  .tubo i:nth-child(3) { animation-delay: -1.6s; }
+  .tubo::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(180deg, transparent 0 6px, color-mix(in srgb, var(--color-luz) 6%, transparent) 6px 7px);
+  }
+  @keyframes paquete {
+    from { top: 8%; opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    to { top: 92%; opacity: 0; }
+  }
+  .cuadros {
+    display: flex;
+    gap: 6px;
+  }
+  .cuadros i {
+    width: 38px;
+    aspect-ratio: 4 / 3;
+    border: 1px solid var(--color-linea);
+    background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-luz) 10%, transparent) 0 3px, transparent 3px 6px);
+    animation: cuadro 1.2s steps(3) infinite;
+  }
+  .cuadros i:nth-child(2) { animation-delay: -0.4s; }
+  .cuadros i:nth-child(3) { animation-delay: -0.8s; }
+  @keyframes cuadro {
+    50% { background-position: 9px 0; opacity: 0.6; }
+  }
+</style>
+
+<script>
+  import { inactivo, reducido } from "../scripts/suave";
+
+  // Pestañas accesibles (agentes y sistema operativo).
+  document.querySelectorAll<HTMLElement>("[data-tabs]").forEach((raiz) => {
+    const tabs = [...raiz.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const elegir = (n: number, foco = false) => {
+      tabs.forEach((t, k) => {
+        const on = k === n;
+        t.setAttribute("aria-selected", String(on));
+        t.tabIndex = on ? 0 : -1;
+        const p = document.getElementById(t.getAttribute("aria-controls")!);
+        if (p) p.hidden = !on;
+      });
+      if (foco) tabs[n].focus();
+    };
+    tabs.forEach((t, k) => {
+      t.addEventListener("click", () => elegir(k));
+      t.addEventListener("keydown", (e) => {
+        const i = tabs.indexOf(t);
+        if (e.key === "ArrowRight") { e.preventDefault(); elegir((i + 1) % tabs.length, true); }
+        if (e.key === "ArrowLeft") { e.preventDefault(); elegir((i - 1 + tabs.length) % tabs.length, true); }
+      });
+    });
+    if (raiz.hasAttribute("data-os-tabs")) {
+      const os = (window as any).__wuiOs ?? document.documentElement.dataset.os;
+      const k = tabs.findIndex((t) => t.dataset.os === os);
+      if (k >= 0) elegir(k);
+    }
+  });
+
+  // Los pasos se encienden al pasar por el centro de la pantalla.
+  const io = new IntersectionObserver(
+    (es) => es.forEach((e) => e.isIntersecting && e.target.classList.add("visto")),
+    { rootMargin: "-35% 0px -35% 0px" },
+  );
+  document.querySelectorAll("[data-paso]").forEach((p) => (reducido() ? p.classList.add("visto") : io.observe(p)));
+
+  // Flujo de privacidad: contador local y eventos en texto.
+  if (!reducido()) {
+    const cuadros = document.querySelector("[data-cuadros]");
+    const json = document.querySelector("[data-json]");
+    let n = 184233;
+    const evs = [
+      '{"type":"touch",\n "on":"celular",\n "x":1185,"y":666}',
+      '{"type":"object_moved",\n "id":"taza",\n "dx_mm":14}',
+      '{"type":"hand_enter",\n "hand":"derecha"}',
+      '{"type":"object_seen",\n "id":"llaves",\n "conf":0.97}',
+    ];
+    let k = 0;
+    setInterval(() => {
+      if (inactivo()) return;
+      n += 15;
+      if (cuadros) cuadros.textContent = n.toLocaleString("es-CL").replace(/\./g, " ");
+    }, 250);
+    setInterval(() => {
+      if (!inactivo() && json) json.textContent = evs[++k % evs.length];
+    }, 2400);
+  }
+</script>

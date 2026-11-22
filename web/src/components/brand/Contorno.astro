@@ -1,0 +1,27 @@
+---
+interface Props {
+  size?: number;
+  color?: string;
+  class?: string;
+}
+
+const { size = 32, color = "currentColor", class: className } = Astro.props;
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 32 32"
+  width={size}
+  height={size}
+  aria-hidden="true"
+  class:list={[className]}
+>
+  <!--
+    Bracket cuadrado 16×16, centrado en (16,16), grosor 2,
+    abertura de 4 px a la derecha.
+  -->
+  <path
+    d="M 8 8 L 24 8 L 24 14 L 11 14 L 11 18 L 24 18 L 24 24 L 8 24 Z"
+    fill={color}
+  />
+</svg>

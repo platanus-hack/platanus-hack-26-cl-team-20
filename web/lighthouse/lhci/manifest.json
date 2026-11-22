@@ -1,0 +1,50 @@
+[
+  {
+    "url": "http://localhost:54221/",
+    "isRepresentativeRun": true,
+    "htmlPath": "/Users/manuelblanco/Projects/platanus_hack_26/platanus-hack-26/.claude/worktrees/agent-a79871debc57c7f6f/web/lighthouse/lhci/localhost--2026_11_21_06_51_08.report.html",
+    "jsonPath": "/Users/manuelblanco/Projects/platanus_hack_26/platanus-hack-26/.claude/worktrees/agent-a79871debc57c7f6f/web/lighthouse/lhci/localhost--2026_11_21_06_51_08.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 1
+    }
+  },
+  {
+    "url": "http://localhost:54221/a/",
+    "isRepresentativeRun": true,
+    "htmlPath": "/Users/manuelblanco/Projects/platanus_hack_26/platanus-hack-26/.claude/worktrees/agent-a79871debc57c7f6f/web/lighthouse/lhci/localhost-a_-2026_11_21_06_51_19.report.html",
+    "jsonPath": "/Users/manuelblanco/Projects/platanus_hack_26/platanus-hack-26/.claude/worktrees/agent-a79871debc57c7f6f/web/lighthouse/lhci/localhost-a_-2026_11_21_06_51_19.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 1
+    }
+  },
+  {
+    "url": "http://localhost:54221/b/",
+    "isRepresentativeRun": true,
+    "htmlPath": "/Users/manuelblanco/Projects/platanus_hack_26/platanus-hack-26/.claude/worktrees/agent-a79871debc57c7f6f/web/lighthouse/lhci/localhost-b_-2026_11_21_06_51_30.report.html",
+    "jsonPath": "/Users/manuelblanco/Projects/platanus_hack_26/platanus-hack-26/.claude/worktrees/agent-a79871debc57c7f6f/web/lighthouse/lhci/localhost-b_-2026_11_21_06_51_30.report.json",
+    "summary": {
+      "performance": 0.99,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 1
+    }
+  },
+  {
+    "url": "http://localhost:54221/c/",
+    "isRepresentativeRun": true,
+    "htmlPath": "/Users/manuelblanco/Projects/platanus_hack_26/platanus-hack-26/.claude/worktrees/agent-a79871debc57c7f6f/web/lighthouse/lhci/localhost-c_-2026_11_21_06_51_40.report.html",
+    "jsonPath": "/Users/manuelblanco/Projects/platanus_hack_26/platanus-hack-26/.claude/worktrees/agent-a79871debc57c7f6f/web/lighthouse/lhci/localhost-c_-2026_11_21_06_51_40.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 1
+    }
+  }
+]

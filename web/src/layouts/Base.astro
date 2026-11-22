@@ -1,0 +1,157 @@
+---
+import "../styles/global.css";
+import { NOMBRE, TAGLINE } from "../data/site";
+
+interface Props {
+  title?: string;
+  description?: string;
+  propuesta?: "a" | "b" | "c";
+}
+const {
+  title = `${NOMBRE} — ${TAGLINE}`,
+  description = "WUI convierte objetos y superficies en interfaces interactivas. Una cámara y un proyector le dan a tu agente ojos y voz sobre el mundo físico.",
+  propuesta,
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="es-CL">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#171717" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!--
+      Tema y movimiento antes del primer pintado (sin parpadeo ni CLS).
+      ?tema=frio | ?tema=calido manda; si no, lo último elegido en el selector.
+    -->
+    <script is:inline>
+      (function () {
+        var d = document.documentElement, ls = {};
+        try { ls = window.localStorage; } catch (e) {}
+        var q = new URLSearchParams(location.search).get("tema");
+        var tema = q === "frio" || q === "calido" ? q : (ls.getItem && ls.getItem("wui-tema")) || "calido";
+        if (q && ls.setItem) ls.setItem("wui-tema", q);
+        d.dataset.tema = tema;
+        if (ls.getItem && ls.getItem("wui-movimiento") === "pausa") d.dataset.movimiento = "pausa";
+        /* WUI usa Instrument Sans en ambos temas — solo el preload varía. */
+        var fuentes = ["instrument-sans"];
+        fuentes.forEach(function (f) {
+          var l = document.createElement("link");
+          l.rel = "preload"; l.as = "font"; l.type = "font/woff2"; l.crossOrigin = "anonymous";
+          l.href = "/fonts/" + f + ".woff2";
+          document.head.appendChild(l);
+        });
+        if (tema === "frio") document.querySelector('meta[name="theme-color"]').setAttribute("content", "#F4F4F2");
+      })();
+    </script>
+  </head>
+  <body class="bg-mesa text-luz">
+    <a href="#contenido" class="sr-only-focusable fixed left-4 top-4 z-50 bg-luz px-4 py-2 text-mesa">Saltar al contenido</a>
+    <slot />
+
+    <div class="controles fixed bottom-4 z-40 flex max-w-[calc(100vw-2rem)] flex-wrap items-center gap-1 bg-mesa/85 p-1 text-sm backdrop-blur-sm" class:list={[propuesta ? "left-4" : "right-4"]}>
+      {
+        propuesta && (
+          <nav aria-label="Propuestas de hero" class="flex items-center gap-1">
+            {(["a", "b", "c"] as const).map((p) => (
+              <a
+                href={`/${p}`}
+                data-con-tema
+                aria-current={p === propuesta ? "page" : undefined}
+                class:list={["num px-3 py-1.5 text-xs", p === propuesta ? "bg-luz text-mesa" : "text-luz-2 hover:text-luz"]}
+              >
+                {p.toUpperCase()}
+              </a>
+            ))}
+            <a href="/" data-con-tema class="px-3 py-1.5 text-luz-2 hover:text-luz">Página completa</a>
+          </nav>
+        )
+      }
+      <button type="button" data-tema-toggle class="px-3 py-1.5 text-luz-2 hover:text-luz" aria-pressed="false">
+        Tema frío
+      </button>
+      <button type="button" data-pausa class="pausa-btn flex items-center gap-2 px-3 py-1.5 text-luz-2 hover:text-luz" aria-pressed="false">
+        <span class="icono" aria-hidden="true"></span><span data-pausa-txt>Pausar movimiento</span>
+      </button>
+    </div>
+
+    <script>
+      import { iniciarScrollSuave, reducido } from "../scripts/suave";
+      iniciarScrollSuave();
+
+      const d = document.documentElement;
+      const guardar = (k: string, v: string | null) => {
+        try {
+          v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v);
+        } catch {}
+      };
+
+      // Selector de tema: oscuro (cálido) o claro (frío). Se conserva al navegar entre propuestas.
+      const tBtn = document.querySelector<HTMLButtonElement>("[data-tema-toggle]")!;
+      const pintarTema = () => {
+        const frio = d.dataset.tema === "frio";
+        tBtn.setAttribute("aria-pressed", String(frio));
+        tBtn.textContent = frio ? "Fondo oscuro" : "Fondo claro";
+        tBtn.setAttribute("aria-label", frio ? "Cambiar a fondo oscuro" : "Cambiar a fondo claro");
+        document.querySelectorAll<HTMLAnchorElement>("a[data-con-tema]").forEach((a) => {
+          const u = new URL(a.href);
+          frio ? u.searchParams.set("tema", "frio") : u.searchParams.delete("tema");
+          a.href = u.pathname + u.search;
+        });
+      };
+      tBtn.addEventListener("click", async () => {
+        const nuevo = d.dataset.tema === "frio" ? "calido" : "frio";
+        d.dataset.tema = nuevo;
+        guardar("wui-tema", nuevo);
+        const u = new URL(location.href);
+        nuevo === "frio" ? u.searchParams.set("tema", "frio") : u.searchParams.delete("tema");
+        history.replaceState(null, "", u.pathname + u.search + u.hash);
+        await document.fonts.load('1em "Instrument Sans"').catch(() => {});
+        pintarTema();
+        document.dispatchEvent(new CustomEvent("wui:tema"));
+      });
+      pintarTema();
+
+      // Pausa del movimiento (WCAG 2.2.2). Con prefers-reduced-motion no hay nada que pausar.
+      const pBtn = document.querySelector<HTMLButtonElement>("[data-pausa]")!;
+      const pTxt = pBtn.querySelector("[data-pausa-txt]")!;
+      if (reducido()) pBtn.hidden = true;
+      const pintarPausa = () => {
+        const p = d.dataset.movimiento === "pausa";
+        pBtn.setAttribute("aria-pressed", String(p));
+        pTxt.textContent = p ? "Reanudar movimiento" : "Pausar movimiento";
+      };
+      pBtn.addEventListener("click", () => {
+        const p = d.dataset.movimiento !== "pausa";
+        if (p) d.dataset.movimiento = "pausa";
+        else delete d.dataset.movimiento;
+        guardar("wui-movimiento", p ? "pausa" : null);
+        pintarPausa();
+        document.dispatchEvent(new CustomEvent("wui:movimiento"));
+      });
+      pintarPausa();
+    </script>
+  </body>
+</html>
+
+<style>
+  .pausa-btn .icono {
+    width: 9px;
+    height: 10px;
+    border-inline: 3px solid currentColor;
+  }
+  .pausa-btn[aria-pressed="true"] .icono {
+    border: 0;
+    border-left: 9px solid currentColor;
+    border-block: 5px solid transparent;
+    width: 0;
+    height: 0;
+  }
+  .controles [aria-pressed="true"][data-tema-toggle] {
+    color: var(--color-luz);
+  }
+</style>

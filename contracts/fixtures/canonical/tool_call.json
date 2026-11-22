@@ -1,0 +1,31 @@
+{
+  "type": "tool_call",
+  "call_id": "c-7f3a",
+  "tool": "project",
+  "args": {
+    "request_id": "req-llaves-1",
+    "widgets": [
+      {
+        "type": "halo",
+        "id": "halo-llaves",
+        "anchor": {
+          "object_id": "llaves"
+        },
+        "color": "#FF4081"
+      },
+      {
+        "type": "label",
+        "id": "lbl-llaves",
+        "anchor": {
+          "object_id": "llaves",
+          "offset_mm": [
+            0,
+            -30
+          ]
+        },
+        "text": "Aquí están tus llaves"
+      }
+    ]
+  },
+  "timeout_s": 30.0
+}

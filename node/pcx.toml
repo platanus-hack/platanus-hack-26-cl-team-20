@@ -1,0 +1,39 @@
+# Procesos del nodo que lanza y vigila `pcx up`. Rutas relativas a este archivo.
+# cmd: argv (`pcx` = este mismo binario); health: URL que debe responder 200 (opcional); enabled=false lo omite;
+# restart: "always" (por defecto) | "never".
+
+[node]
+id = "mesa-1"
+
+# Variables para todos los procesos. ZeroMQ por defecto: ipc:///tmp/pcx/{ingest,events}.sock en Unix y
+# tcp://127.0.0.1:9206/9207 en Windows; PCX_INGEST/PCX_EVENTS lo cambian.
+# `pcx up` entrega a cada proceso PCX_HANDS_TOKEN_FILE (ruta de `<datos>/hands.token`, 0600): con él, `pcx worker
+# hands` autentica sus toques y solo esos pueden confirmar domótica. No pongas tokens en `cmd`.
+[env]
+PCX_PORT = "9200"
+PCX_NODE_ID = "mesa-1"
+
+[process.core]
+cmd = ["pcx", "serve"]
+health = "http://127.0.0.1:9200/health"
+restart = "always"
+
+# Motor local para la web app (consola en el navegador): cámara → foto limpia → objetos en mm, por WebSocket en
+# 127.0.0.1:9230. `pcx up` genera su token (~/.pcx/motor.token, 0600) e imprime la URL de emparejamiento.
+# Sin `--camera` no abre ninguna cámara: le pide los cuadros a la web app. Con cámara propia:
+#   cmd = ["pcx", "motor", "--camera", "c920"]      (nombre, id o índice de `pcx cameras`)
+[process.motor]
+cmd = ["pcx", "motor"]
+health = "http://127.0.0.1:9230/v1/health"
+
+[process.capture]
+enabled = false
+cmd = ["pcx-capture"]
+
+[process.perception]
+enabled = false
+cmd = ["pcx-perception"]
+
+[process.renderer]
+enabled = false
+cmd = ["pcx-renderer", "--core", "ws://127.0.0.1:9200/render"]

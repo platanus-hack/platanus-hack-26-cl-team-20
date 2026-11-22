@@ -1,0 +1,41 @@
+diff --git a/cloud/gateway/src/pcx_gateway/console/html-layer.js b/cloud/gateway/src/pcx_gateway/console/html-layer.js
+index 3d26bf3..25beab2 100644
+--- a/cloud/gateway/src/pcx_gateway/console/html-layer.js
++++ b/cloud/gateway/src/pcx_gateway/console/html-layer.js
+@@ -82,7 +82,7 @@ function srcdoc(w, token) {
+   const p = w.params || {};
+   const live = isLive(w);
+   // Con script del agente no hay red de ningún tipo: tampoco imágenes https (servirían para sacar datos).
+-  const csp = `default-src 'none'; img-src ${live ? "" : "https: "}data: blob:; style-src 'unsafe-inline'; font-src data:; script-src 'nonce-${nonce}'`;
++  const csp = `default-src 'none'; img-src ${live ? "" : "https: "}data: blob:; style-src 'unsafe-inline'; font-src data:; script-src 'nonce-${nonce}'${live ? "; connect-src http://127.0.0.1:9302" : ""}`; // local: un widget vivo puede leer poses del rastreador de la mesa (solo loopback)
+   const js = live ? `<script nonce="${nonce}">${String(p.js).replace(/<\/script/gi, "<\\/script")}</script>` : "";
+   return (
+     `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}">` +
+diff --git a/cloud/gateway/src/pcx_gateway/console/projector.js b/cloud/gateway/src/pcx_gateway/console/projector.js
+index 5a22761..32ca7e7 100644
+--- a/cloud/gateway/src/pcx_gateway/console/projector.js
++++ b/cloud/gateway/src/pcx_gateway/console/projector.js
+@@ -60,7 +60,7 @@ function report() {
+     w: Math.round(geo.sw * dpr), // la pantalla completa, no la ventana
+     h: Math.round(geo.sh * dpr),
+     window: [canvas.width, canvas.height],
+-    fullscreen: !!document.fullscreenElement,
++    fullscreen: !!document.fullscreenElement || fills(),
+     exact: geo.exact,
+     screen: !!screenVideo.srcObject?.active,
+   });
+@@ -165,3 +165,14 @@ if ("getScreenDetails" in window)
+ requestAnimationFrame(frame);
+ // Con el permiso de Window Management, Chrome abre el popup ya en pantalla completa; si no, queda el botón.
+ if (new URLSearchParams(location.search).get("auto")) fullscreen();
++
++// La ventana ya llena la pantalla (pantalla completa del sistema, o abierta así por un script): cuenta como pantalla
++// completa y no se muestra el botón.
++function fills() {
++  return innerWidth >= screen.width - 1 && innerHeight >= screen.height - 1;
++}
++function hintForFilled() {
++  document.getElementById("hint").style.display = fills() ? "none" : "";
++}
++addEventListener("resize", () => (hintForFilled(), report()));
++hintForFilled();

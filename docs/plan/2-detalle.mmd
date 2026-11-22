@@ -1,0 +1,93 @@
+---
+config:
+  layout: elk
+  elk:
+    nodePlacementStrategy: BRANDES_KOEPF
+  fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif"
+  theme: base
+  themeVariables:
+    fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif"
+    fontSize: "17px"
+    lineColor: "#50555E"
+    primaryTextColor: "#1d1f23"
+    edgeLabelBackground: "#FFFFFF"
+---
+flowchart TB
+  subgraph MESA["🪑 Mesa física"]
+    direction LR
+    CAM[/"📷 Cámara cenital<br/>(+ lateral opcional)"/]:::ext
+    PROY[/"📽️ Proyector<br/>(2.ª pantalla)"/]:::ext
+    OBJ["Objetos y manos<br/>de la persona"]:::ext
+  end
+
+  subgraph PC["💻 Computador del usuario"]
+    direction TB
+    subgraph AGT["Agente"]
+      CC["Claude Code · Codex · OpenCode"]:::ext
+      PL["<b>Plugin pcx</b><br/>6 skills: operar · flujos · calibrar<br/>efectos · domótica · extender<br/>+ /pcx-estado"]:::manu
+    end
+    subgraph NAV["Navegador · web app"]
+      CON["<b>Consola</b><br/>sesión · calibración (homografía + lente)<br/>escenas/pestañas · voz · visor"]:::daniel
+      PW["<b>Ventana del proyector</b><br/>widgets · html · efectos<br/>negro a pedido (foto limpia)"]:::daniel
+      HAN["Manos<br/>MediaPipe"]:::daniel
+      UI["<b>Interfaces proyectadas</b><br/>sistema común MOTOR.md<br/>tokens base.css · gramática"]:::max
+      MJ["<b>motor.js</b><br/>empareja · reenvía calib<br/>fusiona objetos por fuente"]:::manu
+    end
+    subgraph MOT["Motor local pcx · Rust · 127.0.0.1:9230"]
+      SRV["<b>Servidor local + protocolo v0</b><br/>token emparejado · CORS/LNA<br/>URL configurable (local o proxy)"]:::manu
+      CAP["<b>Cámara + foto limpia</b><br/>pide negro → verifica caída<br/>mediana de 3 cuadros"]:::manu
+      PER["<b>Percepción</b> (trait Perceptor)<br/>cascada N0–N2b · MobileSAM<br/>ids estables · catálogo v2"]:::max
+      ESC["<b>Percepción por escena</b><br/>vaso en ml · pastillero 7×4<br/>libreta"]:::max
+      PES[("Pesos incluidos<br/>MobileSAM · manos")]:::manu
+    end
+  end
+
+  subgraph NUBE["☁️ Nube (Render)"]
+    direction TB
+    GW["<b>Gateway</b><br/>sesiones con llave · MCP remoto (12 tools)<br/>espejo del mundo · historial · /ver"]:::daniel
+    PRE["<b>Presets / entornos</b><br/>clase · lab · escritorio<br/>escena.md · tema.css → tools"]:::pm
+    DB[("Postgres + Key Value")]:::daniel
+    LAND["<b>Landing + setup.md</b><br/>tu agente instala el motor<br/>(ver diagrama 1)"]:::manu
+    REL[("GitHub Releases<br/>pcx + ONNX Runtime + pesos<br/>sha256")]:::manu
+  end
+
+  CAM == "video (local)" ==> CAP
+  CAP -- "foto limpia" --> PER
+  PER --- ESC
+  PES -.-> PER
+  PER -- "objetos en mm" --> SRV
+  SRV <== "WS protocolo motor v0<br/>calib · blank/blanked · hands · objects · look" ==> MJ
+  MJ --- CON
+  HAN -- "manos presentes" --> MJ
+  CON --> PW
+  UI --- PW
+  PW == "imagen" ==> PROY
+  PROY -. "luz" .-> OBJ
+  OBJ -. "lo que ve" .-> CAM
+  CON <== "WSS sesión<br/>(nodo navegador)" ==> GW
+  GW --- DB
+  PRE --- GW
+  CC --> PL
+  PL == "MCP + llave de sesión" ==> GW
+
+  subgraph LEY["Leyenda · quién"]
+    direction LR
+    k1["Manu · unir, motor local, instalación, contratos"]:::manu
+    k2["Daniel · web, servidores, sesiones"]:::daniel
+    k3["Max · modelos, tracking, interfaces"]:::max
+    k4["Pablo y Matilda · presets"]:::pm
+    k5["externo / hardware"]:::ext
+  end
+
+  classDef manu fill:#FFE8CC,stroke:#E8590C,stroke-width:2px,color:#1d1f23;
+  classDef daniel fill:#D0EBFF,stroke:#1971C2,stroke-width:2px,color:#1d1f23;
+  classDef max fill:#D3F9D8,stroke:#2F9E44,stroke-width:2px,color:#1d1f23;
+  classDef pm fill:#F3D9FA,stroke:#9C36B5,stroke-width:2px,color:#1d1f23;
+  classDef ext fill:#F1F3F5,stroke:#868E96,stroke-width:1.5px,color:#1d1f23;
+  style PC fill:#FFFFFF,stroke:#495057,stroke-width:2px,stroke-dasharray:6 4
+  style NUBE fill:#F8F9FA,stroke:#495057,stroke-width:2px
+  style MESA fill:#FFFFFF,stroke:#868E96
+  style MOT fill:#FFF9F2,stroke:#E8590C
+  style NAV fill:#F4FAFF,stroke:#1971C2
+  style AGT fill:#FFF9F2,stroke:#E8590C
+  style LEY fill:#FFFFFF,stroke:#CED4DA

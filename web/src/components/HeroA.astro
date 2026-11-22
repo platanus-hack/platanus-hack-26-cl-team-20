@@ -1,0 +1,253 @@
+---
+import { CIFRAS } from "../data/site";
+interface Props { completa?: boolean }
+const { completa = true } = Astro.props;
+const base = completa ? "" : "/";
+---
+
+<section data-mesa-host class="hero-a relative isolate overflow-hidden" aria-labelledby="titulo-a">
+
+  <!-- Escena de interacción WUI — objeto físico + punto de acción + línea + etiqueta -->
+  <div class="escena-wui absolute inset-0 pointer-events-none" aria-hidden="true">
+    <svg
+      class="escena-svg"
+      viewBox="0 0 760 480"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <!-- Objeto físico: rectángulo Grafito con sombra interior sutil -->
+      <rect
+        class="objeto"
+        x="310"
+        y="130"
+        width="320"
+        height="220"
+        rx="8"
+        fill="#242424"
+      />
+      <!-- Sombra interior simulada: borde interior difuso -->
+      <rect
+        x="310"
+        y="130"
+        width="320"
+        height="220"
+        rx="8"
+        fill="none"
+        stroke="#171717"
+        stroke-width="10"
+        stroke-opacity="0.55"
+        filter="url(#sombra-interior)"
+      />
+
+      <!-- Punto de acción: círculo principal + 4 satélites NSEW -->
+      <!-- Centro del punto: 470, 240 (centro del objeto) -->
+      <g class="punto">
+        <!-- Satélites -->
+        <circle cx="470" cy="232" r="1.5" fill="#F4F4F2" opacity="0.7"/><!-- N -->
+        <circle cx="478" cy="240" r="1.5" fill="#F4F4F2" opacity="0.7"/><!-- E -->
+        <circle cx="470" cy="248" r="1.5" fill="#F4F4F2" opacity="0.7"/><!-- S -->
+        <circle cx="462" cy="240" r="1.5" fill="#F4F4F2" opacity="0.7"/><!-- W -->
+        <!-- Círculo principal -->
+        <circle cx="470" cy="240" r="5" fill="#F4F4F2"/>
+      </g>
+
+      <!-- Línea curva desde el Punto hacia la derecha -->
+      <path
+        class="linea"
+        d="M 475 240 Q 560 200 650 185"
+        stroke="#F4F4F2"
+        stroke-width="1"
+        stroke-opacity="0.5"
+        stroke-linecap="round"
+        pathLength="1"
+      />
+
+      <!-- Punto de enganche al final de la línea -->
+      <circle class="enganche" cx="650" cy="185" r="2.5" fill="#F4F4F2" opacity="0.6"/>
+
+      <!-- Etiqueta tipográfica -->
+      <text
+        class="etiqueta"
+        x="658"
+        y="183"
+        font-family="'Instrument Sans', 'Instrument Fallback', ui-sans-serif, system-ui, sans-serif"
+        font-size="17"
+        font-weight="400"
+        fill="#F4F4F2"
+        dominant-baseline="middle"
+        letter-spacing="-0.01em"
+      >Gira la pieza</text>
+
+      <!-- Filtro para sombra interior del objeto -->
+      <defs>
+        <filter id="sombra-interior" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+          <feComposite in="blur" in2="SourceGraphic" operator="in"/>
+        </filter>
+      </defs>
+    </svg>
+  </div>
+
+  <!-- Velo gradiente: mantiene legibilidad del texto a la izquierda -->
+  <div class="velo pointer-events-none absolute inset-0"></div>
+
+  <div class="relative z-10 mx-auto flex min-h-[100svh] max-w-[1440px] flex-col justify-end px-5 pb-10 pt-[52svh] sm:px-8 md:pb-14 md:pt-32">
+    <h1 id="titulo-a" class="display max-w-[11ch] text-[clamp(2.75rem,7.4vw,7rem)]">
+      El mundo<br>es tu interfaz.
+    </h1>
+    <p class="mt-6 max-w-[44ch] text-base text-luz-2 md:text-lg md:leading-snug">
+      WUI convierte objetos, superficies y gestos en interfaz para tu agente MCP.
+    </p>
+    <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+      <a href={`${base}#instalar`} class="btn-luz"><span class="marca" aria-hidden="true"></span><span data-os-cta>Instala en macOS</span></a>
+      <a href={`${base}#como`} class="link-suave">Cómo funciona</a>
+    </div>
+
+    <div class="mt-10 grid grid-cols-2 gap-6 border-t border-linea pt-5 md:absolute md:bottom-14 md:right-8 md:mt-0 md:w-[380px] md:grid-cols-[auto_1fr] md:border-t-0 md:pt-0">
+      <dl class="contents">
+        <div>
+          <dt class="text-xs text-luz-3">Proyector</dt>
+          <dd class="num mt-1 text-lg"><span data-fps>{CIFRAS.fps},0</span> fps</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-luz-3">De la cámara a la luz</dt>
+          <dd class="num mt-1 text-lg"><span data-lat>{CIFRAS.latencia}</span> ms <s class="ml-2 text-xs text-luz-3">{CIFRAS.latenciaAntes} ms</s></dd>
+        </div>
+      </dl>
+      <div class="col-span-2 hidden md:block">
+        <p class="text-xs text-luz-3">Lo que recibe tu agente</p>
+        <ol data-registro class="registro num mt-2 space-y-1 text-xs text-luz-2" aria-hidden="true">
+          <li>scene → 5 objetos, 1 mano</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-a {
+    min-height: 100svh;
+    background: #171717;
+  }
+
+  /* Escena SVG: a la derecha en desktop, centrada/abajo en mobile */
+  .escena-wui {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .escena-svg {
+    width: 55%;
+    height: 100%;
+    max-width: 760px;
+  }
+
+  @media (max-width: 767px) {
+    .escena-wui {
+      position: absolute;
+      top: auto;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 48svh;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .escena-svg {
+      width: 100%;
+      max-width: 420px;
+      height: 100%;
+    }
+  }
+
+  /* Velo */
+  .velo {
+    background:
+      linear-gradient(to top, var(--color-mesa) 0%, transparent 38%),
+      linear-gradient(to right, color-mix(in srgb, var(--color-mesa) 92%, transparent) 0%, color-mix(in srgb, var(--color-mesa) 35%, transparent) 36%, transparent 55%);
+  }
+  @media (max-width: 767px) {
+    .velo {
+      background: linear-gradient(to top, var(--color-mesa) 0%, transparent 30%);
+    }
+  }
+
+  /* Animaciones — solo transform y opacity */
+
+  /* Punto: fade + scale in */
+  .punto {
+    opacity: 0;
+    transform-origin: 470px 240px;
+    transform: scale(0.7);
+    animation: punto-entra var(--dur-entra) var(--ease-tinta) forwards;
+  }
+
+  @keyframes punto-entra {
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Línea: dibuja con stroke-dashoffset */
+  .linea {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: linea-dibuja var(--dur-ondula) var(--ease-tinta) var(--dur-entra) forwards;
+  }
+
+  @keyframes linea-dibuja {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Enganche: aparece junto con la etiqueta */
+  .enganche {
+    opacity: 0;
+    animation: fade-in var(--dur-forma) var(--ease-tinta) 0.88s forwards;
+  }
+
+  /* Etiqueta: fade in */
+  .etiqueta {
+    opacity: 0;
+    animation: fade-in var(--dur-forma) var(--ease-tinta) 0.88s forwards;
+  }
+
+  @keyframes fade-in {
+    to { opacity: 1; }
+  }
+
+  /* Objeto: aparece discretamente junto con todo */
+  .objeto {
+    opacity: 0;
+    animation: fade-in var(--dur-entra) var(--ease-tinta) 0s forwards;
+  }
+
+  /* Registro de escena */
+  .registro :global(li:first-child) {
+    color: var(--color-luz);
+    animation: entra 500ms var(--ease-proyector);
+  }
+  .registro :global(li:nth-child(3)) { opacity: 0.6; }
+  .registro :global(li:nth-child(4)) { opacity: 0.3; }
+  @keyframes entra {
+    from { opacity: 0; transform: translateY(-6px); }
+  }
+
+  /* Respeto a prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .punto,
+    .linea,
+    .enganche,
+    .etiqueta,
+    .objeto {
+      opacity: 1 !important;
+      transform: scale(1) !important;
+      stroke-dashoffset: 0 !important;
+      animation: none !important;
+    }
+  }
+</style>

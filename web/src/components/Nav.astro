@@ -1,0 +1,21 @@
+---
+import { NOMBRE } from "../data/site";
+import WordmarkWui from "./brand/WordmarkWui.astro";
+interface Props { completa?: boolean }
+const { completa = true } = Astro.props;
+const base = completa ? "" : "/";
+---
+
+<header class="absolute inset-x-0 top-0 z-30">
+  <nav aria-label="Principal" class="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-5 sm:px-8">
+    <a href="/" class="flex items-center gap-2 text-luz" aria-label={`${NOMBRE}, inicio`}>
+      <WordmarkWui height={22} color="currentColor" label={NOMBRE} />
+    </a>
+    <ul class="flex items-center gap-6 text-sm text-luz-2">
+      <li class="hidden md:block"><a class="hover:text-luz" href={`${base}#como`}>Cómo funciona</a></li>
+      <li class="hidden md:block"><a class="hover:text-luz" href={`${base}#agentes`}>Agentes</a></li>
+      <li class="hidden md:block"><a class="hover:text-luz" href={`${base}#privacidad`}>Privacidad</a></li>
+      <li><a class="border border-luz/30 px-3 py-1.5 text-luz hover:border-luz" href={`${base}#instalar`}>Instala WUI</a></li>
+    </ul>
+  </nav>
+</header>

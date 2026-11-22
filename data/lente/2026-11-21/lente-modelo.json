@@ -1,0 +1,39 @@
+{
+ "camera_id": "cam-2",
+ "imagen": [
+  1280,
+  720
+ ],
+ "modelo": "pinhole + radial (OpenCV): x_d = x(1+k1 r^2+k2 r^4), r en coordenadas normalizadas",
+ "f_px": 450.0,
+ "cx": 640.0,
+ "cy": 360.0,
+ "k1": -0.13113,
+ "k2": 0.02701,
+ "H_px_sin_distorsion_a_mm": [
+  -0.99287242,
+  0.10046804,
+  970.54892745,
+  -0.15859181,
+  -1.05436361,
+  720.07364979,
+  0.00010656,
+  -0.00019545,
+  1.0
+ ],
+ "fov_h_grados": 109.8,
+ "fov_v_grados": 77.3,
+ "rms_reproyeccion_px": 5.11,
+ "error_mm": {
+  "mediana": 2.5,
+  "p95": 10.3,
+  "max": 16.5
+ },
+ "error_mm_solo_homografia": {
+  "mediana": 8.2,
+  "p95": 16.0,
+  "max": 25.3
+ },
+ "puntos": 126,
+ "nota": "Una sola vista de un plano: la focal/FOV no queda determinada (rms 5,0 px con f=350 y 6,5 px con f=1600; el error en mm no cambia). f=450 es un valor nominal. mm = milímetros de la superficie del proyector (1000 x 563), no mm reales."
+}

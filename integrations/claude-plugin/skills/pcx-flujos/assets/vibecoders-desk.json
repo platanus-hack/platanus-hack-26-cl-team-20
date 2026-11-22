@@ -1,0 +1,58 @@
+{
+  "request_id": "vd-decision-pr42-001",
+  "flow": {
+    "id": "vibecoders-decision",
+    "initial": "pregunta",
+    "cleanup": true,
+    "timeout_s": 180,
+    "states": [
+      {
+        "id": "pregunta",
+        "on_enter": [
+          {"type": "project", "widgets": [
+            {"type": "panel", "id": "vd-panel", "rect_mm": [250, 20, 300, 90],
+             "title": "deploy-bot pregunta", "body": "¿Hago merge del PR #42 a main?", "z": 5},
+            {"type": "halo", "id": "vd-halo", "anchor": {"object_id": "mouse"}, "color": "#FFD400", "pulse_hz": 1.2},
+            {"type": "button", "id": "vd-si", "anchor": {"object_id": "mouse", "offset_mm": [0, -35]},
+             "label": "Sí", "color": "#00E676", "z": 6,
+             "on_press": {"value": "si", "triggers": ["dwell", "api"], "dwell_ms": 1000}},
+            {"type": "button", "id": "vd-no", "anchor": {"object_id": "mouse", "offset_mm": [0, 35]},
+             "label": "No", "color": "#FF5252", "z": 6,
+             "on_press": {"value": "no", "triggers": ["dwell", "api"], "dwell_ms": 1000}}
+          ]}
+        ],
+        "transitions": [
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "vd-si"}}, "to": "si"},
+          {"on": {"event": "widget_pressed", "where": {"widget_id": "vd-no"}}, "to": "no"},
+          {"after_s": 60, "to": "sin_respuesta"}
+        ]
+      },
+      {
+        "id": "si",
+        "on_enter": [
+          {"type": "remove", "ids": ["vd-si", "vd-no", "vd-halo"]},
+          {"type": "update", "id": "vd-panel", "set": {"title": "Sí ✓", "body": "Le aviso a deploy-bot.", "color": "#00E676"}},
+          {"type": "emit", "event": "decision", "data": {"pregunta_id": "pr-42", "respuesta": "si"}}
+        ],
+        "transitions": [{"after_s": 1.5, "to": "fin"}]
+      },
+      {
+        "id": "no",
+        "on_enter": [
+          {"type": "remove", "ids": ["vd-si", "vd-no", "vd-halo"]},
+          {"type": "update", "id": "vd-panel", "set": {"title": "No ✗", "body": "Le aviso a deploy-bot.", "color": "#FF5252"}},
+          {"type": "emit", "event": "decision", "data": {"pregunta_id": "pr-42", "respuesta": "no"}}
+        ],
+        "transitions": [{"after_s": 1.5, "to": "fin"}]
+      },
+      {
+        "id": "sin_respuesta",
+        "on_enter": [
+          {"type": "emit", "event": "decision", "data": {"pregunta_id": "pr-42", "respuesta": "sin_respuesta"}}
+        ],
+        "transitions": [{"after_s": 0, "to": "fin"}]
+      },
+      {"id": "fin", "final": true}
+    ]
+  }
+}

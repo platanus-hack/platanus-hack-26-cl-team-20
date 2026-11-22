@@ -1,0 +1,66 @@
+google-pirata.png      F1=0.335 rec=0.505 (ctrl 0.391) chamfer in->out=9.69mm  global={'escala_x': 1.01, 'escala_y': 1.0134, 'rot_grados': 0.27, 'tx_mm': 2.3, 'ty_mm': -6.6}  obj mediana=4.7mm max=22.5mm
+    libreta                dx=  +1 dy=  -2 mm  ncc=0.62 (sin mover 0.62)
+    telefono               dx=  +4 dy=  -3 mm  ncc=0.85 (sin mover 0.69)
+    viales azules          dx= +19 dy= -12 mm  ncc=0.49 (sin mover 0.34)
+    caja organizadora      dx= -30 dy= -22 mm  ncc=0.21 (sin mover 0.15)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    vaso                   dx= +10 dy=  +6 mm  ncc=0.20 (sin mover 0.01)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    plato 1 + engranaje    dx=  +2 dy=  +2 mm  ncc=0.28 (sin mover 0.26)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    plato 2                dx=  +0 dy=  +4 mm  ncc=0.55 (sin mover 0.47)
+    plato 3                dx=  +2 dy=  +4 mm  ncc=0.41 (sin mover 0.33)
+    caja de viales         dx= +15 dy=  -1 mm  ncc=0.24 (sin mover -0.15)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    tapa caja viales       dx=  +5 dy= +12 mm  ncc=0.41 (sin mover 0.26)
+google-scifi.png       F1=0.442 rec=0.730 (ctrl 0.486) chamfer in->out=3.81mm  global={'escala_x': 0.9997, 'escala_y': 1.0096, 'rot_grados': 0.09, 'tx_mm': -0.4, 'ty_mm': -3.8}  obj mediana=2.2mm max=5.0mm
+    libreta                dx=  +1 dy=  -1 mm  ncc=0.55 (sin mover 0.55)
+    telefono               dx= +16 dy= -40 mm  ncc=0.26 (sin mover 0.00)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    viales azules          dx= -32 dy= -36 mm  ncc=0.30 (sin mover 0.04)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    caja organizadora      dx=  -2 dy=  +1 mm  ncc=0.38 (sin mover 0.37)
+    vaso                   dx=  +0 dy=  +2 mm  ncc=0.37 (sin mover 0.36)
+    plato 1 + engranaje    dx=  +0 dy=  +3 mm  ncc=0.59 (sin mover 0.56)
+    plato 2                dx=  +0 dy=  +3 mm  ncc=0.50 (sin mover 0.43)
+    plato 3                dx=  +1 dy=  +2 mm  ncc=0.44 (sin mover 0.41)
+    caja de viales         dx= +15 dy= -19 mm  ncc=0.21 (sin mover 0.02)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    tapa caja viales       dx=  +4 dy=  +3 mm  ncc=0.51 (sin mover 0.45)
+google-jardin.png      F1=0.304 rec=0.697 (ctrl 0.567) chamfer in->out=4.6mm  global={'escala_x': 1.0009, 'escala_y': 1.0105, 'rot_grados': 0.07, 'tx_mm': -0.1, 'ty_mm': -5.5}  obj mediana=1.4mm max=3.6mm
+    libreta                dx=  +1 dy=  +1 mm  ncc=0.63 (sin mover 0.62)
+    telefono               dx=  +3 dy=  +2 mm  ncc=0.37 (sin mover 0.34)
+    viales azules          dx= -19 dy= +28 mm  ncc=0.29 (sin mover 0.03)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    caja organizadora      dx=  +0 dy=  -1 mm  ncc=0.30 (sin mover 0.30)
+    vaso                   dx=  +1 dy=  -3 mm  ncc=0.03 (sin mover 0.01)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    plato 1 + engranaje    dx=  -3 dy= -23 mm  ncc=0.07 (sin mover 0.04)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    plato 2                dx=  +0 dy=  +2 mm  ncc=0.24 (sin mover 0.23)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    plato 3                dx=  +2 dy=  +5 mm  ncc=0.24 (sin mover 0.14)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    caja de viales         dx= +40 dy= -11 mm  ncc=0.16 (sin mover -0.04)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    tapa caja viales       dx= +26 dy= -39 mm  ncc=0.11 (sin mover -0.19)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+openai-pirata.png      F1=0.357 rec=0.657 (ctrl 0.522) chamfer in->out=3.37mm  global={'escala_x': 1.0038, 'escala_y': 0.9967, 'rot_grados': 0.1, 'tx_mm': -3.7, 'ty_mm': -3.4}  obj mediana=6.7mm max=33.5mm
+    libreta                dx=  -1 dy=  -9 mm  ncc=0.19 (sin mover 0.13)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    telefono               dx=  +2 dy=  -1 mm  ncc=0.41 (sin mover 0.37)
+    viales azules          dx= +15 dy= -30 mm  ncc=0.34 (sin mover 0.24)
+    caja organizadora      dx=  -2 dy=  +0 mm  ncc=0.22 (sin mover 0.22)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    vaso                   dx=  -1 dy=  -4 mm  ncc=0.43 (sin mover 0.40)
+    plato 1 + engranaje    dx=  -2 dy=  -4 mm  ncc=0.20 (sin mover 0.17)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    plato 2                dx=  -3 dy=  -6 mm  ncc=0.33 (sin mover 0.18)
+    plato 3                dx=  -4 dy=  -5 mm  ncc=0.20 (sin mover 0.10)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    caja de viales         dx= +40 dy= -28 mm  ncc=0.23 (sin mover 0.03)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    tapa caja viales       dx=  +1 dy=  +8 mm  ncc=0.45 (sin mover 0.41)
+openai-scifi.png       F1=0.418 rec=0.747 (ctrl 0.565) chamfer in->out=2.43mm  global={'escala_x': 1.0019, 'escala_y': 0.9917, 'rot_grados': 0.18, 'tx_mm': -0.9, 'ty_mm': -1.3}  obj mediana=5.1mm max=15.1mm
+    libreta                dx=  +3 dy= -13 mm  ncc=0.38 (sin mover 0.32)
+    telefono               dx=  +1 dy=  -2 mm  ncc=0.39 (sin mover 0.35)
+    viales azules          dx= +15 dy=  -2 mm  ncc=0.44 (sin mover 0.39)
+    caja organizadora      dx=  +0 dy=  +0 mm  ncc=0.34 (sin mover 0.34)
+    vaso                   dx=  +3 dy=  -2 mm  ncc=0.54 (sin mover 0.51)
+    plato 1 + engranaje    dx=  -1 dy=  -3 mm  ncc=0.22 (sin mover 0.20)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    plato 2                dx=  -1 dy=  -5 mm  ncc=0.36 (sin mover 0.25)
+    plato 3                dx=  -1 dy=  -8 mm  ncc=0.26 (sin mover 0.14)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    caja de viales         dx= +36 dy=  -3 mm  ncc=0.24 (sin mover 0.08)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    tapa caja viales       dx=  +8 dy=  +3 mm  ncc=0.45 (sin mover 0.38)
+openai-jardin.png      F1=0.316 rec=0.704 (ctrl 0.584) chamfer in->out=3.03mm  global={'escala_x': 1.0009, 'escala_y': 0.9924, 'rot_grados': 0.16, 'tx_mm': -0.2, 'ty_mm': -1.5}  obj mediana=6.3mm max=26.2mm
+    libreta                dx=  +0 dy=  +1 mm  ncc=0.52 (sin mover 0.51)
+    telefono               dx= -40 dy=  +4 mm  ncc=0.30 (sin mover 0.02)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    viales azules          dx= +17 dy= -20 mm  ncc=0.31 (sin mover 0.16)
+    caja organizadora      dx=  -2 dy=  +0 mm  ncc=0.21 (sin mover 0.21)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    vaso                   dx=  +2 dy=  -6 mm  ncc=0.30 (sin mover 0.27)
+    plato 1 + engranaje    dx=  -2 dy=  -6 mm  ncc=0.35 (sin mover 0.20)
+    plato 2                dx=  -4 dy= -15 mm  ncc=0.26 (sin mover 0.04)  [no confiable: la silueta cambio demasiado o el pico es espurio]
+    plato 3                dx=  -4 dy=  -7 mm  ncc=0.36 (sin mover 0.19)
+    caja de viales         dx=  +1 dy=  -2 mm  ncc=0.30 (sin mover 0.29)
+    tapa caja viales       dx=  +4 dy=  -1 mm  ncc=0.44 (sin mover 0.41)

@@ -1,0 +1,35 @@
+{
+  "_como_editar": "Ajustes de esta mesa, sin programar. fijos: qué planeta es una bola, por su posición en mm (lo escribe solo `conductor.py fijar`, o a mano). ajuste: escala_bola achica o agranda la textura sobre cada bola (1 = del tamaño medido); desplazamiento_mm corre todo el sistema si la luz cae corrida; giro_s es cuánto tarda un planeta en dar una vuelta; orbita_lenta multiplica el tiempo del punto que recorre cada órbita. ficha: tamaño en mm y, si quieres, dónde ponerla (null = el espacio libre más cercano a la lámina). seguir: cuántas fotos por segundo mira, cuánto cambio sobre el canasto cuenta como movimiento y cuántos cuadros quieto espera; la foto limpia (que apaga la proyección) sale solo si en vivo no reconoce el canasto, sin manos a menos de manos_margen_mm y como mucho cada foto_limpia_min_s; revisar_cada_s 0 = nunca apaga solo para revisar. voz: motor say (macOS) o ninguno. armar: solo_en_el_canasto true descarta lo blanco que no está en el canasto (la flor del borde); ponlo en false si hay bolas sueltas sobre la mesa.",
+  "fijos": {},
+  "ajuste": {
+    "escala_bola": 0.96,
+    "desplazamiento_mm": [
+      0,
+      0
+    ],
+    "giro_s": 26,
+    "orbita_lenta": 1
+  },
+  "ficha": {
+    "tam_mm": [
+      360,
+      262
+    ],
+    "rect_mm": null
+  },
+  "seguir": {
+    "hz": 3,
+    "umbral_mov": 0.045,
+    "quieto_cuadros": 4,
+    "revisar_cada_s": 0,
+    "foto_limpia_min_s": 10,
+    "manos_margen_mm": 150
+  },
+  "voz": {
+    "motor": "say",
+    "respaldo": "Paulina"
+  },
+  "armar": {
+    "solo_en_el_canasto": true
+  }
+}

@@ -1,0 +1,181 @@
+# CI de pcx: Rust (fmt, clippy, tests), Python (contracts y gateway), contratos sincronizados y web.
+# Cómo reproducir cada job en local: sección «CI» del README raíz.
+name: ci
+
+on:
+  pull_request:
+    branches: [main, manu/plataforma]
+  # También al mergear: valida la rama base y deja cachés (Rust, uv, pnpm) que los PR pueden reutilizar.
+  push:
+    branches: [main, manu/plataforma]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      # Lo que piden los crates en Linux (revisado con `cargo tree --target x86_64-unknown-linux-gnu`):
+      # - pkg-config + libfontconfig1-dev: fontique (parley, renderer) enlaza fontconfig.
+      # - mesa-vulkan-drivers + libvulkan1: lavapipe, Vulkan por CPU para los tests del renderer con wgpu.
+      # - fonts-dejavu-core: fuentes para el texto de los widgets.
+      # winit, wayland y x11 se cargan con dlopen y rusqlite va `bundled`: no hacen falta más -dev.
+      # libudev, libv4l y alsa no hacen falta: nokhwa solo entra con la feature `uvc` de pcx-capture (no está por defecto).
+      - name: Dependencias del sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libfontconfig1-dev mesa-vulkan-drivers libvulkan1 fonts-dejavu-core
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: cargo fmt
+        run: cargo fmt --all --check
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      # Todo menos los tests del renderer que abren un device de wgpu (golden, hot_reload, bench_smoke).
+      - name: cargo test (sin GPU)
+        run: |
+          cargo test --workspace --exclude pcx-renderer
+          cargo test -p pcx-renderer --lib --bins --test protocol
+
+      # Tests con GPU sobre lavapipe (Vulkan por software). No bloquean todavía: las imágenes golden se
+      # generaron en macOS (Metal y fuentes de macOS) y pueden diferir en Linux más del 0,5% tolerado.
+      # Cuando pasen en verde, quitar `continue-on-error`. Si fallan, las imágenes obtenidas quedan como artefacto.
+      # `new_instance()` usa `Backends::PRIMARY` (en Linux, solo Vulkan) y no lee WGPU_BACKEND; se deja por si
+      # se cambia a `Backends::from_env()`. VK_ICD_FILENAMES obliga al cargador de Vulkan a usar lavapipe.
+      - name: cargo test (renderer con GPU, lavapipe)
+        id: gpu
+        continue-on-error: true
+        env:
+          WGPU_BACKEND: vulkan
+          VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+        run: cargo test -p pcx-renderer --test golden --test hot_reload --test bench_smoke
+
+      - name: Subir imágenes de golden fallidos
+        if: steps.gpu.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: renderer-golden-fallidos
+          path: /tmp/pcx-renderer-fail-*/*.png
+          if-no-files-found: ignore
+
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
+
+      - name: contracts · pytest
+        working-directory: contracts
+        run: uv run --locked pytest
+
+      - name: gateway · pytest
+        working-directory: cloud/gateway
+        run: uv run --locked pytest
+
+      # ruff solo está configurado en el gateway ([tool.ruff] en su pyproject).
+      - name: gateway · ruff
+        working-directory: cloud/gateway
+        run: |
+          uv run --locked ruff check .
+          uv run --locked ruff format --check .
+
+  contracts-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "contracts/uv.lock"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Regenerar schema, fixtures canónicos y tipos TS
+        working-directory: contracts
+        run: |
+          uv run --locked python -m pcx_contracts.export
+          ./ts/generate.sh
+
+      - name: Fallar si lo generado no está committeado
+        run: |
+          if [ -n "$(git status --porcelain -- contracts)" ]; then
+            git status --porcelain -- contracts
+            git --no-pager diff -- contracts
+            echo "::error::Contratos desincronizados: corre export y ts/generate.sh (README de contracts/) y commitea el resultado."
+            exit 1
+          fi
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm build
+        run: pnpm build
+
+      # /setup.md de la landing es el espejo de docs/SETUP-AGENTE.md (instrucciones para agentes).
+      - name: setup.md espejado
+        run: cmp public/setup.md ../docs/SETUP-AGENTE.md || { echo "::error::copia docs/SETUP-AGENTE.md a web/public/setup.md"; exit 1; }
+
+      # Lighthouse con web/lighthouserc.json (rendimiento ≥ 0,95, accesibilidad = 1). Informativo: los
+      # runners compartidos dan puntajes de rendimiento ruidosos. El reporte queda como artefacto.
+      - name: Lighthouse CI
+        id: lhci
+        continue-on-error: true
+        run: npx -y @lhci/cli@0.15 autorun
+
+      - name: Subir reporte de Lighthouse
+        if: always() && steps.lhci.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse
+          path: web/lighthouse/lhci
+          if-no-files-found: ignore

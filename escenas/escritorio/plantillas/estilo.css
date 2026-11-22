@@ -1,0 +1,68 @@
+/* Escritorio · tinta y papel. 1 px de CSS = 1 mm de la mesa. Lo negro no se proyecta: el fondo es la mesa o la hoja.
+   Los colores llegan de escena.json como variables (--papel, --tinta, …). */
+
+html, body { color: var(--papel); font: 400 6px/1.25 var(--sd-fuente, "Instrument Sans", system-ui, sans-serif); }
+
+/* ---------------------------------------------------------------- marco de la libreta */
+.marco { position: absolute; inset: 0; }
+.marco svg { position: absolute; inset: 0; overflow: visible; }
+.corte { stroke: var(--papel-3); stroke-width: 0.6; fill: none; }
+
+.boton {
+  position: absolute;
+  display: flex; align-items: center; justify-content: center;
+  border-block-end: 1px solid var(--papel-3);
+  font: 400 5.5px/1 var(--sd-fuente, "Instrument Sans", system-ui, sans-serif);
+  color: var(--papel);
+  letter-spacing: 0.02em;
+}
+.boton::after { /* el dedo encima llena una raya de lápiz bajo la palabra */
+  content: ""; position: absolute; left: 3px; right: 3px; bottom: 0; height: 1px;
+  background: var(--lapiz); transform-origin: 0 50%; transform: scaleX(var(--press, 0));
+}
+.boton[data-pcx-hover] { outline: none; border-color: var(--papel); }
+.boton[data-pcx-fired] { color: var(--lapiz); border-color: var(--lapiz); }
+
+/* ---------------------------------------------------------------- contorno sobre lo leído */
+.marca svg { position: absolute; inset: 0; overflow: visible; }
+.marca path {
+  stroke: var(--lapiz); stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: var(--largo); stroke-dashoffset: var(--largo);
+  animation: trazo 420ms var(--wui-curva) forwards;
+}
+@keyframes trazo { to { stroke-dashoffset: 0; } }
+
+/* ---------------------------------------------------------------- la respuesta, escrita con luz */
+.nota { position: absolute; inset: 0; color: var(--tinta); white-space: nowrap; --wui-onda: 1px; }
+.nota.wui-pista::before { height: max(.8px, .09em); }
+
+/* ---------------------------------------------------------------- estado breve junto al botón */
+.estado { position: absolute; inset: 0; font: 400 4px/1.2 var(--sd-fuente, "Instrument Sans", system-ui, sans-serif); color: var(--papel-2); white-space: nowrap; }
+.estado .cursor { display: inline-block; width: 1.6px; height: 4px; margin-left: 1px; vertical-align: -0.6px;
+  background: var(--papel-2); animation: titila 2.2s ease-in-out infinite; }
+@keyframes titila { 50% { opacity: .55; } }
+
+/* ---------------------------------------------------------------- panel de agentes */
+.panel { position: absolute; inset: 0; padding: 10px 4px 0; }
+.panel header { display: flex; align-items: baseline; justify-content: space-between; padding-block: 10px 3px;
+  border-top: 0.8px solid var(--papel-3); }
+.panel h1 { margin: 0; font: 600 17px/1.1 var(--sd-fuente, "Instrument Sans", system-ui, sans-serif); color: var(--papel); }
+.panel .hora { font: 400 8px/1 var(--sd-fuente, "Instrument Sans", system-ui, sans-serif); color: var(--papel-3); font-variant-numeric: tabular-nums; }
+.panel ol { list-style: none; margin: 0; padding: 0; }
+.panel li { display: grid; grid-template-columns: 8px 1fr auto; column-gap: 4px; align-items: baseline;
+  padding: 8px 0 6px; }
+.panel .marca-estado { font: 400 7px/1 var(--sd-fuente, "Instrument Sans", system-ui, sans-serif); color: var(--papel-3); text-align: center; }
+.panel .nombre { font: 600 12px/1.15 var(--sd-fuente, "Instrument Sans", system-ui, sans-serif); color: var(--papel); }
+.panel .detalle { grid-column: 2; font: 400 10px/1.25 var(--sd-fuente, "Instrument Sans", system-ui, sans-serif); color: var(--papel-2); }
+.panel .desde { grid-row: 1; grid-column: 3; font: 400 8px/1 var(--sd-fuente, "Instrument Sans", system-ui, sans-serif); color: var(--papel-3);
+  font-variant-numeric: tabular-nums; }
+.panel li.trabajando .marca-estado::before { content: ""; display: inline-block; width: 3px; height: 3px; border-radius: 50%;
+  background: var(--papel); animation: titila 2.2s ease-in-out infinite; }
+.panel li.esperando .marca-estado::before { content: "?"; color: var(--lapiz); }
+.panel li.esperando .detalle { color: var(--papel); }
+.panel li.listo .marca-estado::before { content: "✓"; }
+.panel li.listo .nombre { color: var(--papel-2); }
+.panel li.nuevo .detalle { animation: aparece 600ms var(--wui-curva) both; }
+@keyframes aparece { from { opacity: 0; transform: translateX(-2px); } }
+
+@media (prefers-reduced-motion: reduce) { .marca path { stroke-dashoffset: 0; } }

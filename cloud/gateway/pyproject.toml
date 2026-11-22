@@ -1,0 +1,31 @@
+[project]
+name = "pcx-gateway"
+version = "0.1.0"
+description = "Remote MCP and reported physical state for pcx"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "pcx-contracts", "mcp==2.3.0", "starlette>=1.0,<2", "uvicorn>=0.54,<1",
+  "sqlalchemy[asyncio]>=2.0,<3", "asyncpg>=0.30", "aiosqlite>=0.21",
+  "redis>=6,<8", "websockets>=17,<18",
+]
+[tool.uv.sources]
+pcx-contracts = { path = "../../contracts", editable = true }
+[dependency-groups]
+dev = [
+    "pytest>=9",
+    "pytest-asyncio>=1",
+    "httpx>=0.28",
+    "jsonschema>=4",
+    "pyyaml>=6",
+    "ruff>=0.14",
+    "fakeredis>=2.31",
+]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+[tool.ruff]
+line-length = 110

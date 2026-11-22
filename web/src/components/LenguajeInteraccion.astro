@@ -1,0 +1,216 @@
+---
+// LenguajeInteraccion.astro
+// Sección «Lenguaje de interacción» — lámina 06 brandbook WUI
+import Punto from "./brand/Punto.astro";
+import Linea from "./brand/Linea.astro";
+import Arco from "./brand/Arco.astro";
+import Contorno from "./brand/Contorno.astro";
+---
+
+<section id="lenguaje" tabindex="-1" class="lenguaje-seccion" aria-labelledby="titulo-lenguaje">
+  <div class="lenguaje-contenedor">
+    <header class="lenguaje-header">
+      <p class="eyebrow">Lenguaje de interacción</p>
+      <h2 id="titulo-lenguaje">Cuatro formas que hablan con los objetos</h2>
+      <p class="intro">
+        WUI usa un vocabulario mínimo para señalar sobre la mesa.
+        Punto aparece donde actuar, Línea conecta objeto con mensaje, Arco dirige la mirada, Contorno delimita sin ocupar la superficie.
+      </p>
+    </header>
+
+    <div class="formas-grilla" data-formas>
+      <article class="forma-tarjeta" data-forma>
+        <div class="forma-svg" aria-hidden="true"><Punto size={88} color="#F4F4F2" /></div>
+        <h3 class="forma-nombre">Punto</h3>
+        <p class="forma-desc">Aparece donde ocurre la acción. Marca el inicio del gesto.</p>
+      </article>
+
+      <article class="forma-tarjeta" data-forma>
+        <div class="forma-svg" aria-hidden="true"><Linea size={88} color="#F4F4F2" /></div>
+        <h3 class="forma-nombre">Línea</h3>
+        <p class="forma-desc">Conecta objeto y mensaje. Lleva al texto sin ocupar la pieza.</p>
+      </article>
+
+      <article class="forma-tarjeta" data-forma>
+        <div class="forma-svg" aria-hidden="true"><Arco size={88} color="#F4F4F2" /></div>
+        <h3 class="forma-nombre">Arco</h3>
+        <p class="forma-desc">Dirige la mirada. Indica orientación sin anclarse.</p>
+      </article>
+
+      <article class="forma-tarjeta" data-forma>
+        <div class="forma-svg" aria-hidden="true"><Contorno size={88} color="#F4F4F2" /></div>
+        <h3 class="forma-nombre">Contorno</h3>
+        <p class="forma-desc">Delimita el área de acción. No tapa el objeto.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+  .lenguaje-seccion {
+    background: #171717;
+    padding-top: clamp(80px, 10vw, 160px);
+    padding-bottom: clamp(80px, 10vw, 160px);
+  }
+
+  .lenguaje-contenedor {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .lenguaje-contenedor {
+      padding-inline: 2rem;
+    }
+  }
+
+  /* Header */
+  .lenguaje-header {
+    max-width: 720px;
+    margin-bottom: 3.5rem;
+  }
+
+  .eyebrow {
+    font-family: "Instrument Sans", sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    line-height: 19px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #626260;
+    margin: 0 0 1rem;
+  }
+
+  .lenguaje-header h2 {
+    font-family: "Instrument Sans", sans-serif;
+    font-weight: 500;
+    font-size: clamp(28px, 4vw, 48px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: #F4F4F2;
+    margin: 0 0 1.25rem;
+  }
+
+  .intro {
+    font-family: "Instrument Sans", sans-serif;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 28px;
+    color: #F4F4F2;
+    max-width: 640px;
+    margin: 0;
+  }
+
+  /* Grid de tarjetas */
+  .formas-grilla {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 640px) {
+    .formas-grilla {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .formas-grilla {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  /* Tarjeta */
+  .forma-tarjeta {
+    background: #242424;
+    padding: 32px;
+    border-radius: 12px;
+    border: 1px solid rgba(244, 244, 242, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Animación: estado inicial (opacity 0, desplazada 16px) */
+  @media (prefers-reduced-motion: no-preference) {
+    .forma-tarjeta[data-forma] {
+      opacity: 0;
+      transform: translateY(16px);
+      transition:
+        opacity var(--dur-forma, 1.28s) var(--ease-tinta, cubic-bezier(0.16, 1, 0.3, 1)),
+        transform var(--dur-forma, 1.28s) var(--ease-tinta, cubic-bezier(0.16, 1, 0.3, 1));
+    }
+
+    .forma-tarjeta[data-forma].visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Accesibilidad: si prefers-reduced-motion, visibles desde el inicio */
+  @media (prefers-reduced-motion: reduce) {
+    .forma-tarjeta[data-forma] {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .forma-svg {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .forma-nombre {
+    font-family: "Instrument Sans", sans-serif;
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 31px;
+    color: #F4F4F2;
+    margin: 0 0 0.75rem;
+  }
+
+  .forma-desc {
+    font-family: "Instrument Sans", sans-serif;
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 22px;
+    color: rgba(244, 244, 242, 0.8);
+    margin: 0;
+  }
+</style>
+
+<script>
+  // Stagger de entrada con IntersectionObserver
+  const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (!reducido) {
+    const tarjetas = document.querySelectorAll<HTMLElement>(".forma-tarjeta[data-forma]");
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const grilla = entry.target.closest("[data-formas]");
+            if (!grilla) return;
+            const todas = [...grilla.querySelectorAll<HTMLElement>(".forma-tarjeta[data-forma]")];
+            todas.forEach((tarjeta, i) => {
+              tarjeta.style.transitionDelay = `${i * 0.1}s`;
+              tarjeta.classList.add("visible");
+            });
+            io.disconnect();
+          }
+        });
+      },
+      { rootMargin: "-10% 0px -10% 0px", threshold: 0.1 }
+    );
+
+    // Observar la primera tarjeta para disparar cuando entre la grilla
+    if (tarjetas[0]) io.observe(tarjetas[0]);
+  }
+</script>

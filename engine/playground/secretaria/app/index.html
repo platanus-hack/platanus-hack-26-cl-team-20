@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playground · voz</title>
+<style>
+  :root { --bg: #0d0f12; --fg: #e9edf2; --dim: #8a94a3; --acc: #00ffc8; --err: #ff6b6b; }
+  @media (prefers-color-scheme: light) { :root { --bg: #f6f7f9; --fg: #14171c; --dim: #5d6673; --acc: #008f70; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 -apple-system, system-ui, sans-serif;
+         display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 24px 16px; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; letter-spacing: .02em; }
+  #estado { color: var(--dim); margin-bottom: 20px; min-height: 1.4em; }
+  #estado.error { color: var(--err); }
+  #orbe { width: 120px; height: 120px; border-radius: 50%; border: 2px solid var(--acc); margin: 8px 0 20px;
+          transform: scale(var(--s, .8)); transition: transform .08s; box-shadow: 0 0 40px -10px var(--acc); }
+  #orbe.habla { background: color-mix(in srgb, var(--acc) 25%, transparent); }
+  button { font: inherit; padding: 10px 22px; border-radius: 999px; border: 1px solid var(--acc); cursor: pointer;
+           background: transparent; color: var(--fg); }
+  button.vivo { background: var(--acc); color: var(--bg); }
+  #transcripcion { width: 100%; max-width: 520px; margin-top: 20px; overflow-y: auto; max-height: 50vh; }
+  .linea { margin: 6px 0; } .tu { color: var(--dim); } .ella { color: var(--fg); } .nota { color: var(--dim); font-style: italic; }
+</style>
+</head>
+<body>
+  <h1>Playground</h1>
+  <div id="estado">listo para hablar</div>
+  <div id="orbe"></div>
+  <button id="boton">Hablar</button>
+  <div id="transcripcion"></div>
+<script src="/app/cliente.js"></script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+let conv = null, cuadro = null;
+
+function estado(t, clase = "") { $("estado").textContent = t; $("estado").className = clase; }
+function linea(quien, t) {
+  const d = document.createElement("div"); d.className = "linea " + quien; d.textContent = t;
+  $("transcripcion").appendChild(d); $("transcripcion").scrollTop = $("transcripcion").scrollHeight;
+}
+function animar() {
+  if (!conv) return;
+  const v = $("orbe").classList.contains("habla") ? conv.getOutputVolume() : conv.getInputVolume();
+  $("orbe").style.setProperty("--s", (0.8 + Math.min(1, v * 2.2) * 0.2).toFixed(3));
+  cuadro = requestAnimationFrame(animar);
+}
+async function iniciar() {
+  if (typeof ElevenLabsClient === "undefined") {
+    estado("falta el SDK web de ElevenLabs (cliente_js en la config)", "error"); return;
+  }
+  estado("conectando…");
+  let s;
+  try {
+    const r = await fetch("/app/sesion", { method: "POST" });
+    s = await r.json();
+    if (!r.ok) throw new Error(s.error || r.status);
+  } catch (e) { estado(String(e.message || e), "error"); return; }
+  try {
+    conv = await ElevenLabsClient.Conversation.startSession({
+      conversationToken: s.token, connectionType: "webrtc",
+      onConnect: () => { estado("escuchando"); $("boton").textContent = "Colgar"; $("boton").classList.add("vivo");
+                         cuadro = requestAnimationFrame(animar); },
+      onDisconnect: () => terminar(),
+      onError: (m) => linea("nota", "Error: " + m),
+      onModeChange: ({ mode }) => { const h = mode === "speaking"; $("orbe").classList.toggle("habla", h);
+                                    estado(h ? "hablando" : "escuchando"); },
+      onMessage: ({ role, message }) => message && linea(role === "user" ? "tu" : "ella", message),
+    });
+  } catch (e) {
+    estado("no se pudo conectar", "error"); linea("nota", String(e && e.message || e));
+    if (/permission|NotAllowed/i.test(String(e))) linea("nota", "Falta el permiso del micrófono.");
+    conv = null;
+  }
+}
+function terminar() {
+  if (cuadro) cancelAnimationFrame(cuadro);
+  conv = null; $("orbe").classList.remove("habla"); $("orbe").style.removeProperty("--s");
+  $("boton").textContent = "Hablar"; $("boton").classList.remove("vivo"); estado("colgado");
+}
+$("boton").addEventListener("click", () => conv ? conv.endSession() : iniciar());
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && conv) conv.endSession(); });
+</script>
+</body>
+</html>

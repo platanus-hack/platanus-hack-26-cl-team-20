@@ -1,0 +1,57 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Mesa v2 · pipeline en vivo</title>
+<style>
+:root{--bg:#0d0d0c;--fg:#f1efe9;--mut:#8d8a82;--ac:#ff7a1a;--card:#191917;--ln:#2c2b28}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 ui-sans-serif,system-ui}
+header{display:flex;gap:16px;align-items:baseline;padding:14px 18px;border-bottom:1px solid var(--ln)}
+h1{font-size:18px;margin:0}#etapa{color:var(--ac);font-weight:600}.mut{color:var(--mut)}
+main{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 18px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:10px;min-width:0}
+.card h2{font-size:13px;margin:0 0 8px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.card img{width:100%;border-radius:6px;display:block;background:#000}
+.wide{grid-column:1/-1}#pasos{display:flex;gap:8px;flex-wrap:wrap}
+.paso{border:1px solid var(--ln);border-radius:999px;padding:4px 12px}.paso b{color:var(--ac)}
+#objs{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.obj{border:1px solid var(--ln);border-radius:8px;padding:6px;font-size:12px}.obj img{height:110px;object-fit:contain}
+@media(max-width:800px){main{grid-template-columns:1fr;padding:12px 16px}}
+</style></head><body>
+<header><h1>Mesa v2 · pipeline</h1><span id="etapa">…</span><span class="mut" id="meta"></span></header>
+<main>
+<div class="card wide"><h2>Etapas del último ciclo</h2><div id="pasos"></div></div>
+<div class="card"><h2>En vivo · cámara normalizada (mm reales, solo la mesa)</h2><img id="vivo"></div>
+<div class="card"><h2>4 · Máscaras SAM por recorte + etiquetas</h2><img id="i4"></div>
+<div class="card"><h2>1 · Cámara 4K cruda</h2><img id="i1"></div>
+<div class="card"><h2>3 · Cajas detectadas</h2><img id="i3"></div>
+<div class="card"><h2>Relieve por luz estructurada (paralaje cámara-proyector)</h2><img id="rel"></div>
+<div class="card"><h2>2 · Normalizada del ciclo</h2><img id="i2"></div>
+<div class="card"><h2>5 · Planetas 3D proyectados (foto real de la mesa)</h2><img id="i5"></div>
+<div class="card"><h2>Calibración (un comando)</h2><pre id="cal" class="mut" style="margin:0;white-space:pre-wrap"></pre></div>
+<div class="card wide"><h2>Objetos</h2><div id="objs"></div></div>
+</main>
+<div id="ctl" style="position:fixed;right:14px;bottom:14px;background:#111;color:#f4f4f2;font:600 13px system-ui;padding:12px 14px;border-radius:10px;z-index:9;min-width:330px">
+ <div style="margin-bottom:8px">Demo: <span id="ctl-e">…</span></div>
+ <button id="b-fin" style="font:700 13px system-ui;padding:9px 12px;border:0;border-radius:7px;background:#ff5a3c;color:#fff;cursor:pointer">Terminar escena (T)</button>
+ <button id="b-prep" style="font:700 13px system-ui;padding:9px 12px;border:0;border-radius:7px;background:#f4f4f2;color:#000;cursor:pointer">Preparar siguiente (P)</button>
+ <button id="b-dale" style="font:700 13px system-ui;padding:9px 12px;border:0;border-radius:7px;background:#86f5a0;color:#000;cursor:pointer">Dale (D)</button>
+ <div style="margin-top:7px;font-weight:500;color:#a9a9a6">Directo: E escritorio · S solar · L laboratorio (preparan esa escena)</div></div>
+<script>
+// Controlador de la demo (mesa_ctl.py en :9301). Preparar = la escena detecta o rastrea sin proyectar; Dale = aparece con el arranque.
+let EST={};
+async function ctl(r){try{EST=await (await fetch('http://127.0.0.1:9301/'+r)).json();const f={apagada:'apagada',preparada:'PREPARADA (lista, sin proyectar)',encendida:'ENCENDIDA'}[EST.fase]||EST.fase;
+ document.getElementById('ctl-e').textContent=(EST.nombre?EST.nombre+' · ':'')+f+' · siguiente: '+EST.siguiente;document.getElementById('b-prep').textContent='Preparar '+EST.siguiente+' (P)';document.getElementById('b-dale').style.opacity=EST.fase==='preparada'?1:.35}
+ catch(e){document.getElementById('ctl-e').textContent='sin control (lanza mesa_ctl.py)'}}
+document.getElementById('b-fin').onclick=()=>ctl('fin');document.getElementById('b-prep').onclick=()=>ctl('preparar');document.getElementById('b-dale').onclick=()=>ctl('dale');
+addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey)return;const k=e.key.toLowerCase();if(k==='t'||k==='x')ctl('fin');if(k==='p')ctl('preparar');if(k==='d'||k==='enter')ctl('dale');
+ if(k==='e')ctl('preparar?escena=escritorio');if(k==='s')ctl('preparar?escena=solar');if(k==='l')ctl('preparar?escena=lab')});
+setInterval(()=>ctl('estado'),2000);ctl('estado');
+const $=id=>document.getElementById(id);let ciclo=-1;
+async function tick(){try{
+ const e=await (await fetch('out/estado.json?'+Date.now())).json();
+ $('etapa').textContent=e.etapa;$('meta').textContent=`ciclo ${e.ciclo??0} · vivo ${e.fps_vivo??0} cuadros/s · cambio ${e.cambio??0}% · ${e.n_objetos??0} objetos`;
+ $('pasos').innerHTML=(e.etapas||[]).map(p=>`<span class="paso">${p.n} <b>${p.ms} ms</b></span>`).join('');
+ $('vivo').src='out/vivo.jpg?'+Date.now();
+ if(e.ciclo!==ciclo&&e.etapa==='listo'){ciclo=e.ciclo;const t=Date.now();$('i1').src='out/1-camara.jpg?'+t;$('i2').src='out/2-normalizada.jpg?'+t;$('i3').src='out/3-deteccion.jpg?'+t;$('i4').src='out/4-mascaras.jpg?'+t;$('rel').src='out/relieve.jpg?'+t;$('i5').src='out/5-planetas3d.jpg?'+t;fetch('out/calibracion.json?'+t).then(r=>r.json()).then(c=>{$('cal').textContent=Object.entries(c.pasos).map(([k,v])=>v.toFixed(1).padStart(6)+' s  '+k).join('\n')+'\n'+String(c.total).padStart(6)+' s  TOTAL'}).catch(()=>{});
+  const o=await (await fetch('out/objetos.json?'+t)).json();
+  $('objs').innerHTML=o.map(x=>`<div class="obj"><img src="out/obj-${x.id}.jpg?${t}"><div><b>${x.id} · ${x.etiqueta}</b> <span class="mut">${x.score}</span></div><div class="mut">${x.tam_mm[0]}×${x.tam_mm[1]} mm · centro ${x.centro_mm.map(Math.round)} · ${x.puntos} pts${x.descripcion?'<br>'+x.descripcion:''}</div></div>`).join('');}
+}catch(err){}}
+setInterval(tick,400);tick();
+</script></body></html>

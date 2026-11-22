@@ -1,0 +1,10 @@
+This is a top-down (orthographic, bird's-eye) photo of a desk. It will be projected back onto the real desk as a 1:1 overlay, so geometry must be preserved EXACTLY, like tracing paper over the original.
+HARD CONSTRAINTS:
+- Same framing, same aspect ratio, same strictly top-down viewpoint. No zoom, crop, rotation, tilt or perspective change.
+- Every object keeps its exact position, outline, size and orientation: the open spiral notebook (top-left), the smartphone, the small group of blue vials, the large compartmented organizer box with open lid (top-right), the tall drinking glass (right), the three round white plates with white spheres and the gear (bottom-left), the grid box of colored vials with its lid, the purple vials, the two stickers, and the seam between the two table halves.
+- Do NOT add, remove, move, merge or resize objects. Do not add new objects in the empty table areas; empty table stays empty (only its surface material/texture may change).
+- Only change materials, textures, colors and surface details of each existing object and of the table surface, re-skinning each object within its existing silhouette.
+- No text, labels, borders or watermarks.
+STYLE:
+Bioluminescent deep-sea reef at night: every object becomes a living sea organism or coral structure with glowing patterns; the table is dark wet volcanic rock with faint glowing plankton.
+CREATIVE FREEDOM: do not literally depict what each object is. Reimagine every object as something else that belongs to the style world, as long as it keeps the SAME silhouette, position, size and orientation (a notebook may become a relic, a console or a creature's wings; plates may become portals or machine cores; vials may become eggs, crystals or lights). Be bold and inventive with materials, ornaments and inner details; surprise the viewer. Keep the empty table free of new objects.

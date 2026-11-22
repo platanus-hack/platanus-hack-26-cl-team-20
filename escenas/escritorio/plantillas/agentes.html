@@ -1,0 +1,14 @@
+<!-- Panel «Tus agentes». Cada fila: estado (trabajando, esperando, listo), nombre, qué hace y desde cuándo. -->
+<section class="panel">
+  <header><h1>{{titulo}}</h1><span class="hora">{{hora}}</span></header>
+  <ol>
+    {{#agentes}}
+    <li class="{{estado}}{{#nuevo}} nuevo{{/nuevo}}">
+      <span class="marca-estado"></span>
+      <span class="nombre">{{nombre}}</span>
+      <span class="desde">{{desde}}</span>
+      <span class="detalle">{{detalle}}</span>
+    </li>
+    {{/agentes}}
+  </ol>
+</section>

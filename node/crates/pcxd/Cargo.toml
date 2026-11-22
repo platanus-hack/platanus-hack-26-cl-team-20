@@ -1,0 +1,60 @@
+[package]
+name = "pcxd"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Binario `pcx` del nodo: serve | mcp | up (supervisor) | motor (servidor local para la web app) | worker (captura, manos) | replay."
+publish = false
+
+[features]
+# MobileSAM en `pcx motor` (ONNX Runtime). Sin la feature, o sin los pesos, el motor corre solo con la cascada.
+onnx = ["pcx-perception/onnx"]
+# CoreML para `pcx worker hands --backend coreml` (macOS). Sin la feature, ORT no registra CoreML.
+coreml = ["pcx-hands/coreml"]
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "pcx"
+path = "src/main.rs"
+
+# Emisor de toques para la prueba de integración de la confirmación (no se instala con el binario).
+[[example]]
+name = "hands_probe"
+path = "examples/hands_probe.rs"
+
+[dependencies]
+pcx-core = { path = "../pcx-core" }
+pcx-contracts = { path = "../../../contracts/rust/pcx-contracts" }
+pcx-capture = { path = "../pcx-capture" }
+pcx-shm = { path = "../pcx-shm" }
+pcx-hands = { path = "../pcx-hands" }
+pcx-perception = { path = "../pcx-perception" }
+# `pcx motor`: cuadros RGB, JPEG de `look`/`frame` y su base64.
+image = { version = "0.25", default-features = false, features = ["jpeg"] }
+base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "1"
+anyhow = "1"
+clap = { version = "4", features = ["derive", "env"] }
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+axum = { version = "0.8", features = ["ws"] }
+reqwest = { version = "0.13", default-features = false }
+rmcp = { version = "3.11", features = ["server", "client", "transport-io", "transport-streamable-http-client-reqwest"] }
+tokio-util = "0.7"
+zeromq = "0.7"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_Security"] }
+
+[dev-dependencies]
+tempfile = "3"
+tokio-tungstenite = "0.30"
+futures = "0.3"

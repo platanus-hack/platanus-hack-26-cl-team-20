@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="referrer" content="no-referrer" />
+    <title>WUI · cámara</title>
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+      #video {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #000;
+      }
+      .barra {
+        position: fixed;
+        inset: 0 0 auto 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+        background: linear-gradient(#000c, #0000);
+      }
+      .barra .marca {
+        font-size: 1.2rem;
+      }
+      .pie {
+        position: fixed;
+        inset: auto 0 0 0;
+        display: grid;
+        gap: 12px;
+        justify-items: center;
+        padding: 16px 16px calc(18px + env(safe-area-inset-bottom));
+        background: linear-gradient(#0000, #000d 40%);
+        text-align: center;
+      }
+      .pie p {
+        margin: 0;
+        max-width: 34ch;
+        font-size: 0.95rem;
+        color: var(--luz);
+      }
+      .pie small {
+        font: 400 0.68rem var(--mono);
+        color: var(--luz-2);
+      }
+      .pie .fila {
+        margin: 0;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body>
+    <video id="video" autoplay muted playsinline></video>
+    <header class="barra">
+      <a class="marca" href="/">WUI<span>cámara</span></a>
+      <div class="estado" id="estado" data-state="connecting"><i></i><span id="estado-texto">Conectando…</span></div>
+    </header>
+    <footer class="pie">
+      <p id="nota">Este teléfono va a mandar su cámara a la mesa.</p>
+      <div class="fila">
+        <button class="btn fuerte" id="activar">Activar cámara</button>
+        <button class="btn" id="girar" hidden>Cambiar de cámara</button>
+      </div>
+      <small id="cifras"></small>
+    </footer>
+    <script type="module" src="/cam.js"></script>
+  </body>
+</html>

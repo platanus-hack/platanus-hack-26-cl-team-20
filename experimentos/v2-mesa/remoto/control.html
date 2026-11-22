@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>WUI · Control</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+  html, body { margin: 0; height: 100%; background: #171717; color: #F4F4F2; font: 17px/1.3 -apple-system, system-ui, sans-serif; touch-action: manipulation; overscroll-behavior: none; }
+  body { display: flex; flex-direction: column; gap: 10px; padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px); height: 100dvh; }
+  #est { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  #lam { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  #lam small { font-size: 20px; color: #a9a9a6; font-weight: 600; }
+  #rel { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  #rel.parado { color: #ffb020; }
+  #sub { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; color: #a9a9a6; min-height: 1.3em; }
+  .ok { color: #7ddc8a; } .mal { color: #ff8a80; }
+  button { font: inherit; font-weight: 750; color: #F4F4F2; background: #2b2b2b; border: 1px solid #3d3d3d; border-radius: 16px; font-size: 21px; padding: 0 8px; min-height: 0; }
+  button:active, button.pulso { background: #F4F4F2; color: #171717; }
+  #sig { flex: 3.2; font-size: 38px; background: #F4F4F2; color: #171717; border: 0; }
+  #sig:active, #sig.pulso { background: #a9a9a6; }
+  .fila { display: flex; gap: 10px; flex: 1; min-height: 0; }
+  .fila > button { flex: 1; }
+  .esc > button { background: #20303d; border-color: #33506a; }
+  #dale { background: #1f3d2a; border-color: #2f6b45; font-size: 26px; }
+  #rei.armado { background: #7a1f1f; border-color: #b33; }
+  #esc { font-size: 14px; color: #a9a9a6; text-align: center; min-height: 1.3em; }
+</style>
+</head>
+<body>
+<div id="est"><div id="lam">–<small> / –</small></div><div id="rel" class="parado">0:00</div></div>
+<div id="sub"><span id="con" class="mal">Buscando presentación…</span><span id="pov">Cámara: –</span></div>
+<button id="sig" data-c="siguiente">Siguiente</button>
+<div class="fila"><button data-c="anterior">Anterior</button><button id="pau" data-c="pausa">Pausa</button><button id="rei">Reiniciar</button></div>
+<div id="esc"></div>
+<div class="fila esc"><button data-c="fin">Terminar escena</button><button id="prep" data-c="preparar">Preparar siguiente</button></div>
+<div class="fila esc" style="flex:1.5"><button id="dale" data-c="dale">Dale</button></div>
+<script>
+(() => {
+  const Q = new URLSearchParams(location.search), SALA = Q.get('sala') || 'demo', K = Q.get('k') || '';
+  const url = (p, extra) => `/api/${p}?sala=${encodeURIComponent(SALA)}&k=${encodeURIComponent(K)}&de=ctl${extra || ''}`;
+  const $ = id => document.getElementById(id);
+  const mmss = t => { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+
+  async function cmd(c, boton) {
+    if (boton) { boton.classList.add('pulso'); setTimeout(() => boton.classList.remove('pulso'), 160); }
+    try {
+      const r = await fetch(url('enviar', '&a=pres'), { method: 'POST', body: JSON.stringify({ tipo: 'cmd', cmd: c }) });
+      if (!r.ok) throw 0;
+    } catch (e) { $('con').textContent = 'No se pudo enviar'; $('con').className = 'mal'; }
+    setTimeout(leer, 150);
+  }
+  document.querySelectorAll('button[data-c]').forEach(b => b.addEventListener('click', () => cmd(b.dataset.c, b)));
+  // Reiniciar pide confirmación: dos toques en 3 s.
+  let armado = 0;
+  $('rei').addEventListener('click', () => {
+    const b = $('rei');
+    if (Date.now() - armado < 3000) { armado = 0; b.classList.remove('armado'); b.textContent = 'Reiniciar'; cmd('reiniciar', b); return; }
+    armado = Date.now(); b.classList.add('armado'); b.textContent = '¿Seguro? Toca otra vez';
+    setTimeout(() => { if (armado && Date.now() - armado >= 3000) { armado = 0; b.classList.remove('armado'); b.textContent = 'Reiniciar'; } }, 3100);
+  });
+
+  let leyendo = false;
+  async function leer() {
+    if (leyendo) return; leyendo = true;
+    try {
+      const ab = new AbortController(), t = setTimeout(() => ab.abort(), 4000);
+      const r = await fetch(url('estado'), { signal: ab.signal }); clearTimeout(t);
+      if (!r.ok) throw new Error(r.status === 403 ? 'Clave incorrecta' : 'Error ' + r.status);
+      const j = await r.json(), e = j.estado;
+      const viva = e && j.edad !== null && j.edad < 4;
+      $('con').textContent = viva ? 'Presentación conectada' : e ? 'Presentación sin señal (' + Math.round(j.edad) + ' s)' : 'Presentación no conectada';
+      $('con').className = viva ? 'ok' : 'mal';
+      if (e) {
+        $('lam').innerHTML = e.lamina + '<small> / ' + e.total + '</small>';
+        $('rel').textContent = mmss(e.t + (viva && e.corriendo ? j.edad : 0));
+        $('rel').className = e.corriendo ? '' : 'parado';
+        $('pau').textContent = e.corriendo ? 'Pausa' : 'Seguir';
+        $('pov').textContent = 'Cámara: ' + (e.pov || '–');
+        $('pov').className = e.pov === 'en vivo' ? 'ok' : '';
+        $('esc').textContent = e.escena || '';
+        const p = (e.prep || '').replace(/\s*\(P\)\s*$/, '');
+        $('prep').textContent = p || 'Preparar siguiente';
+      }
+    } catch (x) { $('con').textContent = x.message && /Clave|Error/.test(x.message) ? x.message : 'Sin conexión con el computador'; $('con').className = 'mal'; }
+    leyendo = false;
+  }
+  setInterval(leer, 700); leer();
+  if ('wakeLock' in navigator) {
+    const w = () => { if (document.visibilityState === 'visible') navigator.wakeLock.request('screen').catch(() => {}); };
+    document.addEventListener('visibilitychange', w); document.addEventListener('click', w, { once: true }); w();
+  }
+})();
+</script>
+</body>
+</html>

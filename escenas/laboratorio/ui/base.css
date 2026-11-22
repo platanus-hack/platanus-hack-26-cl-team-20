@@ -1,0 +1,114 @@
+/* Copia de motor/sistema/base.css de origin/max/motor @ 002e67e (sistema común de WUI, h19).
+   Se usa solo si el repo no trae motor/sistema/base.css (antes de integrar). No editar aquí: el tema va en tema.css. */
+/* WUI · sistema común de la mesa (base).
+   Va en `params.css` de todo widget html (`effect` con `shader: "html"`), seguido del tema de la escena.
+   1 px de CSS = 1 mm de mesa. En un proyector, negro = sin luz: el fondo es transparente y la luz se gasta solo en
+   lo que importa. Una escena cambia los tokens (`tema.css`), nunca las reglas de abajo. */
+:root {
+  /* roles de color: cada escena los redefine */
+  --sd-tinta: #f4f4f2;      /* texto y trazos */
+  --sd-tenue: #b3b3b1;      /* texto secundario, guías */
+  --sd-foco: #f4f4f2;       /* «esto»: lo que se señala o se está tocando */
+  --sd-ok: #f4f4f2;         /* paso cumplido */
+  --sd-alerta: #d2d2ce;     /* cerca del límite */
+  --sd-peligro: #ffffff;    /* te pasaste / no hagas esto */
+  --sd-placa: rgba(0, 0, 0, 0.62); /* fondo de paneles: oscuro, para no encandilar ni lavar los objetos */
+  /* letra */
+  --sd-fuente: "Instrument Sans", system-ui, sans-serif;
+  --sd-fuente-dato: var(--sd-fuente);
+  --sd-texto: 28px;         /* mínimo legible de pie frente a la mesa */
+  --sd-titulo: 44px;
+  --sd-dato: 72px;          /* el número que se mira de reojo (ml, paso, planeta) */
+  /* forma */
+  --sd-trazo: 4px;          /* bajo 3 mm una línea proyectada se pierde */
+  --sd-radio: 14px;
+  --sd-toque: 72px;         /* alto mínimo de algo que se toca con un dedo */
+  --sd-aire: 16px;
+  /* tiempo */
+  --sd-rapido: 160ms;
+  --sd-permanencia: 400ms;  /* lo que tarda un toque por permanencia */
+  --sd-curva: cubic-bezier(0.16, 1, 0.3, 1);
+}
+html, body { color: var(--sd-tinta); font: 400 var(--sd-texto)/1.25 var(--sd-fuente); }
+h1, h2, p { margin: 0; }
+h1 { font-size: var(--sd-titulo); line-height: 1.05; font-weight: 600; }
+
+/* Explicar: panel. Siempre en zona libre, nunca encima de un objeto. */
+.sd-panel { background: var(--sd-placa); border: var(--sd-trazo) solid var(--sd-tinta); border-radius: var(--sd-radio);
+  padding: var(--sd-aire); display: flex; flex-direction: column; gap: var(--sd-aire); height: 100%; }
+.sd-tenue { color: var(--sd-tenue); }
+
+/* Nombrar: etiqueta corta junto a un objeto. */
+.sd-etiqueta { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--sd-placa);
+  border: 3px solid var(--sd-foco); white-space: nowrap; }
+
+/* Medir: un dato grande con su unidad. */
+.sd-dato { font: 600 var(--sd-dato)/1 var(--sd-fuente-dato); font-variant-numeric: tabular-nums; }
+.sd-dato small { font-size: 0.4em; font-weight: 400; color: var(--sd-tenue); margin-left: 0.2em; }
+
+/* Tocar: se deja el dedo quieto; la barra se llena con --press (0..1, la pone la mesa) y al completar dispara. */
+.sd-boton[data-press] { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  min-height: var(--sd-toque); padding: 0 24px; border: var(--sd-trazo) solid var(--sd-tinta); border-radius: var(--sd-radio);
+  background: var(--sd-placa); font-weight: 600; outline: none !important; }
+.sd-boton[data-press]::before { content: ""; position: absolute; inset: auto 0 0; height: 5px; background: var(--sd-foco); opacity: 0.85;
+  transform-origin: left; transform: scaleX(var(--press, 0)); }
+.sd-boton[data-press] > * { position: relative; }
+.sd-boton[data-pcx-hover] { border-color: var(--sd-foco); }
+.sd-boton[data-pcx-fired] { background: var(--sd-ok); color: #171717; transition: background var(--sd-rapido) var(--sd-curva); }
+.sd-fila { display: flex; gap: var(--sd-aire); }
+.sd-fila > * { flex: 1; }
+
+/* Avisar: el tono va en color, en forma (borde) y en palabras; nunca solo en color. */
+.sd-aviso { border-left: 12px solid var(--sd-tinta); padding: 8px var(--sd-aire); background: var(--sd-placa);
+  border-radius: 4px var(--sd-radio) var(--sd-radio) 4px; }
+.sd-aviso[data-tono="ok"] { border-color: var(--sd-ok); }
+.sd-aviso[data-tono="alerta"] { border-color: var(--sd-alerta); }
+.sd-aviso[data-tono="peligro"] { border-color: var(--sd-peligro); border-left-width: 24px; }
+
+/* Guiar: paso N de M. */
+.sd-paso { font: 600 var(--sd-texto) var(--sd-fuente-dato); color: var(--sd-foco); letter-spacing: 0.04em; }
+
+/* Pista · trazo, aparición, barrido y reposo a 0,42 / 0,88 / 1,28 / 1,72 s. */
+:root {
+  --wui-curva: cubic-bezier(0.16, 1, 0.3, 1);
+  --wui-pista-tiempo: 1720ms;
+  --wui-onda: 2.6px;
+}
+.wui-pista {
+  position: relative;
+  padding-inline-start: var(--wui-pista-margen, 0.9em);
+}
+.wui-pista::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: .54em;
+  width: .58em;
+  height: max(2px, .09em);
+  border-radius: 999px;
+  background: currentColor;
+  transform-origin: left center;
+  animation: wui-trazo var(--wui-pista-tiempo) var(--wui-curva) both;
+  animation-delay: var(--wui-pista-retardo, 0ms);
+}
+.wui-pista > .wui-linea {
+  display: block;
+  animation: wui-tinta var(--wui-pista-tiempo) var(--wui-curva) both;
+  animation-delay: var(--wui-pista-retardo, 0ms);
+}
+@keyframes wui-trazo {
+  0% { transform: scaleX(0); }
+  24.42% { transform: scaleX(.85); }
+  51.16% { transform: translateY(calc(-1 * var(--wui-onda))) scaleX(1.27) rotate(-5deg); }
+  74.42% { transform: translateY(calc(.48 * var(--wui-onda))) scaleX(1.08) rotate(2deg); }
+  100% { transform: none; }
+}
+@keyframes wui-tinta {
+  0%, 24.42% { opacity: 0; clip-path: polygon(0 0, 0 0, 0 50%, 0 100%, 0 100%); }
+  51.16% { opacity: .82; clip-path: polygon(0 0, 34% 0, 28% 52%, 36% 100%, 0 100%); transform: translateY(calc(.7 * var(--wui-onda))) skewY(-.4deg); }
+  74.42% { opacity: 1; clip-path: polygon(0 0, 88% 0, 94% 53%, 89% 100%, 0 100%); transform: translateY(calc(-.32 * var(--wui-onda))); }
+  100% { clip-path: polygon(0 0, 100% 0, 100% 50%, 100% 100%, 0 100%); transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; }
+  .wui-pista::before { animation: none !important; } }

@@ -1,0 +1,392 @@
+{
+  "objects": {
+    "table": {
+      "id": "table",
+      "name": "mesa",
+      "kind": "table",
+      "bbox": [
+        0,
+        0,
+        -20,
+        1600,
+        800,
+        0
+      ],
+      "contour": [
+        [
+          0,
+          0
+        ],
+        [
+          1600,
+          0
+        ],
+        [
+          1600,
+          800
+        ],
+        [
+          0,
+          800
+        ]
+      ],
+      "plane": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "texture": "madera",
+      "albedo": [
+        0.55,
+        0.42,
+        0.3
+      ],
+      "pose": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tracked": false,
+      "velocity": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "extra": {}
+    },
+    "screen": {
+      "id": "screen",
+      "name": "pantalla",
+      "kind": "screen",
+      "bbox": [
+        1100,
+        650,
+        0,
+        1700,
+        680,
+        340
+      ],
+      "contour": [
+        [
+          1100,
+          650
+        ],
+        [
+          1700,
+          650
+        ],
+        [
+          1700,
+          680
+        ],
+        [
+          1100,
+          680
+        ]
+      ],
+      "plane": [
+        0,
+        -1,
+        0,
+        650
+      ],
+      "texture": "vidrio",
+      "albedo": [
+        0.05,
+        0.05,
+        0.05
+      ],
+      "pose": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tracked": false,
+      "velocity": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "extra": {}
+    },
+    "frame": {
+      "id": "frame",
+      "name": "cuadro",
+      "kind": "frame",
+      "bbox": [
+        200,
+        760,
+        100,
+        500,
+        775,
+        320
+      ],
+      "contour": [
+        [
+          200,
+          760
+        ],
+        [
+          500,
+          760
+        ],
+        [
+          500,
+          775
+        ],
+        [
+          200,
+          775
+        ]
+      ],
+      "plane": [
+        0,
+        -1,
+        0,
+        760
+      ],
+      "texture": "mate",
+      "albedo": [
+        0.9,
+        0.85,
+        0.7
+      ],
+      "pose": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tracked": false,
+      "velocity": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "extra": {
+        "width_mm": 300,
+        "height_mm": 220
+      }
+    },
+    "croc": {
+      "id": "croc",
+      "name": "cocodrilo",
+      "kind": "instrument",
+      "bbox": [
+        580,
+        280,
+        0,
+        980,
+        390,
+        90
+      ],
+      "contour": [
+        [
+          600,
+          300
+        ],
+        [
+          700,
+          280
+        ],
+        [
+          820,
+          300
+        ],
+        [
+          900,
+          330
+        ],
+        [
+          960,
+          330
+        ],
+        [
+          980,
+          350
+        ],
+        [
+          900,
+          370
+        ],
+        [
+          820,
+          380
+        ],
+        [
+          700,
+          390
+        ],
+        [
+          620,
+          370
+        ],
+        [
+          580,
+          340
+        ]
+      ],
+      "plane": null,
+      "texture": "piel",
+      "albedo": [
+        0.25,
+        0.5,
+        0.2
+      ],
+      "pose": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tracked": true,
+      "velocity": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "extra": {}
+    },
+    "keys": {
+      "id": "keys",
+      "name": "teclado",
+      "kind": "instrument",
+      "bbox": [
+        150,
+        120,
+        0,
+        1050,
+        300,
+        60
+      ],
+      "contour": [
+        [
+          150,
+          120
+        ],
+        [
+          1050,
+          120
+        ],
+        [
+          1050,
+          300
+        ],
+        [
+          150,
+          300
+        ]
+      ],
+      "plane": [
+        0,
+        0,
+        1,
+        60
+      ],
+      "texture": "mate",
+      "albedo": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "pose": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tracked": false,
+      "velocity": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "extra": {
+        "keys": 61,
+        "first_note": 36
+      }
+    }
+  },
+  "people": {},
+  "lights": {
+    "dmx0": {
+      "kind": "dmx",
+      "rgb": [
+        1,
+        1,
+        1
+      ],
+      "cct": 5600,
+      "pos": [
+        800,
+        -300,
+        900
+      ],
+      "status": "sin conectar"
+    },
+    "bar0": {
+      "kind": "tracked",
+      "rgb": [
+        1,
+        0.8,
+        0.6
+      ],
+      "cct": 3200,
+      "pos": null,
+      "status": "sin trackear"
+    }
+  },
+  "projectors": {
+    "proj0": {
+      "size": [
+        1920,
+        1080
+      ],
+      "head": {
+        "pan": 0.0,
+        "tilt": -35.0
+      },
+      "status": "sin calibrar"
+    }
+  },
+  "table_mm": [
+    1600.0,
+    800.0
+  ],
+  "beat": {
+    "bpm": 120.0,
+    "phase": 0.0,
+    "bar": 0.0,
+    "playing": false
+  },
+  "audio": {
+    "sub": 0.0,
+    "bass": 0.0,
+    "mid": 0.0,
+    "high": 0.0,
+    "rms": 0.0,
+    "beat": 0.0,
+    "onsets": 0,
+    "bpm": 0.0,
+    "ch": [],
+    "live": false
+  },
+  "t": 0.0,
+  "projector_px": false,
+  "scan_dir": null,
+  "coordinate_space": "legacy",
+  "gaze": {}
+}

@@ -1,0 +1,766 @@
+{
+ "_nota": "Montaje del laboratorio anotado sobre la foto limpia out/lab-norm.png (22-nov, 07:10). Todo en mm de mesa. Si se mueve un objeto hay que corregir su rectángulo aquí (o volver a anotar). El contenido de los compartimentos está leído de la foto: es aproximado.",
+ "fijos": [
+  {
+   "n": "vaso precipitado",
+   "poly": [
+    [
+     45,
+     -10
+    ],
+    [
+     200,
+     -10
+    ],
+    [
+     278,
+     175
+    ],
+    [
+     220,
+     220
+    ],
+    [
+     160,
+     190
+    ]
+   ],
+   "rol": "Reactivo · origen"
+  },
+  {
+   "n": "vaso",
+   "poly": [
+    [
+     240,
+     -5
+    ],
+    [
+     325,
+     -10
+    ],
+    [
+     382,
+     180
+    ],
+    [
+     350,
+     208
+    ],
+    [
+     308,
+     195
+    ]
+   ],
+   "rol": "Mezcla · destino"
+  },
+  {
+   "n": "placa con pantalla",
+   "rect": [
+    793,
+    65,
+    907,
+    265
+   ],
+   "rol": "Fuera de la caja"
+  },
+  {
+   "n": "libreta",
+   "rect": [
+    915,
+    40,
+    1230,
+    280
+   ]
+  },
+  {
+   "n": "pipeta",
+   "rect": [
+    591,
+    304,
+    736,
+    324
+   ],
+   "rol": "Pipeta"
+  },
+  {
+   "n": "tira azul",
+   "rect": [
+    621,
+    346,
+    727,
+    384
+   ]
+  },
+  {
+   "n": "tira morada",
+   "rect": [
+    523,
+    440,
+    554,
+    554
+   ]
+  },
+  {
+   "n": "caja de viales",
+   "rect": [
+    628,
+    440,
+    807,
+    552
+   ]
+  },
+  {
+   "n": "caja organizadora",
+   "rect": [
+    855,
+    380,
+    1217,
+    610
+   ]
+  },
+  {
+   "n": "plátano",
+   "poly": [
+    [
+     198,
+     452
+    ],
+    [
+     212,
+     460
+    ],
+    [
+     186,
+     510
+    ],
+    [
+     190,
+     570
+    ],
+    [
+     230,
+     620
+    ],
+    [
+     290,
+     640
+    ],
+    [
+     286,
+     656
+    ],
+    [
+     220,
+     650
+    ],
+    [
+     165,
+     615
+    ],
+    [
+     145,
+     560
+    ],
+    [
+     150,
+     505
+    ],
+    [
+     175,
+     470
+    ]
+   ]
+  }
+ ],
+ "caja": {
+  "celdas": [
+   {
+    "id": "A1",
+    "rect": [
+     860,
+     385,
+     1048,
+     460
+    ],
+    "item": "Hub USB-C",
+    "n": 1,
+    "alias": [
+     "hub",
+     "usb",
+     "usb-c",
+     "adaptador"
+    ]
+   },
+   {
+    "id": "A2",
+    "rect": [
+     1050,
+     385,
+     1140,
+     460
+    ],
+    "item": "Arduino UNO",
+    "n": 1,
+    "alias": [
+     "arduino",
+     "arduinos",
+     "placa arduino",
+     "microcontrolador"
+    ]
+   },
+   {
+    "id": "A3",
+    "rect": [
+     1155,
+     385,
+     1212,
+     460
+    ],
+    "item": "Módulo sensor",
+    "n": 1,
+    "alias": [
+     "sensor",
+     "modulo sensor"
+    ]
+   },
+   {
+    "id": "B1",
+    "rect": [
+     860,
+     462,
+     935,
+     602
+    ],
+    "item": "Cables jumper",
+    "n": 20,
+    "alias": [
+     "jumper",
+     "jumpers",
+     "cables"
+    ]
+   },
+   {
+    "id": "B2",
+    "rect": [
+     940,
+     462,
+     990,
+     508
+    ],
+    "item": "",
+    "n": 0
+   },
+   {
+    "id": "B3",
+    "rect": [
+     995,
+     462,
+     1045,
+     508
+    ],
+    "item": "Conectores",
+    "n": 4,
+    "alias": [
+     "conector",
+     "pines"
+    ]
+   },
+   {
+    "id": "B4",
+    "rect": [
+     1050,
+     462,
+     1100,
+     508
+    ],
+    "item": "",
+    "n": 0
+   },
+   {
+    "id": "B5",
+    "rect": [
+     1105,
+     462,
+     1155,
+     508
+    ],
+    "item": "Engranaje blanco",
+    "n": 1,
+    "alias": [
+     "engranaje",
+     "rueda"
+    ]
+   },
+   {
+    "id": "B6",
+    "rect": [
+     1160,
+     462,
+     1212,
+     508
+    ],
+    "item": "Pieza blanca",
+    "n": 1,
+    "alias": [
+     "pieza"
+    ]
+   },
+   {
+    "id": "C2",
+    "rect": [
+     940,
+     510,
+     990,
+     553
+    ],
+    "item": "",
+    "n": 0
+   },
+   {
+    "id": "C3",
+    "rect": [
+     995,
+     510,
+     1045,
+     553
+    ],
+    "item": "Tornillos",
+    "n": 6,
+    "alias": [
+     "tornillo",
+     "pernos"
+    ]
+   },
+   {
+    "id": "C4",
+    "rect": [
+     1050,
+     510,
+     1100,
+     553
+    ],
+    "item": "Módulo rojo",
+    "n": 1,
+    "alias": [
+     "modulo rojo",
+     "rele",
+     "relé"
+    ]
+   },
+   {
+    "id": "C5",
+    "rect": [
+     1105,
+     510,
+     1155,
+     553
+    ],
+    "item": "Cables Dupont",
+    "n": 10,
+    "alias": [
+     "dupont"
+    ]
+   },
+   {
+    "id": "C6",
+    "rect": [
+     1160,
+     510,
+     1212,
+     553
+    ],
+    "item": "Soporte blanco",
+    "n": 1,
+    "alias": [
+     "soporte"
+    ]
+   },
+   {
+    "id": "D2",
+    "rect": [
+     940,
+     556,
+     1025,
+     602
+    ],
+    "item": "Pantalla LCD",
+    "n": 1,
+    "alias": [
+     "lcd",
+     "pantalla",
+     "display"
+    ]
+   },
+   {
+    "id": "D3",
+    "rect": [
+     1028,
+     556,
+     1100,
+     602
+    ],
+    "item": "Módulo en bolsa",
+    "n": 1,
+    "alias": [
+     "modulo",
+     "bolsa"
+    ]
+   },
+   {
+    "id": "D4",
+    "rect": [
+     1105,
+     556,
+     1212,
+     602
+    ],
+    "item": "Pines amarillos",
+    "n": 12,
+    "alias": [
+     "pines amarillos",
+     "headers"
+    ]
+   }
+  ]
+ },
+ "tira": {
+  "celdas": [
+   {
+    "id": "T1",
+    "rect": [
+     623,
+     348,
+     649,
+     383
+    ],
+    "abierto": false
+   },
+   {
+    "id": "T2",
+    "rect": [
+     649,
+     348,
+     675,
+     383
+    ],
+    "abierto": true
+   },
+   {
+    "id": "T3",
+    "rect": [
+     675,
+     348,
+     701,
+     383
+    ],
+    "abierto": false
+   },
+   {
+    "id": "T4",
+    "rect": [
+     701,
+     348,
+     727,
+     383
+    ],
+    "abierto": false
+   },
+   {
+    "id": "P1",
+    "rect": [
+     525,
+     442,
+     553,
+     470
+    ],
+    "abierto": false
+   },
+   {
+    "id": "P2",
+    "rect": [
+     525,
+     470,
+     553,
+     498
+    ],
+    "abierto": true
+   },
+   {
+    "id": "P3",
+    "rect": [
+     525,
+     498,
+     553,
+     526
+    ],
+    "abierto": false
+   },
+   {
+    "id": "P4",
+    "rect": [
+     525,
+     526,
+     553,
+     554
+    ],
+    "abierto": false
+   }
+  ]
+ },
+ "fichas": [
+  {
+   "de": "plátano",
+   "titulo": "Plátano",
+   "lineas": [
+    "Muestra orgánica",
+    "118 g · 105 kcal",
+    "Potasio 422 mg",
+    "Madurez: lista"
+   ]
+  }
+ ],
+ "protocolo": [
+  {
+   "texto": "Tome la pipeta.",
+   "objetivo": "pipeta"
+  },
+  {
+   "texto": "Con la pipeta, pase 50 microlitros del vial P2 (morado) al T2 (celeste).",
+   "transferir": {
+    "desde": "P2",
+    "hasta": "T2",
+    "microlitros": 50
+   }
+  },
+  {
+   "texto": "Vierta el reactivo del vaso precipitado al vaso, hasta 50 por ciento.",
+   "meta_vaso": 50
+  },
+  {
+   "texto": "Anote el resultado en la libreta.",
+   "objetivo": "libreta"
+  }
+ ],
+ "viales": [
+  {
+   "id": "B1",
+   "tira": "blanca",
+   "c": "#ffffff",
+   "rect": [
+    630,
+    445,
+    653,
+    471
+   ]
+  },
+  {
+   "id": "B2",
+   "tira": "blanca",
+   "c": "#ffffff",
+   "rect": [
+    630,
+    471,
+    653,
+    497
+   ]
+  },
+  {
+   "id": "B3",
+   "tira": "blanca",
+   "c": "#ffffff",
+   "rect": [
+    630,
+    497,
+    653,
+    523
+   ]
+  },
+  {
+   "id": "B4",
+   "tira": "blanca",
+   "c": "#ffffff",
+   "rect": [
+    630,
+    523,
+    653,
+    549
+   ]
+  },
+  {
+   "id": "A1",
+   "tira": "amarilla",
+   "c": "#ffe94d",
+   "rect": [
+    655,
+    445,
+    680,
+    471
+   ]
+  },
+  {
+   "id": "A2",
+   "tira": "amarilla",
+   "c": "#ffe94d",
+   "rect": [
+    655,
+    471,
+    680,
+    497
+   ]
+  },
+  {
+   "id": "A3",
+   "tira": "amarilla",
+   "c": "#ffe94d",
+   "rect": [
+    655,
+    497,
+    680,
+    523
+   ]
+  },
+  {
+   "id": "A4",
+   "tira": "amarilla",
+   "c": "#ffe94d",
+   "rect": [
+    655,
+    523,
+    680,
+    549
+   ]
+  },
+  {
+   "id": "V1",
+   "tira": "verde",
+   "c": "#7dff9a",
+   "rect": [
+    717,
+    445,
+    741,
+    471
+   ]
+  },
+  {
+   "id": "V2",
+   "tira": "verde",
+   "c": "#7dff9a",
+   "rect": [
+    717,
+    471,
+    741,
+    497
+   ]
+  },
+  {
+   "id": "V3",
+   "tira": "verde",
+   "c": "#7dff9a",
+   "rect": [
+    717,
+    497,
+    741,
+    523
+   ]
+  },
+  {
+   "id": "V4",
+   "tira": "verde",
+   "c": "#7dff9a",
+   "rect": [
+    717,
+    523,
+    741,
+    549
+   ]
+  },
+  {
+   "id": "M1",
+   "tira": "magenta",
+   "c": "#ff5ad0",
+   "rect": [
+    752,
+    445,
+    777,
+    471
+   ]
+  },
+  {
+   "id": "M2",
+   "tira": "magenta",
+   "c": "#ff5ad0",
+   "rect": [
+    752,
+    471,
+    777,
+    497
+   ]
+  },
+  {
+   "id": "M3",
+   "tira": "magenta",
+   "c": "#ff5ad0",
+   "rect": [
+    752,
+    497,
+    777,
+    523
+   ]
+  },
+  {
+   "id": "M4",
+   "tira": "magenta",
+   "c": "#ff5ad0",
+   "rect": [
+    752,
+    523,
+    777,
+    549
+   ]
+  },
+  {
+   "id": "R1",
+   "tira": "rosada",
+   "c": "#ffb3d9",
+   "rect": [
+    780,
+    445,
+    805,
+    471
+   ]
+  },
+  {
+   "id": "R2",
+   "tira": "rosada",
+   "c": "#ffb3d9",
+   "rect": [
+    780,
+    471,
+    805,
+    497
+   ]
+  },
+  {
+   "id": "R3",
+   "tira": "rosada",
+   "c": "#ffb3d9",
+   "rect": [
+    780,
+    497,
+    805,
+    523
+   ]
+  },
+  {
+   "id": "R4",
+   "tira": "rosada",
+   "c": "#ffb3d9",
+   "rect": [
+    780,
+    523,
+    805,
+    549
+   ]
+  }
+ ]
+}

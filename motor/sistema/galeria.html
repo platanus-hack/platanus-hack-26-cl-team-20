@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WUI · sistema común</title>
+<!-- Los mismos cinco componentes con el tema de cada escena. Abrir desde el repo (file://): no necesita servidor.
+     Cada columna es un iframe con base.css + el tema de esa escena, igual que un widget html en la mesa. -->
+<style>
+  body { margin: 0; padding: 24px; background: #000; color: #ddd; font: 16px/1.4 system-ui, sans-serif; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  p { margin: 0 0 20px; color: #999; max-width: 70ch; }
+  .temas { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; }
+  figure { margin: 0; }
+  figcaption { margin-bottom: 8px; color: #bbb; }
+  iframe { width: 100%; height: 760px; border: 1px solid #222; background: #000; }
+</style>
+</head>
+<body>
+<h1>Un mismo producto, tres estilos</h1>
+<p>Señalar, nombrar, explicar, medir y tocar, con el tema de cada escena. Lo que cambia son los tokens de <code>tema.css</code>;
+las reglas son las de <code>motor/sistema/base.css</code>. Fondo negro porque en un proyector el negro es no proyectar.
+Pasa el mouse sobre un botón para ver cómo se llena al dejar el dedo quieto.</p>
+<div class="temas" id="temas"></div>
+<script>
+const TEMAS = [
+  ["Escritorio", "../../escenas/escritorio/tema.css", { nombre: "libreta", paso: "PASO 2 DE 3", titulo: "Leí tu nota", cuerpo: "Passkeys: 3 pasos, 1 día.", dato: "3", unidad: "tareas", si: "Sí, hazlo", no: "Todavía no", aviso: "Rev espera tu OK" }],
+  ["Sistema solar", "temas/sistema-solar.css", { nombre: "Saturno", paso: "PLANETA 6 DE 8", titulo: "Saturno", cuerpo: "Sus anillos son hielo y roca.", dato: "82", unidad: "lunas", si: "Cuéntame más", no: "Otro planeta", aviso: "Toca un planeta de la lámina" }],
+  ["Laboratorio", "../../escenas/laboratorio/tema.css", { nombre: "celda C5", paso: "PASO 3 DE 5", titulo: "Líquido A al vaso B", cuerpo: "Sirve despacio hasta 50 ml.", dato: "54", unidad: "ml", si: "Listo", no: "Repetir paso", aviso: "Te pasaste: saca 4 ml" }],
+];
+const cuerpo = (t) => `
+<div style="display:grid;gap:20px;padding:20px">
+  <div><span class="sd-etiqueta sd-foco" style="border-color:var(--sd-foco)">${t.nombre}</span></div>
+  <div class="sd-panel" style="height:auto">
+    <div class="sd-paso">${t.paso}</div>
+    <h1>${t.titulo}</h1>
+    <p>${t.cuerpo}</p>
+    <div class="sd-dato" data-tono="${t.unidad === "ml" ? "peligro" : ""}">${t.dato}<small>${t.unidad}</small></div>
+    <div class="sd-aviso" data-tono="${t.unidad === "ml" ? "peligro" : "alerta"}">${t.aviso}</div>
+    <div class="sd-fila">
+      <div class="sd-boton" data-press="si"><span>${t.si}</span></div>
+      <div class="sd-boton" data-press="no"><span>${t.no}</span></div>
+    </div>
+  </div>
+</div>`;
+// Dentro del iframe: lo mismo que hace la mesa (BASE_CSS del html-layer) y un llenado de prueba al pasar el mouse.
+const PREVIA = `html,body{margin:0;background:transparent;color:#fff;font:400 24px/1.3 system-ui}*{box-sizing:border-box}
+[data-press]{cursor:pointer;transition:--press 0s}`;
+const LLENAR = `document.querySelectorAll("[data-press]").forEach((b)=>{let t,i;
+b.onmouseenter=()=>{b.setAttribute("data-pcx-hover","");const t0=performance.now();i=setInterval(()=>{const p=Math.min(1,(performance.now()-t0)/400);
+b.style.setProperty("--press",p);if(p>=1){clearInterval(i);b.setAttribute("data-pcx-fired","")}},16)};
+b.onmouseleave=()=>{clearInterval(i);b.style.setProperty("--press",0);b.removeAttribute("data-pcx-hover");b.removeAttribute("data-pcx-fired")}});`;
+for (const [nombre, tema, textos] of TEMAS) {
+  const f = document.createElement("figure");
+  const base = new URL("base.css", location.href).href, hoja = new URL(tema, location.href).href;
+  f.innerHTML = `<figcaption>${nombre} · <code>${tema.replace("../../", "")}</code></figcaption>`;
+  const marco = document.createElement("iframe");
+  marco.srcdoc = `<!doctype html><meta charset="utf-8"><style>${PREVIA}</style><link rel="stylesheet" href="${base}"><link rel="stylesheet" href="${hoja}">` +
+    `<body>${cuerpo(textos)}<script>${LLENAR}<\/script></body>`;
+  f.appendChild(marco);
+  document.getElementById("temas").appendChild(f);
+}
+</script>
+</body>
+</html>

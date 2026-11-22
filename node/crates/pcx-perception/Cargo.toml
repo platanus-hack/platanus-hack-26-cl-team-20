@@ -1,0 +1,20 @@
+[package]
+name = "pcx-perception"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Percepción de pcx: foto limpia (apagón del proyector + mediana de cuadros del anillo) y el pipeline de objetos del motor local (cascada + MobileSAM)."
+publish = false
+
+[features]
+default = []
+# MobileSAM con ONNX Runtime para las regiones nuevas. Sin la feature, el pipeline corre solo con la cascada.
+onnx = ["pcx-objects/onnx"]
+
+[dependencies]
+pcx-shm = { path = "../pcx-shm" }
+pcx-objects = { path = "../pcx-objects" }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+imageproc = { version = "0.25", default-features = false }
+serde_json = "1"
+thiserror = "2"

@@ -1,0 +1,13 @@
+[project]
+name = "escena-escritorio"
+version = "0.1.0"
+description = "Escena «Escritorio del vibe coder» de WUI: libreta que contesta y estado de agentes en la mesa"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26", "opencv-python-headless>=4.9"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
