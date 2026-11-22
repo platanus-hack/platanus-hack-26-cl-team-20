@@ -1,4 +1,4 @@
-# WUI · World UI
+# World UI
 
 <img src="./project-logo.png" alt="Logo de WUI" width="200" />
 

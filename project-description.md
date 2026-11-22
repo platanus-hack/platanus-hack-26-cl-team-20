@@ -1,8 +1,8 @@
-# WUI · World UI
+# World UI
 
 **El mundo es tu interfaz.**
 
-WUI convierte cualquier mesa en una interfaz. Un proyector y una cámara apuntan a la superficie; un agente de IA ve los objetos reales, sabe dónde están en milímetros y proyecta sobre ellos lo que necesitas.
+World UI (WUI) convierte cualquier mesa en una interfaz. Un proyector y una cámara apuntan a la superficie; un agente de IA ve los objetos reales, sabe dónde están en milímetros y proyecta sobre ellos lo que necesitas.
 
 ## Qué hace
 
